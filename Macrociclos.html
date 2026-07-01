@@ -145,17 +145,52 @@
         data.bloques.forEach(b => agregarBloque(b.fase, b.semanas));
     };
 
-    function calcularTotal() {
-        let t = 0;
-        document.querySelectorAll('.bloque').forEach(b => t += parseInt(b.style.flex));
-        document.getElementById('totalSemanas').innerText = t;
-        const inicio = document.getElementById('fechaInicio').value;
-        if (inicio && t > 0) {
-            let f = new Date(inicio);
-            f.setDate(f.getDate() + (t * 7));
-            document.getElementById('fechaFin').value = f.toISOString().split('T')[0];
-        }
+  // 1. Función mejorada para calcular todo
+function calcularTotal() {
+    let totalSemanas = 0;
+    // Sumamos las semanas de todos los bloques
+    document.querySelectorAll('.bloque').forEach(b => {
+        totalSemanas += parseInt(b.style.flex);
+    });
+    
+    document.getElementById('totalSemanas').innerText = totalSemanas;
+    
+    // Calculamos la fecha de fin
+    const inicioStr = document.getElementById('fechaInicio').value;
+    if (inicioStr && totalSemanas > 0) {
+        let f = new Date(inicioStr);
+        // Sumamos semanas * 7 días
+        f.setDate(f.getDate() + (totalSemanas * 7));
+        
+        // Formateamos correctamente para el input date (YYYY-MM-DD)
+        document.getElementById('fechaFin').value = f.toISOString().split('T')[0];
+    } else {
+        document.getElementById('fechaFin').value = '';
     }
+    
+    autoGuardar();
+}
+
+// 2. Aseguramos que se llame al cargar
+window.onload = () => {
+    const dataGuardada = localStorage.getItem('kaskaPlan');
+    let data = (!dataGuardada || dataGuardada === 'vacio') ? PLAN_POR_DEFECTO : JSON.parse(dataGuardada);
+    document.getElementById('titulo').innerText = data.titulo;
+    document.getElementById('fechaInicio').value = data.inicio;
+    
+    // Limpiamos pantalla y agregamos bloques
+    document.getElementById('pantalla').innerHTML = '';
+    data.bloques.forEach(b => agregarBloque(b.fase, b.semanas));
+    
+    // Calculamos el total y la fecha final nada más cargar
+    calcularTotal();
+};
+
+// 3. Modificamos el evento del Sortable para que recalcule al soltar
+new Sortable(document.getElementById('pantalla'), { 
+    animation: 200, 
+    onEnd: () => { calcularTotal(); } 
+});
 
     async function guardarArchivo() { 
         const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
