@@ -27,11 +27,10 @@
         .tap { background-color: #ffd43b; }
 	@media print {
             /* 1. Definimos un tamaño de página "corto" en lugar de un A4 estándar */
-            @page { 
-                size: 210mm 75mm; /* Ajusta el 150mm según lo corto que lo quieras */
-                margin: 0; 
-            }
-
+         @page{
+    margin:0;
+    size:auto;
+}
             .controls, .no-print, .btn-borrar { display: none !important; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             
