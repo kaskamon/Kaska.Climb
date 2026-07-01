@@ -1,6 +1,6 @@
 {
   "name": "Creador Kaska.Climb",
-  "short_name": "Creador tablas	",
+  "short_name": "Creador tablas",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
