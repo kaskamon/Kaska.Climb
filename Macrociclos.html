@@ -26,35 +26,45 @@
         .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
         .tap { background-color: #ffd43b; }
 	@media print {
-    /* 1. Eliminamos el control de página nativo que causa el error */
-    @page { size: auto; margin: 0; }
+            /* 1. Definimos un tamaño de página "corto" en lugar de un A4 estándar */
+            @page { 
+                size: 210mm 75mm; /* Ajusta el 150mm según lo corto que lo quieras */
+                margin: 0; 
+            }
 
-    /* 2. Forzamos el cuerpo a no permitir desbordamiento */
-    body {
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-        width: 100vw !important;
-    }
-
-    /* 3. Escalar el contenedor para que quepa exactamente en el ancho de hoja */
-    .container {
-        width: 1000px !important; /* Tu ancho original */
-        transform-origin: top left;
-        /* Calculamos la escala para que 1000px quepan en 210mm (aprox 794px) */
-        transform: scale(0.79) !important; 
-        margin: 0 !important;
-        padding: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-    }
-
-    .controls, .no-print, .btn-borrar {
-        display: none !important;
-    }
-
+            .controls, .no-print, .btn-borrar { display: none !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            
+            body { 
+                background-color: var(--fondo-base) !important; 
+                margin: 0 !important; 
+                padding: 10mm 5mm !important; /* 10mm arriba/abajo, 5mm lados */
+                display: block !important;
+            }
+            
+            .container { 
+                background: var(--fondo-panel) !important; 
+                border: 1px solid rgba(255,255,255,0.05) !important; 
+                box-shadow: none !important;
+                padding: 30px !important; 
+                width: 100% !important;
+                height: auto !important;
+            }
+            
+            #pantalla { 
+                height: 60px !important; 
+                border: 1px solid rgba(255,255,255,0.01) !important; 
+            }
+            
+            .fechas input { 
+                background: transparent !important; 
+                border: none !important; 
+                color: #fff !important; 
+                pointer-events: none;
+            }
+            
+            .fechas input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; }
+        }
     </style>
 </head>
 <body>
