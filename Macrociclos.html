@@ -26,40 +26,45 @@
         .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
         .tap { background-color: #ffd43b; }
 	@media print {
-    /* 1. Eliminamos el renderizado de cualquier hoja A4 estándar */
-    @page {
-        size: 210mm 75mm;
-        margin: 0 !important;
-    }
+            /* 1. Definimos un tamaño de página "corto" en lugar de un A4 estándar */
+            @page { 
+                size: 210mm 75mm; /* Ajusta el 150mm según lo corto que lo quieras */
+                margin: 0; 
+            }
 
-    /* 2. Forzamos al navegador a que el viewport de impresión sea el tamaño de tu elemento */
-    html, body {
-        width: 210mm !important;
-        height: 75mm !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-        /* Esto evita que el navegador intente paginar el contenido */
-        page-break-before: avoid !important;
-        page-break-after: avoid !important;
-    }
-
-    /* 3. El contenedor asume el control total */
-    .container {
-        width: 210mm !important;
-        height: 75mm !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-        display: block !important;
-    }
-
-    /* 4. Ocultamos el resto */
-    .controls, .no-print, .btn-borrar {
-        display: none !important;
-    }
-
+            .controls, .no-print, .btn-borrar { display: none !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            
+            body { 
+                background-color: var(--fondo-base) !important; 
+                margin: 0 !important; 
+                padding: 10mm 5mm !important; /* 10mm arriba/abajo, 5mm lados */
+                display: block !important;
+            }
+            
+            .container { 
+                background: var(--fondo-panel) !important; 
+                border: 1px solid rgba(255,255,255,0.05) !important; 
+                box-shadow: none !important;
+                padding: 30px !important; 
+                width: 100% !important;
+                height: auto !important;
+            }
+            
+            #pantalla { 
+                height: 60px !important; 
+                border: 1px solid rgba(255,255,255,0.01) !important; 
+            }
+            
+            .fechas input { 
+                background: transparent !important; 
+                border: none !important; 
+                color: #fff !important; 
+                pointer-events: none;
+            }
+            
+            .fechas input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; }
+        }
     </style>
 </head>
 <body>
