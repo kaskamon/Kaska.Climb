@@ -4,8 +4,10 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#333333">
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaska.Climb | Macrociclos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root { --fondo-base: #121212; --fondo-panel: rgba(30, 30, 30, 0.85); }
         * { box-sizing: border-box; }
@@ -19,52 +21,12 @@
         button { background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; text-transform: capitalize; }
         select { background: #2c2c2c; color: #fff; border: 1px solid #4a4a4a; padding: 6px; font-size: 11px; border-radius: 4px; }
         #pantalla-wrapper { position: relative; width: 100%; padding: 3px; }
-        #pantalla { display: flex; width: 100%; height: 60px; border: 1px solid rgba(255,255,255,0.01); }
+        #pantalla { display: flex; width: 100%; height: 60px; border: 1px solid rgba(255,255,255,0.01); overflow: hidden; }
         .bloque { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; cursor: grab; color: #000; }
         .btn-borrar { margin-top: 2px; background: rgba(0,0,0,0.15); border: none; font-size: 9px; cursor: pointer; border-radius: 3px; }
         .fmax { background-color: #ff6b6b; } .desox { background-color: #4dabf7; }
         .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
         .tap { background-color: #ffd43b; }
-	@media print {
-            /* 1. Definimos un tamaño de página "corto" en lugar de un A4 estándar */
-            @page { 
-                size: 210mm 75mm; /* Ajusta el 150mm según lo corto que lo quieras */
-                margin: 0; 
-            }
-
-            .controls, .no-print, .btn-borrar { display: none !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            
-            body { 
-                background-color: var(--fondo-base) !important; 
-                margin: 0 !important; 
-                padding: 10mm 5mm !important; /* 10mm arriba/abajo, 5mm lados */
-                display: block !important;
-            }
-            
-            .container { 
-                background: var(--fondo-panel) !important; 
-                border: 1px solid rgba(255,255,255,0.05) !important; 
-                box-shadow: none !important;
-                padding: 30px !important; 
-                width: 100% !important;
-                height: auto !important;
-            }
-            
-            #pantalla { 
-                height: 60px !important; 
-                border: 1px solid rgba(255,255,255,0.01) !important; 
-            }
-            
-            .fechas input { 
-                background: transparent !important; 
-                border: none !important; 
-                color: #fff !important; 
-                pointer-events: none;
-            }
-            
-            .fechas input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; }
-        }
     </style>
 </head>
 <body>
@@ -85,14 +47,14 @@
         <button onclick="guardarArchivo()">Guardar</button>
         <button onclick="cargarArchivo()">Cargar</button>
         <button onclick="limpiarPlan()">Limpiar</button>
-        <button onclick="window.print()">Exportar Pdf</button>
+        <button onclick="exportarPDF()">Exportar PDF</button>
     </div>
 
     <div id="pantalla-wrapper"><div id="pantalla"></div></div>
     <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
     <div style="text-align: center; margin-top: 10px;" class="no-print">
-    <button onclick="window.location.href='index.html'" style="background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; font-weight: 900;"><b>&larr;</b> INICIO</button>
-</div>
+        <button onclick="window.location.href='index.html'" style="background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; font-weight: 900;"><b>&larr;</b> INICIO</button>
+    </div>
 </div>
 
 <script>
@@ -106,13 +68,13 @@
     };
 
     function autoGuardar() {
-        const data = { 
-            titulo: document.getElementById('titulo').innerText, 
+        const data = {
+            titulo: document.getElementById('titulo').innerText,
             inicio: document.getElementById('fechaInicio').value,
-            bloques: Array.from(document.querySelectorAll('.bloque')).map(b => ({ 
-                fase: b.className.split(' ')[1], 
+            bloques: Array.from(document.querySelectorAll('.bloque')).map(b => ({
+                fase: b.className.split(' ')[1],
                 semanas: parseInt(b.style.flex)
-            })) 
+            }))
         };
         localStorage.setItem('kaskaPlan', JSON.stringify(data));
     }
@@ -157,10 +119,15 @@
         }
     }
 
+    function calcularFin() {
+        calcularTotal();
+    }
+
     async function guardarArchivo() { 
         const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan.json'; a.click(); 
     }
+
     async function cargarArchivo() {
         const input = document.createElement('input'); input.type = 'file';
         input.onchange = e => {
@@ -170,6 +137,111 @@
         };
         input.click();
     }
+
+    function formatearFecha(iso) {
+        if (!iso) return '';
+        const [y, m, d] = iso.split('-');
+        return `${d}/${m}/${y}`;
+    }
+
+    function exportarPDF() {
+        calcularTotal();
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: [44, 210]
+        });
+
+        const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
+        const fechaInicio = formatearFecha(document.getElementById('fechaInicio').value);
+        const fechaFin = formatearFecha(document.getElementById('fechaFin').value);
+        const total = document.getElementById('totalSemanas').innerText.trim();
+        const bloques = Array.from(document.querySelectorAll('.bloque')).map(b => ({
+            fase: b.className.split(' ')[1],
+            semanas: parseInt(b.style.flex)
+        }));
+
+        const colores = {
+            fondo: [18, 18, 18],
+            tarjeta: [31, 31, 31],
+            texto: [255, 255, 255],
+            negro: [0, 0, 0],
+            borde: [55, 55, 55],
+            fmax: [255, 107, 107],
+            desox: [77, 171, 247],
+            reox: [105, 219, 124],
+            aero: [177, 151, 252],
+            tap: [255, 212, 59]
+        };
+
+        const pageW = 210;
+        const pageH = 44;
+
+        pdf.setFillColor(...colores.fondo);
+        pdf.rect(0, 0, pageW, pageH, 'F');
+
+        const outerX = 3;
+        const outerY = 3;
+        const outerW = 204;
+        const outerH = 38;
+
+        pdf.setFillColor(...colores.tarjeta);
+        pdf.setDrawColor(...colores.borde);
+        pdf.roundedRect(outerX, outerY, outerW, outerH, 3, 3, 'FD');
+
+        const left = outerX + 4;
+        const right = outerX + outerW - 4;
+        const top = outerY + 6;
+
+        pdf.setTextColor(...colores.texto);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(8.5);
+        pdf.text(titulo, left, top);
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(5.2);
+        const inicioTxt = `Inicio: ${fechaInicio}`;
+        const finTxt = `Fin: ${fechaFin}`;
+        pdf.text(inicioTxt, right - 45, top);
+        pdf.text(finTxt, right - 16, top);
+
+        const barX = left + 1;
+        const barY = outerY + 12;
+        const barW = outerW - 8;
+        const barH = 10;
+        const totalSemanas = bloques.reduce((acc, b) => acc + b.semanas, 0) || 1;
+
+        let cursorX = barX;
+        bloques.forEach(b => {
+            const w = (barW * b.semanas) / totalSemanas;
+            const color = colores[b.fase] || colores.tap;
+            pdf.setFillColor(...color);
+            pdf.rect(cursorX, barY, w, barH, 'F');
+
+            pdf.setTextColor(...colores.negro);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(5.4);
+
+            const t1 = b.fase.toUpperCase();
+            const t2 = `${b.semanas}S`;
+            const t1w = pdf.getTextWidth(t1);
+            const t2w = pdf.getTextWidth(t2);
+            pdf.text(t1, cursorX + (w - t1w) / 2, barY + 4.2);
+            pdf.text(t2, cursorX + (w - t2w) / 2, barY + 7.5);
+
+            cursorX += w;
+        });
+
+        pdf.setTextColor(...colores.texto);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(6.5);
+        pdf.text(`TOTAL: ${total} SEMANAS`, left, outerY + outerH - 4.5);
+
+        pdf.save('Macrociclo.pdf');
+    }
+
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
 </body>
