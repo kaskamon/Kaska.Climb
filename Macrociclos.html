@@ -5,11 +5,11 @@
     <meta name="theme-color" content="#333333">
     <meta charset="UTF-8">
     <title>Kaska.Climb | Macrociclos</title>
-    <script src="[cdnjs.cloudflare.com](https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js)"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
         :root { --fondo-base: #121212; --fondo-panel: rgba(30, 30, 30, 0.85); }
         * { box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--fondo-base); color: #e0e0e0; margin: 0; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--fondo-base); color: #e0e0e0; margin: 0; min-height: 99vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .container { position: relative; width: 100%; max-width: 1000px; background: var(--fondo-panel); backdrop-filter: blur(10px); padding: 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
         #header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         #titulo { font-size: 18px; font-weight: 700; text-transform: uppercase; margin: 0; color: #fff; outline: none; }
@@ -19,81 +19,51 @@
         button { background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; text-transform: capitalize; }
         select { background: #2c2c2c; color: #fff; border: 1px solid #4a4a4a; padding: 6px; font-size: 11px; border-radius: 4px; }
         #pantalla-wrapper { position: relative; width: 100%; padding: 3px; }
-        #pantalla { display: flex; width: 100%; height: 60px; border: 1px solid rgba(255,255,255,0.01); overflow: hidden; }
+        #pantalla { display: flex; width: 100%; height: 60px; border: 1px solid rgba(255,255,255,0.01); }
         .bloque { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; cursor: grab; color: #000; }
         .btn-borrar { margin-top: 2px; background: rgba(0,0,0,0.15); border: none; font-size: 9px; cursor: pointer; border-radius: 3px; }
         .fmax { background-color: #ff6b6b; } .desox { background-color: #4dabf7; }
         .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
         .tap { background-color: #ffd43b; }
+	@media print {
+            /* 1. Definimos un tamaño de página "corto" en lugar de un A4 estándar */
+            @page { 
+                size: 210mm 75mm; /* Ajusta el 150mm según lo corto que lo quieras */
+                margin: 0; 
+            }
 
-        @media print {
             .controls, .no-print, .btn-borrar { display: none !important; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-
-            html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                background: #ffffff !important;
-            }
-
-            body {
+            
+            body { 
+                background-color: var(--fondo-base) !important; 
+                margin: 0 !important; 
+                padding: 10mm 5mm !important; /* 10mm arriba/abajo, 5mm lados */
                 display: block !important;
             }
-
-            .container {
-                display: inline-block !important;
-                width: auto !important;
-                max-width: none !important;
-                background: var(--fondo-panel) !important;
-                border: 1px solid rgba(255,255,255,0.05) !important;
+            
+            .container { 
+                background: var(--fondo-panel) !important; 
+                border: 1px solid rgba(255,255,255,0.05) !important; 
                 box-shadow: none !important;
-                backdrop-filter: none !important;
-                padding: 14px !important;
-                border-radius: 0 !important;
-                margin: 0 !important;
+                padding: 30px !important; 
+                width: 100% !important;
+                height: auto !important;
             }
-
-            #header-info {
-                margin-bottom: 10px !important;
+            
+            #pantalla { 
+                height: 60px !important; 
+                border: 1px solid rgba(255,255,255,0.01) !important; 
             }
-
-            #titulo {
-                font-size: 14px !important;
-            }
-
-            .fechas {
-                gap: 12px !important;
-                font-size: 12px !important;
-            }
-
-            .fechas input {
-                background: transparent !important;
-                border: none !important;
-                color: #fff !important;
+            
+            .fechas input { 
+                background: transparent !important; 
+                border: none !important; 
+                color: #fff !important; 
                 pointer-events: none;
-                padding: 0 !important;
-                font-size: 12px !important;
             }
-
-            .fechas input[type="date"]::-webkit-calendar-picker-indicator {
-                display: none !important;
-            }
-
-            #pantalla-wrapper {
-                padding: 0 !important;
-            }
-
-            #pantalla {
-                width: 740px !important;
-                height: 44px !important;
-                border: none !important;
-                overflow: hidden !important;
-            }
-
-            .bloque {
-                font-size: 11px !important;
-                line-height: 1.05 !important;
-            }
+            
+            .fechas input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; }
         }
     </style>
 </head>
@@ -101,9 +71,7 @@
 
 <div class="container">
     <div id="header-info">
-        <h1 id="titulo" contenteditable="true" onblur="autoGuardar()">
-            Macrociclo
-        </h1>
+        <h1 id="titulo" contenteditable="true" onblur="autoGuardar()">Macrociclo</h1>
         <div class="fechas">
             <div>Inicio: <input type="date" id="fechaInicio" onchange="calcularFin(); autoGuardar();"></div>
             <div>Fin: <input type="date" id="fechaFin" readonly></div>
@@ -123,8 +91,8 @@
     <div id="pantalla-wrapper"><div id="pantalla"></div></div>
     <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
     <div style="text-align: center; margin-top: 10px;" class="no-print">
-        <button onclick="window.location.href='index.html'" style="background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; font-weight: 900;"><b>&larr;</b> INICIO</button>
-    </div>
+    <button onclick="window.location.href='index.html'" style="background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; font-weight: 900;"><b>&larr;</b> INICIO</button>
+</div>
 </div>
 
 <script>
@@ -189,15 +157,10 @@
         }
     }
 
-    function calcularFin() {
-        calcularTotal();
-    }
-
     async function guardarArchivo() { 
         const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan.json'; a.click(); 
     }
-
     async function cargarArchivo() {
         const input = document.createElement('input'); input.type = 'file';
         input.onchange = e => {
@@ -207,7 +170,6 @@
         };
         input.click();
     }
-
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
 </body>
