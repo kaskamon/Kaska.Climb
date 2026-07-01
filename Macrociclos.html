@@ -4,344 +4,457 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#333333">
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaska.Climb | Macrociclos</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-  <style>
-    :root {
-        --fondo-base: #121212;
-        --fondo-panel: rgba(30, 30, 30, 0.85);
-    }
+    <script src="[cdnjs.cloudflare.com](https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js)"></script>
 
-    * {
-        box-sizing: border-box;
-    }
+    <style>
+        :root {
+            --fondo-base: #121212;
+            --fondo-panel: rgba(30, 30, 30, 0.85);
+        }
 
-   body {
-    font-family: 'Inter', sans-serif;
-    background-color: var(--fondo-base);
-    color: #e0e0e0;
-    margin: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-}
+        * {
+            box-sizing: border-box;
+        }
 
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--fondo-base);
+            color: #e0e0e0;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
 
-    .container {
-        position: relative;
-        width: 100%;
-        max-width: 1000px;
-        background: var(--fondo-panel);
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        padding: 30px;
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.05);
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    }
+        .container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            background: var(--fondo-panel);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
 
-    #header-info {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        gap: 20px;
-    }
+        #header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
 
-    #titulo {
-        font-size: 18px;
-        font-weight: 700;
-        text-transform: uppercase;
-        margin: 0;
-        color: #fff;
-        outline: none;
-    }
+        #titulo {
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 0;
+            color: #fff;
+            outline: none;
+        }
 
-    .fechas {
-        display: flex;
-        gap: 15px;
-        font-size: 14px;
-        flex-wrap: wrap;
-    }
+        .fechas {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+            flex-wrap: wrap;
+        }
 
-    .fechas input {
-        background: #2c2c2c;
-        color: #fff;
-        border: 1px solid #444;
-        padding: 4px;
-        border-radius: 4px;
-    }
+        .fechas input {
+            background: #2c2c2c;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 4px;
+            border-radius: 4px;
+        }
 
-    .controls {
-        display: flex;
-        gap: 6px;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-    }
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
 
-    button {
-        background: #3a3a3a;
-        color: #fff;
-        border: 1px solid #4a4a4a;
-        padding: 6px 12px;
-        font-size: 11px;
-        cursor: pointer;
-        border-radius: 4px;
-        text-transform: capitalize;
-    }
+        button {
+            background: #3a3a3a;
+            color: #fff;
+            border: 1px solid #4a4a4a;
+            padding: 6px 12px;
+            font-size: 11px;
+            cursor: pointer;
+            border-radius: 4px;
+            text-transform: capitalize;
+        }
 
-    select {
-        background: #2c2c2c;
-        color: #fff;
-        border: 1px solid #4a4a4a;
-        padding: 6px;
-        font-size: 11px;
-        border-radius: 4px;
-    }
+        select {
+            background: #2c2c2c;
+            color: #fff;
+            border: 1px solid #4a4a4a;
+            padding: 6px;
+            font-size: 11px;
+            border-radius: 4px;
+        }
 
-    #pantalla-wrapper {
-        position: relative;
-        width: 100%;
-        padding: 3px;
-    }
+        #pantalla-wrapper {
+            position: relative;
+            width: 100%;
+            padding: 3px;
+        }
 
-    #pantalla {
-        display: flex;
-        width: 100%;
-        height: 60px;
-        border: 1px solid rgba(255,255,255,0.01);
-        overflow: hidden;
-    }
+        #pantalla {
+            display: flex;
+            width: 100%;
+            height: 60px;
+            border: 1px solid rgba(255,255,255,0.01);
+            overflow: hidden;
+        }
 
-    .bloque {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-        cursor: grab;
-        color: #000;
-    }
+        .bloque {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: grab;
+            color: #000;
+            min-width: 0;
+        }
 
-    .btn-borrar {
-        margin-top: 2px;
-        background: rgba(0,0,0,0.15);
-        border: none;
-        font-size: 9px;
-        cursor: pointer;
-        border-radius: 3px;
-    }
+        .btn-borrar {
+            margin-top: 2px;
+            background: rgba(0,0,0,0.15);
+            border: none;
+            font-size: 9px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
 
-    .fmax { background-color: #ff6b6b; }
-    .desox { background-color: #4dabf7; }
-    .reox { background-color: #69db7c; }
-    .aero { background-color: #b197fc; }
-    .tap  { background-color: #ffd43b; }
+        .fmax { background-color: #ff6b6b; }
+        .desox { background-color: #4dabf7; }
+        .reox { background-color: #69db7c; }
+        .aero { background-color: #b197fc; }
+        .tap  { background-color: #ffd43b; }
 
-  @media print {
-    @page {
-        size: auto;
-        margin: 0;
-    }
+        /* VERSION SOLO IMPRESION */
+        #print-sheet {
+            display: none;
+        }
 
-    html, body {
-        width: auto !important;
-        height: auto !important;
-        min-height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: visible !important;
-        background: #ffffff !important;
-    }
+        #print-band {
+            background: #1f1f1f;
+            color: white;
+            padding: 14px 16px 12px 16px;
+            width: 920px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
 
-    * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
+        .print-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 10px;
+        }
 
-    .controls,
-    .no-print,
-    .btn-borrar {
-        display: none !important;
-    }
+        .print-title {
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            line-height: 1.2;
+        }
 
-    body {
-        display: block !important;
-    }
+        .print-dates {
+            display: flex;
+            gap: 24px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
 
-    .container {
-        display: inline-block !important;
-        width: auto !important;
-        max-width: none !important;
-        height: auto !important;
-        min-height: 0 !important;
-        margin: 0 !important;
-        padding: 14px 16px !important;
-        background: #1e1e1e !important;
-        border: none !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-    }
+        .print-bar {
+            display: flex;
+            width: 100%;
+            height: 48px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
 
-    #header-info {
-        margin-bottom: 12px !important;
-        gap: 20px;
-    }
+        .print-block {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #000;
+            font-size: 12px;
+            line-height: 1.05;
+            min-width: 0;
+        }
 
-    #pantalla-wrapper {
-        width: auto !important;
-        padding: 0 !important;
-    }
+        .print-total {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
 
-    #pantalla {
-        display: flex !important;
-        width: 888px !important;
-        height: 48px !important;
-        border: none !important;
-        overflow: hidden !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-    }
+        @page {
+            size: auto;
+            margin: 0;
+        }
 
-    .bloque {
-        font-size: 12px !important;
-        line-height: 1.1 !important;
-    }
+        @media print {
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                width: auto !important;
+                height: auto !important;
+                overflow: visible !important;
+            }
 
-    #titulo {
-        font-size: 14px !important;
-    }
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
 
-    .fechas {
-        font-size: 12px !important;
-        gap: 12px !important;
-    }
+            .container {
+                display: none !important;
+            }
 
-    .fechas input {
-        background: transparent !important;
-        border: none !important;
-        color: #fff !important;
-        padding: 0 !important;
-        pointer-events: none !important;
-        font-size: 12px !important;
-    }
+            #print-sheet {
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #ffffff !important;
+                width: fit-content !important;
+            }
 
-    .fechas input[type="date"]::-webkit-calendar-picker-indicator {
-        display: none !important;
-    }
-}
-
-</style>
+            #print-band {
+                display: block !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+        }
+    </style>
 </head>
 <body>
 
 <div class="container">
     <div id="header-info">
-        <h1 id="titulo" contenteditable="true" onblur="autoGuardar()">Macrociclo</h1>
+        <h1 id="titulo" contenteditable="true" onblur="autoGuardar(); sincronizarImpresion();">Macrociclo</h1>
         <div class="fechas">
-            <div>Inicio: <input type="date" id="fechaInicio" onchange="calcularFin(); autoGuardar();"></div>
+            <div>Inicio: <input type="date" id="fechaInicio" onchange="calcularFin(); autoGuardar(); sincronizarImpresion();"></div>
             <div>Fin: <input type="date" id="fechaFin" readonly></div>
         </div>
     </div>
-    
+
     <div class="controls">
-        <select id="fase"><option value="fmax">FMAX</option><option value="desox">DESOX</option><option value="reox">REOX</option><option value="aero">AERO</option><option value="tap">TAP</option></select>
-        <select id="duracion"><script>for(let i=1; i<=8; i++) document.write(`<option value="${i}">${i}S</option>`);</script></select>
+        <select id="fase">
+            <option value="fmax">FMAX</option>
+            <option value="desox">DESOX</option>
+            <option value="reox">REOX</option>
+            <option value="aero">AERO</option>
+            <option value="tap">TAP</option>
+        </select>
+
+        <select id="duracion">
+            <script>
+                for (let i = 1; i <= 8; i++) {
+                    document.write(`<option value="${i}">${i}S</option>`);
+                }
+            </script>
+        </select>
+
         <button onclick="agregarBloque()">Añadir</button>
         <button onclick="guardarArchivo()">Guardar</button>
         <button onclick="cargarArchivo()">Cargar</button>
         <button onclick="limpiarPlan()">Limpiar</button>
-        <button onclick="window.print()">Exportar Pdf</button>
+        <button onclick="prepararImpresion()">Exportar Pdf</button>
     </div>
 
-    <div id="pantalla-wrapper"><div id="pantalla"></div></div>
-    <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
+    <div id="pantalla-wrapper">
+        <div id="pantalla"></div>
+    </div>
+
+    <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">
+        TOTAL: <span id="totalSemanas">0</span> SEMANAS
+    </div>
+
     <div style="text-align: center; margin-top: 10px;" class="no-print">
-    <button onclick="window.location.href='index.html'" style="background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; font-weight: 900;"><b>&larr;</b> INICIO</button>
+        <button onclick="window.location.href='index.html'" style="background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; font-weight: 900;">
+            <b>&larr;</b> INICIO
+        </button>
+    </div>
 </div>
+
+<!-- VERSION EXCLUSIVA PARA PDF -->
+<div id="print-sheet">
+    <div id="print-band">
+        <div class="print-header">
+            <div class="print-title" id="print-titulo"></div>
+            <div class="print-dates">
+                <div>Inicio: <span id="print-inicio"></span></div>
+                <div>Fin: <span id="print-fin"></span></div>
+            </div>
+        </div>
+
+        <div class="print-bar" id="print-bar"></div>
+        <div class="print-total">TOTAL: <span id="print-total"></span> SEMANAS</div>
+    </div>
 </div>
 
 <script>
     const PLAN_POR_DEFECTO = {
-        "titulo": "MACROCICLO MIKEL GARCÍA",
-        "inicio": "2026-06-29",
-        "bloques": [
-            {"fase": "reox", "semanas": 6}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 4},
-            {"fase": "desox", "semanas": 4}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 3}, {"fase": "aero", "semanas": 4}
+        titulo: "MACROCICLO MIKEL GARCÍA",
+        inicio: "2026-06-29",
+        bloques: [
+            { fase: "reox", semanas: 6 },
+            { fase: "tap", semanas: 2 },
+            { fase: "fmax", semanas: 4 },
+            { fase: "desox", semanas: 4 },
+            { fase: "tap", semanas: 2 },
+            { fase: "fmax", semanas: 3 },
+            { fase: "aero", semanas: 4 }
         ]
     };
 
-    function autoGuardar() {
-        const data = { 
-            titulo: document.getElementById('titulo').innerText, 
-            inicio: document.getElementById('fechaInicio').value,
-            bloques: Array.from(document.querySelectorAll('.bloque')).map(b => ({ 
-                fase: b.className.split(' ')[1], 
-                semanas: parseInt(b.style.flex)
-            })) 
-        };
-        localStorage.setItem('kaskaPlan', JSON.stringify(data));
+    function formatearFecha(fechaISO) {
+        if (!fechaISO) return "";
+        const [yyyy, mm, dd] = fechaISO.split("-");
+        return `${dd}/${mm}/${yyyy}`;
     }
 
-    function agregarBloque(fase = document.getElementById('fase').value, duracion = parseInt(document.getElementById('duracion').value)) {
-        const b = document.createElement('div');
-        b.className = 'bloque ' + fase;
+    function autoGuardar() {
+        const data = {
+            titulo: document.getElementById("titulo").innerText,
+            inicio: document.getElementById("fechaInicio").value,
+            bloques: Array.from(document.querySelectorAll(".bloque")).map(b => ({
+                fase: b.className.split(" ")[1],
+                semanas: parseInt(b.style.flex)
+            }))
+        };
+        localStorage.setItem("kaskaPlan", JSON.stringify(data));
+    }
+
+    function agregarBloque(fase = document.getElementById("fase").value, duracion = parseInt(document.getElementById("duracion").value)) {
+        const b = document.createElement("div");
+        b.className = "bloque " + fase;
         b.style.flex = duracion;
         b.innerHTML = `<span>${fase.toUpperCase()}</span><span>${duracion}S</span>
-                       <button class="btn-borrar" onclick="this.parentElement.remove(); calcularTotal(); autoGuardar();">X</button>`;
-        document.getElementById('pantalla').appendChild(b);
+                       <button class="btn-borrar" onclick="this.parentElement.remove(); calcularTotal(); autoGuardar(); sincronizarImpresion();">X</button>`;
+        document.getElementById("pantalla").appendChild(b);
         calcularTotal();
         autoGuardar();
-    }
-    
-    function limpiarPlan() {
-        document.getElementById('pantalla').innerHTML = '';
-        localStorage.setItem('kaskaPlan', 'vacio');
-        document.getElementById('totalSemanas').innerText = '0';
-        document.getElementById('fechaFin').value = '';
-        document.getElementById('titulo').innerText = 'Macrociclo';
-        document.getElementById('fechaInicio').value = '';
+        sincronizarImpresion();
     }
 
-    window.onload = () => {
-        const dataGuardada = localStorage.getItem('kaskaPlan');
-        let data = (!dataGuardada || dataGuardada === 'vacio') ? PLAN_POR_DEFECTO : JSON.parse(dataGuardada);
-        document.getElementById('titulo').innerText = data.titulo;
-        document.getElementById('fechaInicio').value = data.inicio;
-        data.bloques.forEach(b => agregarBloque(b.fase, b.semanas));
-    };
+    function limpiarPlan() {
+        document.getElementById("pantalla").innerHTML = "";
+        localStorage.setItem("kaskaPlan", "vacio");
+        document.getElementById("totalSemanas").innerText = "0";
+        document.getElementById("fechaFin").value = "";
+        document.getElementById("titulo").innerText = "Macrociclo";
+        document.getElementById("fechaInicio").value = "";
+        sincronizarImpresion();
+    }
 
     function calcularTotal() {
         let t = 0;
-        document.querySelectorAll('.bloque').forEach(b => t += parseInt(b.style.flex));
-        document.getElementById('totalSemanas').innerText = t;
-        const inicio = document.getElementById('fechaInicio').value;
+        document.querySelectorAll(".bloque").forEach(b => t += parseInt(b.style.flex));
+        document.getElementById("totalSemanas").innerText = t;
+
+        const inicio = document.getElementById("fechaInicio").value;
         if (inicio && t > 0) {
             let f = new Date(inicio);
             f.setDate(f.getDate() + (t * 7));
-            document.getElementById('fechaFin').value = f.toISOString().split('T')[0];
+            document.getElementById("fechaFin").value = f.toISOString().split("T")[0];
+        } else {
+            document.getElementById("fechaFin").value = "";
         }
     }
 
-    async function guardarArchivo() { 
-        const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan.json'; a.click(); 
+    function sincronizarImpresion() {
+        document.getElementById("print-titulo").innerText = document.getElementById("titulo").innerText.toUpperCase();
+
+        const inicio = document.getElementById("fechaInicio").value;
+        const fin = document.getElementById("fechaFin").value;
+        const total = document.getElementById("totalSemanas").innerText;
+
+        document.getElementById("print-inicio").innerText = formatearFecha(inicio);
+        document.getElementById("print-fin").innerText = formatearFecha(fin);
+        document.getElementById("print-total").innerText = total;
+
+        const printBar = document.getElementById("print-bar");
+        printBar.innerHTML = "";
+
+        document.querySelectorAll(".bloque").forEach(b => {
+            const fase = b.className.split(" ")[1];
+            const semanas = parseInt(b.style.flex);
+
+            const clone = document.createElement("div");
+            clone.className = "print-block " + fase;
+            clone.style.flex = semanas;
+            clone.innerHTML = `<span>${fase.toUpperCase()}</span><span>${semanas}S</span>`;
+            printBar.appendChild(clone);
+        });
     }
+
+    function prepararImpresion() {
+        calcularTotal();
+        sincronizarImpresion();
+        setTimeout(() => window.print(), 50);
+    }
+
+    async function guardarArchivo() {
+        const blob = new Blob([localStorage.getItem("kaskaPlan")], { type: "application/json" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "plan.json";
+        a.click();
+    }
+
     async function cargarArchivo() {
-        const input = document.createElement('input'); input.type = 'file';
+        const input = document.createElement("input");
+        input.type = "file";
         input.onchange = e => {
             const reader = new FileReader();
-            reader.onload = event => { localStorage.setItem('kaskaPlan', event.target.result); location.reload(); };
+            reader.onload = event => {
+                localStorage.setItem("kaskaPlan", event.target.result);
+                location.reload();
+            };
             reader.readAsText(e.target.files[0]);
         };
         input.click();
     }
-    new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
+
+    window.onload = () => {
+        const dataGuardada = localStorage.getItem("kaskaPlan");
+        let data = (!dataGuardada || dataGuardada === "vacio") ? PLAN_POR_DEFECTO : JSON.parse(dataGuardada);
+
+        document.getElementById("titulo").innerText = data.titulo;
+        document.getElementById("fechaInicio").value = data.inicio;
+        data.bloques.forEach(b => agregarBloque(b.fase, b.semanas));
+        calcularTotal();
+        sincronizarImpresion();
+    };
+
+    new Sortable(document.getElementById("pantalla"), {
+        animation: 200,
+        onSort: () => {
+            calcularTotal();
+            autoGuardar();
+            sincronizarImpresion();
+        }
+    });
 </script>
+
 </body>
 </html>
