@@ -182,7 +182,8 @@
         pdf.setFillColor(...colores.fondo);
         pdf.rect(0, 0, pageW, pageH, 'F');
 
-        const outerW = 160; 
+        // ANCHO REDUCIDO A 140mm
+        const outerW = 140; 
         const outerX = (pageW - outerW) / 2;
         const outerY = 3;
         const outerH = 38;
@@ -200,12 +201,13 @@
         pdf.setFontSize(8.5);
         pdf.text(titulo, left, top);
 
+        // FECHAS MÁS GRANDES (FontSize 7)
         pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(5.2);
+        pdf.setFontSize(7);
         const inicioTxt = `Inicio: ${fechaInicio}`;
         const finTxt = `Fin: ${fechaFin}`;
-        pdf.text(inicioTxt, right - 35, top);
-        pdf.text(finTxt, right - 12, top);
+        pdf.text(inicioTxt, right - 40, top);
+        pdf.text(finTxt, right - 15, top);
 
         const barX = left + 1;
         const barY = outerY + 12;
