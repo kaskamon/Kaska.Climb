@@ -157,40 +157,9 @@
         }
     }
 
-  async function guardarArchivo() {
-    const data = localStorage.getItem('kaskaPlan');
-    const blob = new Blob([data], { type: 'application/json' });
-
-    // Intentamos usar la API moderna de guardado (ShowSaveFilePicker)
-    if ('showSaveFilePicker' in window) {
-        try {
-            const handle = await window.showSaveFilePicker({
-                suggestedName: 'mi_macrociclo.json',
-                types: [{
-                    description: 'Archivo JSON de Kaska',
-                    accept: { 'application/json': ['.json'] },
-                }],
-            });
-            const writable = await handle.createWritable();
-            await writable.write(blob);
-            await writable.close();
-            return;
-        } catch (err) {
-            // Si el usuario cancela, no hacemos nada
-            if (err.name !== 'AbortError') console.error(err);
-        }
-    }
-
-    // Fallback para navegadores que no soportan la API (o si el usuario canceló)
-    // Esto es lo que tenías, pero forzamos el nombre antes de descargar
-    const nombre = prompt("¿Cómo quieres llamar a tu archivo?", "plan_kaska.json");
-    if (nombre) {
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = nombre.endsWith('.json') ? nombre : nombre + '.json';
-        a.click();
-    }
-}
+    async function guardarArchivo() { 
+        const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan.json'; a.click(); 
     }
     async function cargarArchivo() {
         const input = document.createElement('input'); input.type = 'file';
