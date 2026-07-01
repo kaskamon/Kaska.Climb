@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0"/>
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#333333">
     <meta charset="UTF-8">
@@ -72,7 +73,15 @@
     </style>
 </head>
 <body>
-
+// Si usas un script para imprimir, fuérzalo así:
+function imprimirTabla() {
+    window.matchMedia('print').addListener(function(media) {
+        if (media.matches) {
+            console.log("Modo impresión activo");
+        }
+    });
+    window.print();
+}
 <div class="layout-editor">
     <div class="contenedor-principal">
         <div class="header">
