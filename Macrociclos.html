@@ -26,26 +26,45 @@
         .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
         .tap { background-color: #ffd43b; }
 	@media print {
-    /* Forzar que el navegador no escale el contenido para "ajustarlo" a la hoja */
-    @page {
-        size: 210mm 75mm;
-        margin: 0;
-    }
+            /* 1. Definimos un tamaño de página "corto" en lugar de un A4 estándar */
+            @page { 
+                size: 210mm 75mm; /* Ajusta el 150mm según lo corto que lo quieras */
+                margin: 0; 
+            }
 
-    body {
-        /* Desactiva el escalado automático del motor de PDF de la tablet */
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
-        overflow: visible !important;
-    }
-
-    .container {
-        /* Mantiene el ancho exacto definido sin que el PDF móvil intente comprimirlo */
-        width: 1000px !important; 
-        max-width: 1000px !important;
-        transform: none !important;
-    }
-}
+            .controls, .no-print, .btn-borrar { display: none !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            
+            body { 
+                background-color: var(--fondo-base) !important; 
+                margin: 0 !important; 
+                padding: 10mm 5mm !important; /* 10mm arriba/abajo, 5mm lados */
+                display: block !important;
+            }
+            
+            .container { 
+                background: var(--fondo-panel) !important; 
+                border: 1px solid rgba(255,255,255,0.05) !important; 
+                box-shadow: none !important;
+                padding: 30px !important; 
+                width: 100% !important;
+                height: auto !important;
+            }
+            
+            #pantalla { 
+                height: 60px !important; 
+                border: 1px solid rgba(255,255,255,0.01) !important; 
+            }
+            
+            .fechas input { 
+                background: transparent !important; 
+                border: none !important; 
+                color: #fff !important; 
+                pointer-events: none;
+            }
+            
+            .fechas input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -126,52 +145,17 @@
         data.bloques.forEach(b => agregarBloque(b.fase, b.semanas));
     };
 
-  // 1. Función mejorada para calcular todo
-function calcularTotal() {
-    let totalSemanas = 0;
-    // Sumamos las semanas de todos los bloques
-    document.querySelectorAll('.bloque').forEach(b => {
-        totalSemanas += parseInt(b.style.flex);
-    });
-    
-    document.getElementById('totalSemanas').innerText = totalSemanas;
-    
-    // Calculamos la fecha de fin
-    const inicioStr = document.getElementById('fechaInicio').value;
-    if (inicioStr && totalSemanas > 0) {
-        let f = new Date(inicioStr);
-        // Sumamos semanas * 7 días
-        f.setDate(f.getDate() + (totalSemanas * 7));
-        
-        // Formateamos correctamente para el input date (YYYY-MM-DD)
-        document.getElementById('fechaFin').value = f.toISOString().split('T')[0];
-    } else {
-        document.getElementById('fechaFin').value = '';
+    function calcularTotal() {
+        let t = 0;
+        document.querySelectorAll('.bloque').forEach(b => t += parseInt(b.style.flex));
+        document.getElementById('totalSemanas').innerText = t;
+        const inicio = document.getElementById('fechaInicio').value;
+        if (inicio && t > 0) {
+            let f = new Date(inicio);
+            f.setDate(f.getDate() + (t * 7));
+            document.getElementById('fechaFin').value = f.toISOString().split('T')[0];
+        }
     }
-    
-    autoGuardar();
-}
-
-// 2. Aseguramos que se llame al cargar
-window.onload = () => {
-    const dataGuardada = localStorage.getItem('kaskaPlan');
-    let data = (!dataGuardada || dataGuardada === 'vacio') ? PLAN_POR_DEFECTO : JSON.parse(dataGuardada);
-    document.getElementById('titulo').innerText = data.titulo;
-    document.getElementById('fechaInicio').value = data.inicio;
-    
-    // Limpiamos pantalla y agregamos bloques
-    document.getElementById('pantalla').innerHTML = '';
-    data.bloques.forEach(b => agregarBloque(b.fase, b.semanas));
-    
-    // Calculamos el total y la fecha final nada más cargar
-    calcularTotal();
-};
-
-// 3. Modificamos el evento del Sortable para que recalcule al soltar
-new Sortable(document.getElementById('pantalla'), { 
-    animation: 200, 
-    onEnd: () => { calcularTotal(); } 
-});
 
     async function guardarArchivo() { 
         const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
