@@ -5,133 +5,236 @@
     <meta name="theme-color" content="#333333">
     <meta charset="UTF-8">
     <title>Kaska.Climb | Macrociclos</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="[cdnjs.cloudflare.com](https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js)"></script>
     <style>
-        :root { --fondo-base: #121212; --fondo-panel: rgba(30, 30, 30, 0.85); }
-        * { box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--fondo-base); color: #e0e0e0; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .container { position: relative; width: 100%; max-width: 1000px; background: var(--fondo-panel); backdrop-filter: blur(10px); padding: 24px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
-        #header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        #titulo { font-size: 18px; font-weight: 700; text-transform: uppercase; margin: 0; color: #fff; outline: none; }
-        .fechas { display: flex; gap: 15px; font-size: 14px; }
-        .fechas input { background: #2c2c2c; color: #fff; border: 1px solid #444; padding: 4px; border-radius: 4px; }
-        .controls { display: flex; gap: 6px; margin-bottom: 20px; }
-        button { background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; text-transform: capitalize; }
-        select { background: #2c2c2c; color: #fff; border: 1px solid #4a4a4a; padding: 6px; font-size: 11px; border-radius: 4px; }
-        #pantalla-wrapper { position: relative; width: 100%; padding: 3px; }
-        #pantalla { display: flex; width: 100%; height: 60px; border: 1px solid rgba(255,255,255,0.01); }
-        .bloque { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; cursor: grab; color: #000; }
-        .btn-borrar { margin-top: 2px; background: rgba(0,0,0,0.15); border: none; font-size: 9px; cursor: pointer; border-radius: 3px; }
-        .fmax { background-color: #ff6b6b; } .desox { background-color: #4dabf7; }
-        .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
+        :root {
+            --fondo-base: #121212;
+            --fondo-panel: rgba(30, 30, 30, 0.85);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--fondo-base);
+            color: #e0e0e0;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            background: var(--fondo-panel);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        #header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        #titulo {
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin: 0;
+            color: #fff;
+            outline: none;
+        }
+
+        .fechas {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+        }
+
+        .fechas input {
+            background: #2c2c2c;
+            color: #fff;
+            border: 1px solid #444;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #3a3a3a;
+            color: #fff;
+            border: 1px solid #4a4a4a;
+            padding: 6px 12px;
+            font-size: 11px;
+            cursor: pointer;
+            border-radius: 4px;
+            text-transform: capitalize;
+        }
+
+        select {
+            background: #2c2c2c;
+            color: #fff;
+            border: 1px solid #4a4a4a;
+            padding: 6px;
+            font-size: 11px;
+            border-radius: 4px;
+        }
+
+        #pantalla-wrapper {
+            position: relative;
+            width: 100%;
+            padding: 3px;
+        }
+
+        #pantalla {
+            display: flex;
+            width: 100%;
+            height: 60px;
+            border: 1px solid rgba(255,255,255,0.01);
+            overflow: hidden;
+        }
+
+        .bloque {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            cursor: grab;
+            color: #000;
+        }
+
+        .btn-borrar {
+            margin-top: 2px;
+            background: rgba(0,0,0,0.15);
+            border: none;
+            font-size: 9px;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        .fmax { background-color: #ff6b6b; }
+        .desox { background-color: #4dabf7; }
+        .reox { background-color: #69db7c; }
+        .aero { background-color: #b197fc; }
         .tap { background-color: #ffd43b; }
-	@media print {
 
-    @page{
-        size:auto;
-        margin:0;
-    }
+        /* VERSION SOLO IMPRESION */
+        #print-root {
+            display: none;
+        }
 
-    html{
-        width:100%;
-        height:auto;
-        overflow:hidden !important;
-    }
+        .print-outer {
+            background: #121212;
+            width: 210mm;
+            height: 44mm;
+            padding: 3mm;
+        }
 
-    body{
+        .print-card {
+            width: 100%;
+            height: 100%;
+            background: #1f1f1f;
+            border-radius: 12px;
+            padding: 3mm 4mm 3mm 4mm;
+            border: 1px solid rgba(255,255,255,0.06);
+            overflow: hidden;
+        }
 
-        margin:0 !important;
-        padding:0 !important;
+        .print-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.8mm;
+        }
 
-        width:100%;
-        height:auto !important;
-        min-height:auto !important;
+        .print-title {
+            font-size: 4.8mm;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #fff;
+            line-height: 1;
+            margin: 0;
+        }
 
-        display:block !important;
+        .print-dates {
+            display: flex;
+            gap: 4mm;
+            font-size: 2.7mm;
+            color: #fff;
+            line-height: 1;
+        }
 
-        overflow:hidden !important;
+        .print-bar {
+            display: flex;
+            width: 100%;
+            height: 9.5mm;
+            overflow: hidden;
+            margin-bottom: 2.6mm;
+        }
 
-        background:#121212 !important;
+        .print-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.9mm;
+            line-height: 1.05;
+            color: #000;
+        }
 
-        -webkit-print-color-adjust:exact !important;
-        print-color-adjust:exact !important;
-    }
+        .print-total {
+            font-weight: 700;
+            font-size: 3.4mm;
+            line-height: 1;
+            color: #fff;
+        }
 
-    *{
-        -webkit-print-color-adjust:exact !important;
-        print-color-adjust:exact !important;
-    }
+        @media print {
+            @page {
+                size: 210mm 44mm;
+                margin: 0;
+            }
 
-    .controls,
-    .btn-borrar,
-    .no-print{
-        display:none !important;
-    }
+            html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 210mm !important;
+                height: 44mm !important;
+                background: #121212 !important;
+                overflow: hidden !important;
+            }
 
-    .container{
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
 
-        width:100% !important;
+            .container {
+                display: none !important;
+            }
 
-        max-width:none !important;
-
-        margin:0 !important;
-
-        padding:12px !important;
-
-        border-radius:0 !important;
-
-        border:1px solid rgba(255,255,255,.08);
-
-        box-shadow:none !important;
-
-        page-break-inside:avoid !important;
-        break-inside:avoid !important;
-
-        background:var(--fondo-panel) !important;
-    }
-
-    #header-info{
-        page-break-inside:avoid;
-        break-inside:avoid;
-        margin-bottom:12px;
-    }
-
-    #pantalla-wrapper{
-        padding:0;
-    }
-
-    #pantalla{
-
-        height:60px !important;
-
-        border:1px solid rgba(255,255,255,.08);
-
-        page-break-inside:avoid;
-        break-inside:avoid;
-    }
-
-    .bloque{
-
-        page-break-inside:avoid;
-        break-inside:avoid;
-
-    }
-
-    .fechas input{
-
-        background:transparent !important;
-
-        border:none !important;
-
-        color:white !important;
-
-    }
-
-    .fechas input::-webkit-calendar-picker-indicator{
-        display:none;
-    }
-
-}
+            #print-root {
+                display: block !important;
+                width: 210mm !important;
+                height: 44mm !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -152,14 +255,34 @@
         <button onclick="guardarArchivo()">Guardar</button>
         <button onclick="cargarArchivo()">Cargar</button>
         <button onclick="limpiarPlan()">Limpiar</button>
-        <button onclick="window.print()">Exportar Pdf</button>
+        <button onclick="prepararImpresion()">Exportar Pdf</button>
     </div>
 
     <div id="pantalla-wrapper"><div id="pantalla"></div></div>
     <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
     <div style="text-align: center; margin-top: 10px;" class="no-print">
-    <button onclick="window.location.href='index.html'" style="background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; font-weight: 900;"><b>&larr;</b> INICIO</button>
+        <button onclick="window.location.href='index.html'" style="background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; font-weight: 900;"><b>&larr;</b> INICIO</button>
+    </div>
 </div>
+
+<div id="print-root">
+    <div class="print-outer">
+        <div class="print-card">
+            <div class="print-header">
+                <div class="print-title" id="print-titulo"></div>
+                <div class="print-dates">
+                    <div>Inicio: <span id="print-inicio"></span></div>
+                    <div>Fin: <span id="print-fin"></span></div>
+                </div>
+            </div>
+
+            <div class="print-bar" id="print-bar"></div>
+
+            <div class="print-total">
+                TOTAL: <span id="print-total"></span> SEMANAS
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -173,13 +296,13 @@
     };
 
     function autoGuardar() {
-        const data = { 
-            titulo: document.getElementById('titulo').innerText, 
+        const data = {
+            titulo: document.getElementById('titulo').innerText,
             inicio: document.getElementById('fechaInicio').value,
-            bloques: Array.from(document.querySelectorAll('.bloque')).map(b => ({ 
-                fase: b.className.split(' ')[1], 
+            bloques: Array.from(document.querySelectorAll('.bloque')).map(b => ({
+                fase: b.className.split(' ')[1],
                 semanas: parseInt(b.style.flex)
-            })) 
+            }))
         };
         localStorage.setItem('kaskaPlan', JSON.stringify(data));
     }
@@ -194,7 +317,7 @@
         calcularTotal();
         autoGuardar();
     }
-    
+
     function limpiarPlan() {
         document.getElementById('pantalla').innerHTML = '';
         localStorage.setItem('kaskaPlan', 'vacio');
@@ -224,10 +347,48 @@
         }
     }
 
-    async function guardarArchivo() { 
-        const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan.json'; a.click(); 
+    function calcularFin() {
+        calcularTotal();
     }
+
+    function formatearFecha(iso) {
+        if (!iso) return '';
+        const [y, m, d] = iso.split('-');
+        return `${d}/${m}/${y}`;
+    }
+
+    function sincronizarImpresion() {
+        document.getElementById('print-titulo').innerText = document.getElementById('titulo').innerText;
+        document.getElementById('print-inicio').innerText = formatearFecha(document.getElementById('fechaInicio').value);
+        document.getElementById('print-fin').innerText = formatearFecha(document.getElementById('fechaFin').value);
+        document.getElementById('print-total').innerText = document.getElementById('totalSemanas').innerText;
+
+        const barra = document.getElementById('print-bar');
+        barra.innerHTML = '';
+
+        document.querySelectorAll('.bloque').forEach(b => {
+            const fase = b.className.split(' ')[1];
+            const semanas = parseInt(b.style.flex);
+
+            const item = document.createElement('div');
+            item.className = 'print-block ' + fase;
+            item.style.flex = semanas;
+            item.innerHTML = `<span>${fase.toUpperCase()}</span><span>${semanas}S</span>`;
+            barra.appendChild(item);
+        });
+    }
+
+    function prepararImpresion() {
+        calcularTotal();
+        sincronizarImpresion();
+        setTimeout(() => window.print(), 50);
+    }
+
+    async function guardarArchivo() {
+        const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan.json'; a.click();
+    }
+
     async function cargarArchivo() {
         const input = document.createElement('input'); input.type = 'file';
         input.onchange = e => {
@@ -237,6 +398,7 @@
         };
         input.click();
     }
+
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
 </body>
