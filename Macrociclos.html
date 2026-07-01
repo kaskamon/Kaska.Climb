@@ -25,43 +25,182 @@
         .fmax { background-color: #ff6b6b; } .desox { background-color: #4dabf7; }
         .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
         .tap { background-color: #ffd43b; }
+	<!DOCTYPE html>
+<html lang="es">
+<head>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#333333">
+    <meta charset="UTF-8">
+    <title>Kaska.Climb | Macrociclos</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <style>
+        :root { --fondo-base: #121212; --fondo-panel: rgba(30, 30, 30, 0.85); }
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--fondo-base); color: #e0e0e0; margin: 0; min-height: 99vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .container { position: relative; width: 100%; max-width: 1000px; background: var(--fondo-panel); backdrop-filter: blur(10px); padding: 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        #header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        #titulo { font-size: 18px; font-weight: 700; text-transform: uppercase; margin: 0; color: #fff; outline: none; }
+        .fechas { display: flex; gap: 15px; font-size: 14px; }
+        .fechas input { background: #2c2c2c; color: #fff; border: 1px solid #444; padding: 4px; border-radius: 4px; }
+        .controls { display: flex; gap: 6px; margin-bottom: 20px; }
+        button { background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; text-transform: capitalize; }
+        select { background: #2c2c2c; color: #fff; border: 1px solid #4a4a4a; padding: 6px; font-size: 11px; border-radius: 4px; }
+        #pantalla-wrapper { position: relative; width: 100%; padding: 3px; }
+        #pantalla { display: flex; width: 100%; height: 60px; border: 1px solid rgba(255,255,255,0.01); }
+        .bloque { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; cursor: grab; color: #000; }
+        .btn-borrar { margin-top: 2px; background: rgba(0,0,0,0.15); border: none; font-size: 9px; cursor: pointer; border-radius: 3px; }
+        .fmax { background-color: #ff6b6b; } .desox { background-color: #4dabf7; }
+        .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
+        .tap { background-color: #ffd43b; }
 	@media print {
-    @page { 
-        size: 210mm 75mm; 
-        margin: 0 !important; 
+            /* 1. Definimos un tamaño de página "corto" en lugar de un A4 estándar */
+            @page { 
+                size: 210mm 75mm; /* Ajusta el 150mm según lo corto que lo quieras */
+                margin: 0; 
+            }
+
+            .controls, .no-print, .btn-borrar { display: none !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            
+            body { 
+                background-color: var(--fondo-base) !important; 
+                margin: 0 !important; 
+                padding: 10mm 5mm !important; /* 10mm arriba/abajo, 5mm lados */
+                display: block !important;
+            }
+            
+            .container { 
+                background: var(--fondo-panel) !important; 
+                border: 1px solid rgba(255,255,255,0.05) !important; 
+                box-shadow: none !important;
+                padding: 30px !important; 
+                width: 100% !important;
+                height: auto !important;
+            }
+            
+            #pantalla { 
+                height: 60px !important; 
+                border: 1px solid rgba(255,255,255,0.01) !important; 
+            }
+            
+            .fechas input { 
+                background: transparent !important; 
+                border: none !important; 
+                color: #fff !important; 
+                pointer-events: none;
+            }
+            
+            .fechas input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="header-info">
+        <h1 id="titulo" contenteditable="true" onblur="autoGuardar()">Macrociclo</h1>
+        <div class="fechas">
+            <div>Inicio: <input type="date" id="fechaInicio" onchange="calcularFin(); autoGuardar();"></div>
+            <div>Fin: <input type="date" id="fechaFin" readonly></div>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <select id="fase"><option value="fmax">FMAX</option><option value="desox">DESOX</option><option value="reox">REOX</option><option value="aero">AERO</option><option value="tap">TAP</option></select>
+        <select id="duracion"><script>for(let i=1; i<=8; i++) document.write(`<option value="${i}">${i}S</option>`);</script></select>
+        <button onclick="agregarBloque()">Añadir</button>
+        <button onclick="guardarArchivo()">Guardar</button>
+        <button onclick="cargarArchivo()">Cargar</button>
+        <button onclick="limpiarPlan()">Limpiar</button>
+        <button onclick="window.print()">Exportar Pdf</button>
+    </div>
+
+    <div id="pantalla-wrapper"><div id="pantalla"></div></div>
+    <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
+    <div style="text-align: center; margin-top: 10px;" class="no-print">
+    <button onclick="window.location.href='index.html'" style="background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; font-weight: 900;"><b>&larr;</b> INICIO</button>
+</div>
+</div>
+
+<script>
+    const PLAN_POR_DEFECTO = {
+        "titulo": "MACROCICLO MIKEL GARCÍA",
+        "inicio": "2026-06-29",
+        "bloques": [
+            {"fase": "reox", "semanas": 6}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 4},
+            {"fase": "desox", "semanas": 4}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 3}, {"fase": "aero", "semanas": 4}
+        ]
+    };
+
+    function autoGuardar() {
+        const data = { 
+            titulo: document.getElementById('titulo').innerText, 
+            inicio: document.getElementById('fechaInicio').value,
+            bloques: Array.from(document.querySelectorAll('.bloque')).map(b => ({ 
+                fase: b.className.split(' ')[1], 
+                semanas: parseInt(b.style.flex)
+            })) 
+        };
+        localStorage.setItem('kaskaPlan', JSON.stringify(data));
     }
 
-    /* 1. Ocultamos TODA la estructura de la web para la impresora */
-    body, body * {
-        visibility: hidden !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
+    function agregarBloque(fase = document.getElementById('fase').value, duracion = parseInt(document.getElementById('duracion').value)) {
+        const b = document.createElement('div');
+        b.className = 'bloque ' + fase;
+        b.style.flex = duracion;
+        b.innerHTML = `<span>${fase.toUpperCase()}</span><span>${duracion}S</span>
+                       <button class="btn-borrar" onclick="this.parentElement.remove(); calcularTotal(); autoGuardar();">X</button>`;
+        document.getElementById('pantalla').appendChild(b);
+        calcularTotal();
+        autoGuardar();
+    }
+    
+    function limpiarPlan() {
+        document.getElementById('pantalla').innerHTML = '';
+        localStorage.setItem('kaskaPlan', 'vacio');
+        document.getElementById('totalSemanas').innerText = '0';
+        document.getElementById('fechaFin').value = '';
+        document.getElementById('titulo').innerText = 'Macrociclo';
+        document.getElementById('fechaInicio').value = '';
     }
 
-    /* 2. Hacemos visible SOLO el contenedor y sus hijos */
-    .container, .container * {
-        visibility: visible !important;
+    window.onload = () => {
+        const dataGuardada = localStorage.getItem('kaskaPlan');
+        let data = (!dataGuardada || dataGuardada === 'vacio') ? PLAN_POR_DEFECTO : JSON.parse(dataGuardada);
+        document.getElementById('titulo').innerText = data.titulo;
+        document.getElementById('fechaInicio').value = data.inicio;
+        data.bloques.forEach(b => agregarBloque(b.fase, b.semanas));
+    };
+
+    function calcularTotal() {
+        let t = 0;
+        document.querySelectorAll('.bloque').forEach(b => t += parseInt(b.style.flex));
+        document.getElementById('totalSemanas').innerText = t;
+        const inicio = document.getElementById('fechaInicio').value;
+        if (inicio && t > 0) {
+            let f = new Date(inicio);
+            f.setDate(f.getDate() + (t * 7));
+            document.getElementById('fechaFin').value = f.toISOString().split('T')[0];
+        }
     }
 
-    /* 3. Posicionamos el contenedor arriba a la izquierda sin márgenes */
-    .container {
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 210mm !important;
-        height: 75mm !important;
-        padding: 0 !important;
-        border: none !important;
-        box-shadow: none !important;
-        background: var(--fondo-panel) !important;
+    async function guardarArchivo() { 
+        const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan.json'; a.click(); 
     }
-
-    /* 4. Aseguramos que el contenido principal no tenga scroll */
-    #pantalla, #pantalla-wrapper {
-        overflow: hidden !important;
+    async function cargarArchivo() {
+        const input = document.createElement('input'); input.type = 'file';
+        input.onchange = e => {
+            const reader = new FileReader();
+            reader.onload = event => { localStorage.setItem('kaskaPlan', event.target.result); location.reload(); };
+            reader.readAsText(e.target.files[0]);
+        };
+        input.click();
     }
-}
+    new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
+</script>
+</body>
+</html>
     </style>
 </head>
 <body>
