@@ -182,9 +182,9 @@
         pdf.setFillColor(...colores.fondo);
         pdf.rect(0, 0, pageW, pageH, 'F');
 
-        const outerX = 3;
+        const outerW = 160; 
+        const outerX = (pageW - outerW) / 2;
         const outerY = 3;
-        const outerW = 204;
         const outerH = 38;
 
         pdf.setFillColor(...colores.tarjeta);
@@ -204,8 +204,8 @@
         pdf.setFontSize(5.2);
         const inicioTxt = `Inicio: ${fechaInicio}`;
         const finTxt = `Fin: ${fechaFin}`;
-        pdf.text(inicioTxt, right - 45, top);
-        pdf.text(finTxt, right - 16, top);
+        pdf.text(inicioTxt, right - 35, top);
+        pdf.text(finTxt, right - 12, top);
 
         const barX = left + 1;
         const barY = outerY + 12;
