@@ -26,45 +26,26 @@
         .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
         .tap { background-color: #ffd43b; }
 	@media print {
-            /* 1. Definimos un tamaño de página "corto" en lugar de un A4 estándar */
-            @page { 
-                size: 210mm 75mm; /* Ajusta el 150mm según lo corto que lo quieras */
-                margin: 0; 
-            }
+    /* Forzar que el navegador no escale el contenido para "ajustarlo" a la hoja */
+    @page {
+        size: 210mm 75mm;
+        margin: 0;
+    }
 
-            .controls, .no-print, .btn-borrar { display: none !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            
-            body { 
-                background-color: var(--fondo-base) !important; 
-                margin: 0 !important; 
-                padding: 10mm 5mm !important; /* 10mm arriba/abajo, 5mm lados */
-                display: block !important;
-            }
-            
-            .container { 
-                background: var(--fondo-panel) !important; 
-                border: 1px solid rgba(255,255,255,0.05) !important; 
-                box-shadow: none !important;
-                padding: 30px !important; 
-                width: 100% !important;
-                height: auto !important;
-            }
-            
-            #pantalla { 
-                height: 60px !important; 
-                border: 1px solid rgba(255,255,255,0.01) !important; 
-            }
-            
-            .fechas input { 
-                background: transparent !important; 
-                border: none !important; 
-                color: #fff !important; 
-                pointer-events: none;
-            }
-            
-            .fechas input[type="date"]::-webkit-calendar-picker-indicator { display: none !important; }
-        }
+    body {
+        /* Desactiva el escalado automático del motor de PDF de la tablet */
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        overflow: visible !important;
+    }
+
+    .container {
+        /* Mantiene el ancho exacto definido sin que el PDF móvil intente comprimirlo */
+        width: 1000px !important; 
+        max-width: 1000px !important;
+        transform: none !important;
+    }
+}
     </style>
 </head>
 <body>
