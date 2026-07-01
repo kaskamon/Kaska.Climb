@@ -1,73 +1,109 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#333333">
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaska.Climb | Inicio</title>
     <style>
+        :root {
+            --bg-principal: #121212;
+            /* Panel casi sólido (0.95) */
+            --bg-panel: rgba(30, 30, 30, 0.95);
+            --border-general: rgba(255, 255, 255, 0.1);
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-principal);
             margin: 0;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            overflow: hidden;
         }
-        .marca-agua-fondo {
+
+        /* Logo ajustado al 100% (5% más grande que el anterior 95%) */
+        .fondo-logo {
             position: fixed;
             top: 0; left: 0; width: 100vw; height: 100vh;
             background-image: url('logo.png');
-            background-position: center;
             background-repeat: no-repeat;
-            background-size: contain;
-            opacity: 0.15;
-            z-index: -1;
+            background-position: center;
+            background-size: 100%; 
+            opacity: 0.2;
+            z-index: -10;
         }
-        .contenedor-menu { text-align: center; z-index: 1; }
-        h1 { margin-bottom: 40px; color: #0f172a; letter-spacing: -1px; }
-        .botones-menu { display: flex; flex-direction: column; gap: 15px; }
-        .btn-menu {
-            padding: 20px 40px;
-            font-size: 18px;
-            font-weight: 700;
-            background: #0f172a;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
-            text-decoration: none;
-            display: block;
+
+        .contenedor-menu { 
+            position: relative;
+            z-index: 10;
             text-align: center;
+            background: var(--bg-panel);
+            padding: 40px;
+            border-radius: 20px;
+            border: 1px solid var(--border-general);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            width: 85%;
+            max-width: 350px;
         }
-        .btn-menu:hover { background: #334155; transform: scale(1.02); }
+
+        h1 { margin: 0 0 40px 0; padding-bottom: 20px; border-bottom: 1px solid var(--border-general); color: #fff; }
+
+        .marca-principal { 
+            display: block;
+            font-size: 2.2rem; 
+            font-weight: 800;
+            margin-bottom: 15px; 
+        }
+
+        .subtitulo {
+            display: block;
+            font-size: 1.4rem; 
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #ccc;
+        }
+
+        .botones-menu { display: flex; flex-direction: column; gap: 15px; }
+        
+        .btn-menu {
+            padding: 18px;
+            font-size: 16px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.05); 
+            color: #fff;
+            border: 1px solid var(--border-general);
+            border-radius: 12px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        /* HOVER: Más resaltado con fondo claro y sombra */
+        .btn-menu:hover { 
+            background: rgba(255, 255, 255, 0.2); 
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+            transform: scale(1.03);
+        }
     </style>
 </head>
 <body>
-    <div class="marca-agua-fondo"></div>
+
+    <div class="fondo-logo"></div>
+
     <div class="contenedor-menu">
-        <h1>PLANIFICADOR KASKA.CLIMB</h1>
+        <h1>
+            <span class="marca-principal">Kaska.Climb</span>
+            <span class="subtitulo">PLANIFICADOR</span>
+        </h1>
         <div class="botones-menu">
             <a href="Sesiones.html" class="btn-menu">Sesiones</a>
             <a href="Semanas.html" class="btn-menu">Semanas</a>
             <a href="Macrociclos.html" class="btn-menu">Macrociclos</a>
         </div>
     </div>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(registration => {
-          console.log('Service Worker registrado con éxito:', registration.scope);
-        })
-        .catch(error => {
-          console.log('Fallo en el registro del Service Worker:', error);
-        });
-    });
-  }
-</script>
+
 </body>
 </html>
