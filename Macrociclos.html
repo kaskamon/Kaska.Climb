@@ -16,17 +16,17 @@
         box-sizing: border-box;
     }
 
-    body {
-        font-family: 'Inter', sans-serif;
-        background-color: var(--fondo-base);
-        color: #e0e0e0;
-        margin: 0;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-    }
+   body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--fondo-base);
+    color: #e0e0e0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
 
     .container {
         position: relative;
@@ -139,79 +139,103 @@
     .aero { background-color: #b197fc; }
     .tap  { background-color: #ffd43b; }
 
-    @media print {
-        @page {
-            size: A4 landscape;
-            margin: 0;
-        }
-
-        html, body {
-            width: 100%;
-            height: auto;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
-            background: #121212 !important;
-        }
-
-        * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-        }
-
-        .controls,
-        .no-print,
-        .btn-borrar {
-            display: none !important;
-        }
-
-        body {
-            display: block !important;
-            min-height: auto !important;
-        }
-
-        .container {
-            width: 100% !important;
-            max-width: none !important;
-            margin: 0 !important;
-            padding: 16px 18px !important;
-            border-radius: 0 !important;
-            border: none !important;
-            box-shadow: none !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            background: #1e1e1e !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
-
-        #header-info {
-            margin-bottom: 12px !important;
-        }
-
-        #pantalla-wrapper {
-            padding: 0 !important;
-        }
-
-        #pantalla {
-            height: 60px !important;
-            border: none !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-        }
-
-        .fechas input {
-            background: transparent !important;
-            border: none !important;
-            color: #fff !important;
-            padding: 0 !important;
-            pointer-events: none;
-        }
-
-        .fechas input[type="date"]::-webkit-calendar-picker-indicator {
-            display: none !important;
-        }
+  @media print {
+    @page {
+        size: auto;
+        margin: 0;
     }
+
+    html, body {
+        width: auto !important;
+        height: auto !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .controls,
+    .no-print,
+    .btn-borrar {
+        display: none !important;
+    }
+
+    body {
+        display: block !important;
+    }
+
+    .container {
+        display: inline-block !important;
+        width: auto !important;
+        max-width: none !important;
+        height: auto !important;
+        min-height: 0 !important;
+        margin: 0 !important;
+        padding: 14px 16px !important;
+        background: #1e1e1e !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    #header-info {
+        margin-bottom: 12px !important;
+        gap: 20px;
+    }
+
+    #pantalla-wrapper {
+        width: auto !important;
+        padding: 0 !important;
+    }
+
+    #pantalla {
+        display: flex !important;
+        width: 888px !important;
+        height: 48px !important;
+        border: none !important;
+        overflow: hidden !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .bloque {
+        font-size: 12px !important;
+        line-height: 1.1 !important;
+    }
+
+    #titulo {
+        font-size: 14px !important;
+    }
+
+    .fechas {
+        font-size: 12px !important;
+        gap: 12px !important;
+    }
+
+    .fechas input {
+        background: transparent !important;
+        border: none !important;
+        color: #fff !important;
+        padding: 0 !important;
+        pointer-events: none !important;
+        font-size: 12px !important;
+    }
+
+    .fechas input[type="date"]::-webkit-calendar-picker-indicator {
+        display: none !important;
+    }
+}
+
 </style>
 </head>
 <body>
