@@ -35,21 +35,25 @@
             .controls, .no-print, .btn-borrar { display: none !important; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             
-            body { 
-                background-color: var(--fondo-base) !important; 
-                margin: 0 !important; 
-                padding: 10mm 5mm !important; /* 10mm arriba/abajo, 5mm lados */
-                display: block !important;
-            }
-            
-            .container { 
-                background: var(--fondo-panel) !important; 
-                border: 1px solid rgba(255,255,255,0.05) !important; 
-                box-shadow: none !important;
-                padding: 30px !important; 
-                width: 100% !important;
-                height: auto !important;
-            }
+ 
+    html, body {
+        height: 75mm !important;
+        width: 210mm !important;
+        overflow: hidden !important; /* Corta cualquier excedente que genere la 2ª página */
+    }
+
+    .container {
+        /* Eliminamos cualquier posibilidad de que el padding/border sume al tamaño */
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        /* Forzamos el tamaño exacto al contenedor */
+        height: 75mm !important; 
+        width: 210mm !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+    }
+}
             
             #pantalla { 
                 height: 60px !important; 
