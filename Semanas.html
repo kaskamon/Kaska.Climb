@@ -38,15 +38,34 @@
         .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.75em; cursor: pointer; }
         #banco { width: 250px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; }
 
-        @media print {
-            @page { size: 90mm 115mm; margin: 0; }
-            body { background-color: #121212 !important; margin: 0 !important; padding: 0 !important; width: 90mm !important; height: 115mm !important; display: flex !important; justify-content: center !important; align-items: center !important; }
-            .layout-editor { display: block !important; width: 90mm !important; }
-            .contenedor-principal { width: 90mm !important; margin: 0 !important; }
-            #banco, .no-print { display: none !important; }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        }
-    </style>
+       @media print {
+    @page { size: 67mm 115mm; margin: 0; }
+    
+    /* 1. Forzamos el body a ocupar toda la hoja y ser un contenedor flex */
+    body { 
+        background-color: #121212 !important; 
+        margin: 0 !important; 
+        padding: 0 !important; 
+        width: 100mm !important; 
+        height: 170mm !important; 
+        display: flex !important; 
+        justify-content: center !important; /* Centrado horizontal */
+        align-items: center !important;     /* Centrado vertical */
+    }
+    
+    /* 2. El layout se comporta como un bloque normal dentro del flex padre */
+    .layout-editor { display: block !important; width: 90mm !important; }
+    
+    /* 3. Aseguramos que el contenedor principal no tenga márgenes que lo desplacen */
+    .contenedor-principal { 
+        width: 90mm !important; 
+        margin: 0 !important; 
+    }
+    
+    #banco, .no-print { display: none !important; }
+    
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
 </head>
 <body>
 
