@@ -4,7 +4,6 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#333333">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kaska.Climb | Semanas</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <style>
@@ -24,21 +23,21 @@
         .semana-grid { display: grid; gap: 8px; background: var(--bg-panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border-general); }
         .dia-columna { background: var(--input-bg); border-radius: 6px; padding: 8px; border: 1px solid var(--border-general); display: flex; align-items: center; gap: 8px; min-height: 40px; }
         .dia-nombre { width: 35px; font-size: 0.65em; color: #cbd5e1; text-transform: uppercase; font-weight: bold; text-align: center; background: var(--btn-bg); padding: 4px; border-radius: 4px; pointer-events: none; user-select: none; }
-        .sesion { background: #475569; padding: 5px 8px; border-radius: 4px; cursor: move; border: 1px solid var(--border-general); flex-grow: 1; display: flex; align-items: center; min-height: 35px; text-transform: uppercase; color: #000; font-weight: bold; touch-action: none; }
+        .sesion { background: #475569; padding: 5px 8px; border-radius: 4px; cursor: move; border: 1px solid var(--border-general); flex-grow: 1; display: flex; align-items: center; min-height: 35px; text-transform: uppercase; color: #000; font-weight: bold; }
         .sesion.fmax { background-color: var(--fmax) !important; }
         .sesion.reox { background-color: var(--reox) !important; }
         .sesion.roca { background-color: var(--roca) !important; }
         .sesion.antagonistas { background-color: var(--antagonistas) !important; }
         .sesion.descanso { background-color: var(--descanso) !important; }
         .sesion-contenido { display: grid; grid-template-columns: 20px 1fr 40px; align-items: center; width: 100%; gap: 5px; }
-        .sesion-text { grid-column: 2; text-align: center; font-size: 0.7em; outline: none; cursor: text; }
+        .sesion-text { grid-column: 2; text-align: center; font-size: 0.7em; outline: none; }
         .btn-del-sesion { grid-column: 1; color: #000; cursor: pointer; font-size: 0.8em; font-weight: bold; }
         .btn-link { grid-column: 3; color: #000; cursor: pointer; font-size: 0.6em; text-decoration: underline; justify-self: end; }
         .link-btn { grid-column: 3; color: #000; font-size: 0.6em; text-decoration: none; justify-self: end; font-weight: bold; cursor: default; }
         .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.75em; cursor: pointer; }
         #banco { width: 250px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; }
 
-       @media print {
+     @media print {
     @page { size: 67mm 115mm; margin: 0; }
     
     /* 1. Forzamos el body a ocupar toda la hoja y ser un contenedor flex */
@@ -66,6 +65,7 @@
     
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }
+    </style>
 </head>
 <body>
 
@@ -167,6 +167,7 @@
         } 
         act(); 
     };
+</script>
 </script>
 </body>
 </html>
