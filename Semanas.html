@@ -5,10 +5,10 @@
     <meta name="theme-color" content="#333333">
     <meta charset="UTF-8">
     <title>Kaska.Climb | Semanas</title>
+<head>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    </head>
     <style>
         :root { 
             --fmax: #3b82f6; --reox: #69db7c; --roca: #ffd43b; 
@@ -124,28 +124,27 @@
         alert("Guardado"); 
     }
 
-   async function exportarPDF() {
-        const { jsPDF } = window.jspdf;
-        const elemento = document.querySelector('.contenedor-principal');
+  async function exportarPDF() {
+    const { jsPDF } = window.jspdf;
+    // Seleccionamos solo el contenedor que quieres exportar
+    const elemento = document.querySelector('.contenedor-principal');
 
-        // Capturamos el elemento como una imagen
-        const canvas = await html2canvas(elemento, {
-            backgroundColor: '#121212', // Color de fondo oscuro de tu app
-            scale: 2 // Mayor resolución para que no se vea borroso
-        });
+    // Usamos html2canvas para convertir el HTML a una imagen (respeta colores y estilos)
+    const canvas = await html2canvas(elemento, {
+        backgroundColor: '#121212', // Fondo oscuro de tu app
+        scale: 2 // Mejora la resolución
+    });
 
-        const imgData = canvas.toDataURL('image/png');
-        
-        // Crear PDF en formato A4 (o el que prefieras)
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    const imgData = canvas.toDataURL('image/png');
+    
+    // Crear PDF: el tamaño dependerá de la proporción de tu contenedor
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-        // Añadimos la imagen al PDF (ajustada al ancho de la hoja)
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save('Semana_Kaska.pdf');
-    }
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save('MiSemana.pdf');
+}
 </script>
 </body>
 </html>
