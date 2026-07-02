@@ -154,6 +154,15 @@ function exportarPDF() {
         const pageW = 189; 
         const pageH = 44; 
 
+function exportarPDF() {
+        calcularTotal();
+
+        const { jsPDF } = window.jspdf;
+        
+        // Formato reducido un 10% en horizontal (210mm -> 189mm)
+        const pageW = 189; 
+        const pageH = 44;
+
         const pdf = new jsPDF({
             orientation: 'landscape',
             unit: 'mm',
@@ -182,22 +191,21 @@ function exportarPDF() {
             tap: [255, 212, 59]
         };
 
-        // Rellenar fondo del nuevo tamaño
+        // 1. Fondo negro
         pdf.setFillColor(...colores.fondo);
         pdf.rect(0, 0, pageW, pageH, 'F');
 
-        // Márgenes ajustados al nuevo ancho
-        const mX = 4;
-        const mY = 4;
-        const outerX = mX;
-        const outerY = mY;
-        const outerW = pageW - (mX * 2);
-        const outerH = pageH - (mY * 2);
+        // 2. Recuadro (manteniendo márgenes proporcionales)
+        const outerX = 4;
+        const outerY = 4;
+        const outerW = pageW - 8;
+        const outerH = pageH - 8;
 
         pdf.setFillColor(...colores.tarjeta);
         pdf.setDrawColor(...colores.borde);
         pdf.roundedRect(outerX, outerY, outerW, outerH, 3, 3, 'FD');
 
+        // 3. Textos
         const contentX = outerX + 4;
         const contentY = outerY + 6;
 
@@ -210,6 +218,7 @@ function exportarPDF() {
         const dateStr = `Inicio: ${fechaInicio}     Fin: ${fechaFin}`;
         pdf.text(dateStr, outerX + outerW - pdf.getTextWidth(dateStr) - 4, contentY);
 
+        // 4. Barra de bloques
         const barX = contentX;
         const barY = outerY + 12;
         const barW = outerW - 8;
@@ -235,6 +244,7 @@ function exportarPDF() {
             cursorX += w;
         });
 
+        // 5. Total
         pdf.setTextColor(...colores.texto);
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(7);
