@@ -14,8 +14,14 @@
         body { font-family: sans-serif; background-color: var(--bg-principal); color: white; padding: 20px; }
         .layout-editor { display: flex; gap: 40px; justify-content: center; align-items: flex-start; }
         .columna-izquierda { width: 400px; }
-        .columna-derecha { width: 400px; display: flex; flex-direction: column; gap: 10px; margin-top: 140px; }
         
+        /* Ajuste: Banco un poco más arriba (margin-top menor) */
+        .columna-derecha { width: 400px; display: flex; flex-direction: column; gap: 15px; margin-top: 60px; }
+        
+        /* Botón Inicio */
+        .btn-inicio { background: var(--btn-bg); border: 1px solid var(--border-general); padding: 10px; text-align: center; border-radius: 4px; margin-bottom: 20px; }
+        .btn-inicio a { color: white; text-decoration: none; font-weight: bold; }
+
         .header { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg-panel); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-general); }
         .head-val { background: var(--input-bg); border: 1px solid #444; border-radius: 4px; font-weight: bold; color: #69db7c; padding: 2px 6px; cursor: pointer; display: inline-block; }
         
@@ -62,7 +68,8 @@
     </div>
 
     <div class="columna-derecha">
-        <a href="index.html" style="color: white; font-weight: 900; text-decoration: none;">&larr; INICIO</a>
+        <div class="btn-inicio"><a href="index.html">&larr; INICIO</a></div>
+        
         <div id="banco">
             <h4 style="margin:0; color:#cbd5e1;">Banco de sesiones</h4>
             <div class="sesion roca"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Roca/roco</span></div></div>
@@ -71,8 +78,8 @@
             <div class="sesion descanso"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Descanso</span></div></div>
         </div>
         <div class="acciones-container">
-            <button class="btn-action" onclick="alert('Guardado')">Guardar</button>
-            <button class="btn-action" onclick="location.reload()">Limpiar Tabla</button>
+            <button class="btn-action" onclick="guardar()">Guardar</button>
+            <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
             <button class="btn-action" onclick="alert('Links reiniciados')">Limpiar Links</button>
             <button class="btn-action" onclick="window.print()">Exportar PDF</button>
         </div>
@@ -85,11 +92,24 @@
         document.getElementById('displayDate').innerText = `${d}/${m}/${y}`;
     }
     function addLink(el) { let u = prompt("Enlace:"); if(u) el.outerHTML = `<a href="${u}" target="_blank" style="color:black; font-size: 0.6em; font-weight:bold;">▶ Ver</a>`; }
+    
+    function guardar() { localStorage.gridCont = document.getElementById('grid').innerHTML; alert("Guardado"); }
+    
+    function cargarEstado() {
+        if(localStorage.gridCont) document.getElementById('grid').innerHTML = localStorage.gridCont;
+    }
+    
+    function limpiarTabla() { 
+        localStorage.removeItem('gridCont');
+        location.reload(); 
+    }
+
     function act() { 
         document.querySelectorAll('.dia-columna').forEach(d => new Sortable(d, {group:'s', filter:'.dia-nombre'}));
         new Sortable(document.getElementById('banco'), {group:{name:'s', pull:'clone', put:false}, sort:false}); 
     }
-    window.onload = act;
+    
+    window.onload = () => { cargarEstado(); act(); };
 </script>
 </body>
 </html>
