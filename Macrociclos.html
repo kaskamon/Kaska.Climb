@@ -189,8 +189,9 @@ function exportarPDF() {
         pdf.setFillColor(...colores.fondo);
         pdf.rect(0, 0, pageW, pageH, 'F');
 
-        // MARGENES: 4mm vertical, 2mm horizontal
-        const mX = 2; 
+        // AJUSTE: Reducción horizontal del 10%
+        // Aumentamos los márgenes laterales (de 2mm a aprox 12mm) para estrechar el conjunto
+        const mX = 12; 
         const mY = 4;
         const outerX = mX;
         const outerY = mY;
