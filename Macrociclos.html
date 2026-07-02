@@ -151,7 +151,7 @@
         return `${d}/${m}/${y}`;
     }
 
-    function exportarPDF() {
+function exportarPDF() {
         calcularTotal();
 
         const { jsPDF } = window.jspdf;
@@ -189,35 +189,34 @@
         pdf.setFillColor(...colores.fondo);
         pdf.rect(0, 0, pageW, pageH, 'F');
 
-        // AJUSTE: Ancho reducido a 150mm y centrado
-        const outerW = 150; 
-        const outerX = (pageW - outerW) / 2;
-        const outerY = 3;
-        const outerH = 38;
+        // MARGEN UNIFICADO: 4mm en todas direcciones
+        const m = 4; 
+        const outerX = m;
+        const outerY = m;
+        const outerW = pageW - (m * 2);
+        const outerH = pageH - (m * 2);
 
         pdf.setFillColor(...colores.tarjeta);
         pdf.setDrawColor(...colores.borde);
         pdf.roundedRect(outerX, outerY, outerW, outerH, 3, 3, 'FD');
 
-        const left = outerX + 4;
-        const top = outerY + 6;
+        const contentX = outerX + 4; // Padding interno de 4mm
+        const contentY = outerY + 6;
 
         pdf.setTextColor(...colores.texto);
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(9);
-        pdf.text(titulo, left, top);
+        pdf.text(titulo, contentX, contentY);
 
-        // FECHAS: Aumentado tamaño de fuente y reposicionado a la derecha del recuadro
-        pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(7.5);
         const dateStr = `Inicio: ${fechaInicio}     Fin: ${fechaFin}`;
-        const dateW = pdf.getTextWidth(dateStr);
-        pdf.text(dateStr, outerX + outerW - dateW - 4, top);
+        pdf.text(dateStr, outerX + outerW - pdf.getTextWidth(dateStr) - 4, contentY);
 
-        const barX = left + 1;
-        const barY = outerY + 12;
+        // Barra ajustada al mismo margen lateral
+        const barX = contentX;
+        const barY = outerY + 14;
         const barW = outerW - 8;
-        const barH = 12; // Un poco más alta la barra
+        const barH = 12;
         const totalSemanas = bloques.reduce((acc, b) => acc + b.semanas, 0) || 1;
 
         let cursorX = barX;
@@ -228,7 +227,6 @@
             pdf.rect(cursorX, barY, w, barH, 'F');
 
             pdf.setTextColor(...colores.negro);
-            pdf.setFont('helvetica', 'bold');
             pdf.setFontSize(6);
 
             const t1 = b.fase.toUpperCase();
@@ -240,13 +238,11 @@
         });
 
         pdf.setTextColor(...colores.texto);
-        pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(7);
-        pdf.text(`TOTAL: ${total} SEMANAS`, left, outerY + outerH - 4);
+        pdf.text(`TOTAL: ${total} SEMANAS`, contentX, outerY + outerH - 4);
 
         pdf.save('Macrociclo.pdf');
     }
-
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
 </body>
