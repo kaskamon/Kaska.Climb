@@ -42,12 +42,13 @@
         .btn-link { grid-column: 3; color: #000; cursor: pointer; font-size: 0.6em; text-decoration: underline; justify-self: end; }
         .link-btn { grid-column: 3; color: #000; font-size: 0.6em; text-decoration: none; justify-self: end; font-weight: bold; cursor: default; }
         
-        /* Botones estilo oscuro y ajustados */
-        .btn-action { background: var(--input-bg); border: 1px solid var(--border-general); color: #fff; padding: 10px; border-radius: 4px; font-size: 0.75em; cursor: pointer; width: 100%; box-sizing: border-box; }
+        /* Botones estilo oscuro, finos y ajustados al ancho */
+        .btn-action { background: var(--input-bg); border: 1px solid var(--border-general); color: #fff; padding: 6px; border-radius: 4px; font-size: 0.7em; cursor: pointer; width: 100%; box-sizing: border-box; }
         
         #banco { width: 250px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; }
         
-        .grid-botones-abajo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 250px; margin-top: 15px; }
+        /* Cuadrícula 2x2 ajustada con espacio */
+        .grid-botones-abajo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 250px; margin-top: 15px; }
 
         @media print {
             @page { size: 67mm 115mm; margin: 0; }
