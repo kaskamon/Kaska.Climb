@@ -1,32 +1,25 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<link rel="manifest" href="/manifest.json">
-
-<meta name="mobile-web-app-capable" content="yes">
-
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Kaska.Climb">
-<link rel="apple-touch-icon" href="/logo-192.png">
-
-<meta name="theme-color" content="#121212">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaska.Climb | Macrociclos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        :root { --fondo-base: #121212; --fondo-panel: rgba(30, 30, 30, 0.85); }
+        :root { --bg-principal: #121212; --bg-panel: rgba(30, 30, 30, 0.95); --border-general: rgba(255, 255, 255, 0.1); }
         * { box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--fondo-base); color: #e0e0e0; margin: 0; min-height: 99vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .container { position: relative; width: 100%; max-width: 1000px; background: var(--fondo-panel); backdrop-filter: blur(10px); padding: 30px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-principal); color: #e0e0e0; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        
+        .fondo-logo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-image: url('logo.png'); background-repeat: no-repeat; background-position: center; background-size: 100%; opacity: 0.2; z-index: -10; }
+        
+        .container { position: relative; width: 100%; max-width: 1000px; background: var(--bg-panel); padding: 30px; border-radius: 20px; border: 1px solid var(--border-general); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
         #header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         #titulo { font-size: 18px; font-weight: 700; text-transform: uppercase; margin: 0; color: #fff; outline: none; }
         .fechas { display: flex; gap: 15px; font-size: 14px; }
         .fechas input { background: #2c2c2c; color: #fff; border: 1px solid #444; padding: 4px; border-radius: 4px; }
         .controls { display: flex; gap: 6px; margin-bottom: 20px; }
         button { background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; text-transform: capitalize; }
-        select { background: #2c2c2c; color: #fff; border: 1px solid #4a4a4a; padding: 6px; font-size: 11px; border-radius: 4px; }
         #pantalla-wrapper { position: relative; width: 100%; padding: 3px; }
         #pantalla { display: flex; width: 100%; height: 60px; border: 1px solid rgba(255,255,255,0.01); overflow: hidden; }
         .bloque { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; cursor: grab; color: #000; }
@@ -37,7 +30,7 @@
     </style>
 </head>
 <body>
-
+<div class="fondo-logo"></div>
 <div class="container">
     <div id="header-info">
         <h1 id="titulo" contenteditable="true" onblur="autoGuardar()">Macrociclo</h1>
@@ -46,7 +39,6 @@
             <div>Fin: <input type="date" id="fechaFin" readonly></div>
         </div>
     </div>
-    
     <div class="controls">
         <select id="fase"><option value="fmax">FMAX</option><option value="desox">DESOX</option><option value="reox">REOX</option><option value="aero">AERO</option><option value="tap">TAP</option></select>
         <select id="duracion"><script>for(let i=1; i<=8; i++) document.write(`<option value="${i}">${i}S</option>`);</script></select>
@@ -56,12 +48,8 @@
         <button onclick="limpiarPlan()">Limpiar</button>
         <button onclick="exportarPDF()">Exportar PDF</button>
     </div>
-
     <div id="pantalla-wrapper"><div id="pantalla"></div></div>
     <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
-    <div style="text-align: center; margin-top: 10px;" class="no-print">
-        <button onclick="window.location.href='index.html'" style="background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; font-weight: 900;"><b>&larr;</b> INICIO</button>
-    </div>
 </div>
 
 <script>
@@ -90,8 +78,7 @@
         const b = document.createElement('div');
         b.className = 'bloque ' + fase;
         b.style.flex = duracion;
-        b.innerHTML = `<span>${fase.toUpperCase()}</span><span>${duracion}S</span>
-                       <button class="btn-borrar" onclick="this.parentElement.remove(); calcularTotal(); autoGuardar();">X</button>`;
+        b.innerHTML = `<span>${fase.toUpperCase()}</span><span>${duracion}S</span><button class="btn-borrar" onclick="this.parentElement.remove(); calcularTotal(); autoGuardar();">X</button>`;
         document.getElementById('pantalla').appendChild(b);
         calcularTotal();
         autoGuardar();
@@ -126,16 +113,14 @@
         }
     }
 
-    function calcularFin() {
-        calcularTotal();
-    }
+    function calcularFin() { calcularTotal(); }
 
-    async function guardarArchivo() { 
+    function guardarArchivo() { 
         const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan.json'; a.click(); 
     }
 
-    async function cargarArchivo() {
+    function cargarArchivo() {
         const input = document.createElement('input'); input.type = 'file';
         input.onchange = e => {
             const reader = new FileReader();
@@ -151,107 +136,56 @@
         return `${d}/${m}/${y}`;
     }
 
-function exportarPDF() {
-    calcularTotal();
+    function exportarPDF() {
+        calcularTotal();
+        const { jsPDF } = window.jspdf;
+        const pW = 189; const pH = 44;
+        const pdf = new jsPDF('landscape', 'mm', [pH, pW]);
 
-    const { jsPDF } = window.jspdf;
-    
-    // REDUCCIÓN DEL 10% TOTAL: 210mm -> 189mm
-    const pageW = 189; 
-    const pageH = 44;
+        const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
+        const fechaInicio = formatearFecha(document.getElementById('fechaInicio').value);
+        const fechaFin = formatearFecha(document.getElementById('fechaFin').value);
+        const total = document.getElementById('totalSemanas').innerText.trim();
+        const bloques = Array.from(document.querySelectorAll('.bloque')).map(b => ({
+            fase: b.className.split(' ')[1],
+            semanas: parseInt(b.style.flex)
+        }));
 
-    const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: [pageH, pageW]
-    });
+        pdf.setFillColor(18, 18, 18);
+        pdf.rect(0, 0, pW, pH, 'F');
+        pdf.setFillColor(31, 31, 31);
+        pdf.setDrawColor(55, 55, 55);
+        pdf.roundedRect(4, 4, pW - 8, pH - 8, 3, 3, 'FD');
 
-    const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
-    const fechaInicio = formatearFecha(document.getElementById('fechaInicio').value);
-    const fechaFin = formatearFecha(document.getElementById('fechaFin').value);
-    const total = document.getElementById('totalSemanas').innerText.trim();
-    const bloques = Array.from(document.querySelectorAll('.bloque')).map(b => ({
-        fase: b.className.split(' ')[1],
-        semanas: parseInt(b.style.flex)
-    }));
-
-    const colores = {
-        fondo: [18, 18, 18],
-        tarjeta: [31, 31, 31],
-        texto: [255, 255, 255],
-        negro: [0, 0, 0],
-        borde: [55, 55, 55],
-        fmax: [255, 107, 107],
-        desox: [77, 171, 247],
-        reox: [105, 219, 124],
-        aero: [177, 151, 252],
-        tap: [255, 212, 59]
-    };
-
-    // Fondo (ocupa todo el nuevo ancho pageW)
-    pdf.setFillColor(...colores.fondo);
-    pdf.rect(0, 0, pageW, pageH, 'F');
-
-    // Márgenes ajustados al nuevo ancho (manteniendo proporción)
-    const mX = 1.8; // 2mm - 10%
-    const mY = 4;
-    const outerX = mX;
-    const outerY = mY;
-    const outerW = pageW - (mX * 2);
-    const outerH = pageH - (mY * 2);
-
-    // Dibujo del contenedor
-    pdf.setFillColor(...colores.tarjeta);
-    pdf.setDrawColor(...colores.borde);
-    pdf.roundedRect(outerX, outerY, outerW, outerH, 3, 3, 'FD');
-
-    const contentX = outerX + 4;
-    const contentY = outerY + 6;
-
-    // Título y Fecha
-    pdf.setTextColor(...colores.texto);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(9);
-    pdf.text(titulo, contentX, contentY);
-
-    pdf.setFontSize(7.5);
-    const dateStr = `Inicio: ${fechaInicio}     Fin: ${fechaFin}`;
-    pdf.text(dateStr, outerX + outerW - pdf.getTextWidth(dateStr) - 4, contentY);
-
-    // Barra de bloques
-    const barX = contentX;
-    const barY = outerY + 12;
-    const barW = outerW - 8;
-    const barH = 12;
-    const totalSemanas = bloques.reduce((acc, b) => acc + b.semanas, 0) || 1;
-
-    let cursorX = barX;
-    bloques.forEach(b => {
-        const w = (barW * b.semanas) / totalSemanas;
-        const color = colores[b.fase] || colores.tap;
-        pdf.setFillColor(...color);
-        pdf.rect(cursorX, barY, w, barH, 'F');
-
-        pdf.setTextColor(...colores.negro);
+        pdf.setTextColor(255, 255, 255);
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(6);
+        pdf.setFontSize(9);
+        pdf.text(titulo, 8, 10);
+        pdf.setFontSize(7.5);
+        const dS = `Inicio: ${fechaInicio}     Fin: ${fechaFin}`;
+        pdf.text(dS, pW - pdf.getTextWidth(dS) - 8, 10);
 
-        const t1 = b.fase.toUpperCase();
-        const t2 = `${b.semanas}S`;
-        pdf.text(t1, cursorX + w/2 - pdf.getTextWidth(t1)/2, barY + 5);
-        pdf.text(t2, cursorX + w/2 - pdf.getTextWidth(t2)/2, barY + 9);
+        const tS = bloques.reduce((acc, b) => acc + b.semanas, 0) || 1;
+        let cX = 8;
+        const bW = pW - 16;
+        const colores = { fmax:[255,107,107], desox:[77,171,247], reox:[105,219,124], aero:[177,151,252], tap:[255,212,59] };
 
-        cursorX += w;
-    });
+        bloques.forEach(b => {
+            const w = (bW * b.semanas) / tS;
+            pdf.setFillColor(...(colores[b.fase] || [255,212,59]));
+            pdf.rect(cX, 16, w, 12, 'F');
+            pdf.setTextColor(0,0,0);
+            pdf.setFontSize(6);
+            pdf.text(b.fase.toUpperCase(), cX + w/2, 21, {align:'center'});
+            pdf.text(b.semanas + 'S', cX + w/2, 25, {align:'center'});
+            cX += w;
+        });
 
-    // Total inferior
-    pdf.setTextColor(...colores.texto);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setFontSize(7);
-    pdf.text(`TOTAL: ${total} SEMANAS`, contentX, outerY + outerH - 4);
-
-    pdf.save('Macrociclo.pdf');
-}
+        pdf.setTextColor(255,255,255);
+        pdf.setFontSize(7);
+        pdf.text(`TOTAL: ${total} SEMANAS`, 8, 38);
+        pdf.save('Macrociclo.pdf');
+    }
 
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
