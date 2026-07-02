@@ -151,11 +151,47 @@
         return `${d}/${m}/${y}`;
     }
 
-// MARGEN VERTICAL: 4mm (se mantiene)
-        const mY = 4;
-        // MARGEN HORIZONTAL: reducido a 2mm para que el recuadro sea más ancho
-        const mX = 2; 
+function exportarPDF() {
+        calcularTotal();
 
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: [44, 210]
+        });
+
+        const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
+        const fechaInicio = formatearFecha(document.getElementById('fechaInicio').value);
+        const fechaFin = formatearFecha(document.getElementById('fechaFin').value);
+        const total = document.getElementById('totalSemanas').innerText.trim();
+        const bloques = Array.from(document.querySelectorAll('.bloque')).map(b => ({
+            fase: b.className.split(' ')[1],
+            semanas: parseInt(b.style.flex)
+        }));
+
+        const colores = {
+            fondo: [18, 18, 18],
+            tarjeta: [31, 31, 31],
+            texto: [255, 255, 255],
+            negro: [0, 0, 0],
+            borde: [55, 55, 55],
+            fmax: [255, 107, 107],
+            desox: [77, 171, 247],
+            reox: [105, 219, 124],
+            aero: [177, 151, 252],
+            tap: [255, 212, 59]
+        };
+
+        const pageW = 210;
+        const pageH = 44;
+
+        pdf.setFillColor(...colores.fondo);
+        pdf.rect(0, 0, pageW, pageH, 'F');
+
+        // MARGENES: 4mm vertical, 2mm horizontal
+        const mX = 2; 
+        const mY = 4;
         const outerX = mX;
         const outerY = mY;
         const outerW = pageW - (mX * 2);
@@ -165,11 +201,49 @@
         pdf.setDrawColor(...colores.borde);
         pdf.roundedRect(outerX, outerY, outerW, outerH, 3, 3, 'FD');
 
-        // Ajuste de los elementos internos para que se desplacen con el nuevo ancho
-        const contentX = outerX + 4; 
+        const contentX = outerX + 4;
         const contentY = outerY + 6;
+
+        pdf.setTextColor(...colores.texto);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.text(titulo, contentX, contentY);
+
+        pdf.setFontSize(7.5);
+        const dateStr = `Inicio: ${fechaInicio}     Fin: ${fechaFin}`;
+        pdf.text(dateStr, outerX + outerW - pdf.getTextWidth(dateStr) - 4, contentY);
+
         const barX = contentX;
-        const barW = outerW - 8; // Mantenemos el padding interno de 8mm total
+        const barY = outerY + 12;
+        const barW = outerW - 8;
+        const barH = 12;
+        const totalSemanas = bloques.reduce((acc, b) => acc + b.semanas, 0) || 1;
+
+        let cursorX = barX;
+        bloques.forEach(b => {
+            const w = (barW * b.semanas) / totalSemanas;
+            const color = colores[b.fase] || colores.tap;
+            pdf.setFillColor(...color);
+            pdf.rect(cursorX, barY, w, barH, 'F');
+
+            pdf.setTextColor(...colores.negro);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(6);
+
+            const t1 = b.fase.toUpperCase();
+            const t2 = `${b.semanas}S`;
+            pdf.text(t1, cursorX + w/2 - pdf.getTextWidth(t1)/2, barY + 5);
+            pdf.text(t2, cursorX + w/2 - pdf.getTextWidth(t2)/2, barY + 9);
+
+            cursorX += w;
+        });
+
+        pdf.setTextColor(...colores.texto);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(7);
+        pdf.text(`TOTAL: ${total} SEMANAS`, contentX, outerY + outerH - 4);
+
+        pdf.save('Macrociclo.pdf');
     }
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
