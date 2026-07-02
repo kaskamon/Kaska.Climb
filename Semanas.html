@@ -17,9 +17,8 @@
             --bg-principal: #121212; --bg-panel: rgba(30, 30, 30, 0.85);
             --input-bg: #2c2c2c; --btn-bg: #3a3a3a; --border-general: #4a4a4a;
         }
-        body { font-family: sans-serif; background-color: var(--bg-principal); color: white; padding: 20px; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        body { font-family: sans-serif; background-color: var(--bg-principal); color: white; padding: 20px; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; gap: 20px; }
         
-        /* FONDO */
         .fondo-logo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-image: url('logo.png'); background-repeat: no-repeat; background-position: center; background-size: 100%; opacity: 0.2; z-index: -10; }
         
         .layout-editor { display: flex; gap: 20px; align-items: flex-start; justify-content: center; }
@@ -44,6 +43,8 @@
         .link-btn { grid-column: 3; color: #000; font-size: 0.6em; text-decoration: none; justify-self: end; font-weight: bold; cursor: default; }
         .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.75em; cursor: pointer; }
         #banco { width: 250px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; }
+        
+        .panel-lateral { display: flex; flex-direction: column; gap: 15px; margin-top: 0; }
 
         @media print {
             @page { size: 67mm 115mm; margin: 0; }
@@ -83,18 +84,20 @@
             <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
             <button class="btn-action" onclick="restablecerLinks()">Limpiar Links</button>
             <button class="btn-action" onclick="window.print()">Exportar PDF</button>
-            <button class="btn-action" onclick="window.location.href='index.html'" style="font-weight: 900; text-transform: uppercase;">&larr; INICIO</button>
         </div>
     </div>
 
-    <div id="banco" class="no-print">
-        <h4 style="margin-top:0; color:#cbd5e1;">Banco de sesiones</h4>
-        <div class="sesion roca"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Roca/roco</span></div></div>
-        <div class="sesion antagonistas"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Antagonistas</span><span class="btn-link" onclick="addLink(this)">Link</span></div></div>
-        <div class="sesion reox"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">REOX (ROCO)</span><span class="btn-link" onclick="addLink(this)">Link</span></div></div>
-        <div class="sesion descanso"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Descanso</span></div></div>
+    <div class="panel-lateral">
+        <button class="btn-action" onclick="window.location.href='index.html'" style="font-weight: 900; text-transform: uppercase;">&larr; INICIO</button>
+        <div id="banco" class="no-print">
+            <h4 style="margin-top:0; color:#cbd5e1;">Banco de sesiones</h4>
+            <div class="sesion roca"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Roca/roco</span></div></div>
+            <div class="sesion antagonistas"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Antagonistas</span><span class="btn-link" onclick="addLink(this)">Link</span></div></div>
+            <div class="sesion reox"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">REOX (ROCO)</span><span class="btn-link" onclick="addLink(this)">Link</span></div></div>
+            <div class="sesion descanso"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Descanso</span></div></div>
+        </div>
     </div>
-</div> 
+</div>
 
 <script>
     function act() { 
