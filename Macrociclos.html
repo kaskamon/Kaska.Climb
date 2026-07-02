@@ -144,12 +144,21 @@
         };
         input.click();
     }
-function exportarPDF() {
+const PLAN_POR_DEFECTO = {
+        "titulo": "MACROCICLO MIKEL GARCÍA",
+        "inicio": "2026-06-29",
+        "bloques": [
+            {"fase": "reox", "semanas": 6}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 4},
+            {"fase": "desox", "semanas": 4}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 3}, {"fase": "aero", "semanas": 4}
+        ]
+    };
+
+    function exportarPDF() {
         calcularTotal();
 
         const { jsPDF } = window.jspdf;
         
-        // Formato reducido un 10% en horizontal (210mm -> 189mm)
+        // 189mm es el 90% de 210mm (reducido un 10% horizontal)
         const pageW = 189; 
         const pageH = 44;
 
@@ -181,11 +190,11 @@ function exportarPDF() {
             tap: [255, 212, 59]
         };
 
-        // 1. Fondo negro
+        // Fondo
         pdf.setFillColor(...colores.fondo);
         pdf.rect(0, 0, pageW, pageH, 'F');
 
-        // 2. Recuadro (manteniendo márgenes proporcionales)
+        // Recuadro redondeado
         const outerX = 4;
         const outerY = 4;
         const outerW = pageW - 8;
@@ -195,7 +204,7 @@ function exportarPDF() {
         pdf.setDrawColor(...colores.borde);
         pdf.roundedRect(outerX, outerY, outerW, outerH, 3, 3, 'FD');
 
-        // 3. Textos
+        // Textos
         const contentX = outerX + 4;
         const contentY = outerY + 6;
 
@@ -208,7 +217,7 @@ function exportarPDF() {
         const dateStr = `Inicio: ${fechaInicio}     Fin: ${fechaFin}`;
         pdf.text(dateStr, outerX + outerW - pdf.getTextWidth(dateStr) - 4, contentY);
 
-        // 4. Barra de bloques
+        // Barra de bloques
         const barX = contentX;
         const barY = outerY + 12;
         const barW = outerW - 8;
@@ -234,7 +243,7 @@ function exportarPDF() {
             cursorX += w;
         });
 
-        // 5. Total
+        // Total
         pdf.setTextColor(...colores.texto);
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(7);
@@ -242,7 +251,6 @@ function exportarPDF() {
 
         pdf.save('Macrociclo.pdf');
     }
-
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
 </body>
