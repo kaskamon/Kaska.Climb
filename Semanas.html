@@ -31,12 +31,11 @@
         .sesion.descanso { background-color: var(--descanso) !important; }
         
         /* Botones unificados */
-        .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em; text-decoration: none; display: block; text-align: center; box-sizing: border-box; }
+        .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em; text-decoration: none; display: block; text-align: center; box-sizing: border-box; width: 100%; }
         .acciones-container { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 360px; }
         
         /* Control eliminación */
-        .btn-del { cursor: pointer; font-size: 0.8em; margin-right: 5px; display: none; }
-        .tabla-activa .btn-del { display: block; } /* Solo visible en la tabla */
+        .btn-del { cursor: pointer; font-size: 0.8em; margin-right: 8px; font-weight: bold; }
         
         #banco { width: 360px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; box-sizing: border-box; }
     </style>
@@ -66,13 +65,13 @@
     </div>
 
     <div class="columna-derecha">
-        <a href="index.html" class="btn-action" style="font-weight:bold;">INICIO</a>
+        <a href="index.html" class="btn-action">INICIO</a>
         <div id="banco">
             <h4 style="margin:0; color:#cbd5e1;">Banco de sesiones</h4>
-            <div class="sesion roca"><span class="btn-del" onclick="this.parentElement.remove()">X</span>Roca/roco</div>
-            <div class="sesion antagonistas"><span class="btn-del" onclick="this.parentElement.remove()">X</span>Antagonistas</div>
-            <div class="sesion reox"><span class="btn-del" onclick="this.parentElement.remove()">X</span>REOX (ROCO)</div>
-            <div class="sesion descanso"><span class="btn-del" onclick="this.parentElement.remove()">X</span>Descanso</div>
+            <div class="sesion roca">Roca/roco</div>
+            <div class="sesion antagonistas">Antagonistas</div>
+            <div class="sesion reox">REOX (ROCO)</div>
+            <div class="sesion descanso">Descanso</div>
         </div>
         <div class="acciones-container">
             <button class="btn-action" onclick="guardar()">Guardar</button>
@@ -94,9 +93,19 @@
                 group: { name: 's', pull: true, put: true },
                 filter: '.dia-nombre',
                 preventOnFilter: true,
-                onAdd: function (evt) { evt.item.classList.add('tabla-activa'); }
+                onAdd: function (evt) {
+                    // Al soltar en la tabla, añadimos el botón de borrar
+                    if (!evt.item.querySelector('.btn-del')) {
+                        let btn = document.createElement('span');
+                        btn.innerHTML = 'X ';
+                        btn.className = 'btn-del';
+                        btn.onclick = function() { this.parentElement.remove(); };
+                        evt.item.prepend(btn);
+                    }
+                }
             });
         });
+        // Configuración banco: pull clone para no quitar elementos originales
         new Sortable(document.getElementById('banco'), {group:{name:'s', pull:'clone', put:false}, sort:false}); 
     }
     window.onload = () => { if(localStorage.gridCont) document.getElementById('grid').innerHTML = localStorage.gridCont; act(); };
