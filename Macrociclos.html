@@ -144,16 +144,6 @@
         };
         input.click();
     }
-
-function exportarPDF() {
-        calcularTotal();
-
-        const { jsPDF } = window.jspdf;
-        
-        // Reducimos el ancho total un 10%: de 210mm a 189mm
-        const pageW = 189; 
-        const pageH = 44; 
-
 function exportarPDF() {
         calcularTotal();
 
@@ -252,6 +242,7 @@ function exportarPDF() {
 
         pdf.save('Macrociclo.pdf');
     }
+
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
 </body>
