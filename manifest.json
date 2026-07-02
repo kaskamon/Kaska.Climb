@@ -1,8 +1,10 @@
 {
   "name": "Kaska Climb",
   "short_name": "Kaska",
-  "start_url": "/Semanas.html",
+  "start_url": "/index.html",
   "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212",
   "icons": [
     {
       "src": "/logo-192.png",
