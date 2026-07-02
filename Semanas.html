@@ -42,10 +42,6 @@
         .btn-link { grid-column: 3; color: #000; cursor: pointer; font-size: 0.6em; text-decoration: underline; justify-self: end; }
         .link-btn { grid-column: 3; color: #000; font-size: 0.6em; text-decoration: none; justify-self: end; font-weight: bold; cursor: default; }
         .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.75em; cursor: pointer; }
-        
-        /* Botón INICIO: Reducido al 30%, formato mantenido */
-        .btn-inicio { font-weight: 900; text-transform: uppercase; font-size: 0.22em; padding: 2px 4px; align-self: flex-start; }
-
         #banco { width: 250px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; }
 
         @media print {
@@ -90,24 +86,59 @@
     </div>
 
     <div style="display: flex; flex-direction: column; gap: 15px;">
-        <button class="btn-action btn-inicio" onclick="window.location.href='index.html'">&larr; INICIO</button>
+        <button class="btn-action" onclick="window.location.href='index.html'" style="font-weight: 900; text-transform: uppercase;">&larr; INICIO</button>
         
         <div id="banco" class="no-print">
             <h4 style="margin-top:0; color:#cbd5e1;">Banco de sesiones</h4>
-            </div>
+            <div class="sesion roca"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Roca/roco</span></div></div>
+            <div class="sesion antagonistas"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Antagonistas</span><span class="btn-link" onclick="addLink(this)">Link</span></div></div>
+            <div class="sesion reox"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">REOX (ROCO)</span><span class="btn-link" onclick="addLink(this)">Link</span></div></div>
+            <div class="sesion descanso"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Descanso</span></div></div>
+        </div>
     </div>
 </div> 
 
 <script>
-    // Tu lógica se mantiene intacta
-    function act() { document.querySelectorAll('.dia-columna').forEach(d => new Sortable(d, {group:'s', filter:'.dia-nombre'})); new Sortable(document.getElementById('banco'), {group:{name:'s', pull:'clone', put:false}, sort:false}); }
-    function actualizarFecha(val) { if(!val) return; const [y, m, d] = val.split('-'); document.getElementById('displayDate').innerText = `${d}/${m}/${y}`; }
-    function limpiarTabla() { document.querySelectorAll('.dia-columna').forEach(d => { Array.from(d.children).forEach(child => { if(!child.classList.contains('dia-nombre')) child.remove(); }); }); }
-    document.addEventListener('click', (e) => { let s = e.target.closest('.sesion'); if (e.target.classList.contains('sesion-text')) return; if(s && !s.parentElement.id.includes('banco')) { e.preventDefault(); s.after(s.cloneNode(true)); } });
+    function act() { 
+        document.querySelectorAll('.dia-columna').forEach(d => new Sortable(d, {group:'s', filter:'.dia-nombre'}));
+        new Sortable(document.getElementById('banco'), {group:{name:'s', pull:'clone', put:false}, sort:false}); 
+    }
+    
+    function actualizarFecha(val) {
+        if(!val) return;
+        const [y, m, d] = val.split('-');
+        document.getElementById('displayDate').innerText = `${d}/${m}/${y}`;
+    }
+
+    function limpiarTabla() {
+        document.querySelectorAll('.dia-columna').forEach(d => {
+            Array.from(d.children).forEach(child => { if(!child.classList.contains('dia-nombre')) child.remove(); });
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        let s = e.target.closest('.sesion');
+        if (e.target.classList.contains('sesion-text')) return;
+        if(s && !s.parentElement.id.includes('banco')) { e.preventDefault(); s.after(s.cloneNode(true)); }
+    });
+
     function addLink(el) { let u = prompt("Enlace:"); if(u) el.outerHTML = `<a href="${u}" target="_blank" class="link-btn">▶ Ver</a>`; }
     function restablecerLinks() { document.querySelectorAll('.link-btn').forEach(el => el.outerHTML = '<span class="btn-link" onclick="addLink(this)">Link</span>'); }
-    function guardar() { localStorage.g = document.getElementById('grid').innerHTML; localStorage.h = JSON.stringify({h1:h1.innerText, h2val:hiddenDate.value, h3:h3.innerText, h4:h4.innerText}); alert("Guardado"); }
-    window.onload = () => { if(localStorage.g) { document.getElementById('grid').innerHTML = localStorage.g; let h = JSON.parse(localStorage.h); h1.innerText=h.h1; hiddenDate.value=h.h2val; actualizarFecha(h.h2val); h3.innerText=h.h3; h4.innerText=h.h4; } act(); };
+    
+    function guardar() { 
+        localStorage.g = document.getElementById('grid').innerHTML; 
+        localStorage.h = JSON.stringify({h1:h1.innerText, h2val:hiddenDate.value, h3:h3.innerText, h4:h4.innerText}); 
+        alert("Guardado"); 
+    }
+
+    window.onload = () => { 
+        if(localStorage.g) { 
+            document.getElementById('grid').innerHTML = localStorage.g; 
+            let h = JSON.parse(localStorage.h); 
+            h1.innerText=h.h1; hiddenDate.value=h.h2val; actualizarFecha(h.h2val); h3.innerText=h.h3; h4.innerText=h.h4; 
+        } 
+        act(); 
+    };
 </script>
 </body>
 </html>
