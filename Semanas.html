@@ -5,6 +5,8 @@
     <meta name="theme-color" content="#333333">
     <meta charset="UTF-8">
     <title>Kaska.Climb | Semanas</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
@@ -122,50 +124,28 @@
         alert("Guardado"); 
     }
 
-    // --- FUNCIÓN EXPORTAR PDF ---
-    function exportarPDF() {
+   async function exportarPDF() {
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [115, 67] });
+        const elemento = document.querySelector('.contenedor-principal');
 
-        pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(10);
-        pdf.text(`SEM: ${document.getElementById('h1').innerText}`, 5, 10);
-        pdf.text(document.getElementById('displayDate').innerText, 40, 10);
-        pdf.text(document.getElementById('h3').innerText, 5, 18);
-        pdf.text(document.getElementById('h4').innerText, 50, 18);
-
-        let y = 25;
-        document.querySelectorAll('.dia-columna').forEach(col => {
-            const dia = col.querySelector('.dia-nombre').innerText;
-            pdf.setFontSize(8);
-            pdf.text(dia, 5, y);
-            
-            const sesiones = col.querySelectorAll('.sesion');
-            let x = 15;
-            sesiones.forEach(s => {
-                const texto = s.querySelector('.sesion-text').innerText;
-                pdf.setDrawColor(0);
-                pdf.rect(x, y-4, 15, 6);
-                pdf.setFontSize(6);
-                pdf.text(texto.substring(0, 8), x+1, y);
-                x += 17;
-            });
-            y += 12;
+        // Capturamos el elemento como una imagen
+        const canvas = await html2canvas(elemento, {
+            backgroundColor: '#121212', // Color de fondo oscuro de tu app
+            scale: 2 // Mayor resolución para que no se vea borroso
         });
-        pdf.save('Semana.pdf');
-    }
 
-    window.onload = () => { 
-        if(localStorage.g) { 
-            document.getElementById('grid').innerHTML = localStorage.g; 
-            let h = JSON.parse(localStorage.h); 
-            h1.innerText=h.h1; 
-            hiddenDate.value=h.h2val; 
-            actualizarFecha(h.h2val);
-            h3.innerText=h.h3; h4.innerText=h.h4; 
-        } 
-        act(); 
-    };
+        const imgData = canvas.toDataURL('image/png');
+        
+        // Crear PDF en formato A4 (o el que prefieras)
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+        // Añadimos la imagen al PDF (ajustada al ancho de la hoja)
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save('Semana_Kaska.pdf');
+    }
 </script>
 </body>
 </html>
