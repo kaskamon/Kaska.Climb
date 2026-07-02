@@ -15,14 +15,14 @@
         }
         body { font-family: sans-serif; background-color: var(--bg-principal); color: white; padding: 20px; min-height: 100vh; }
         .layout-editor { display: flex; gap: 20px; align-items: flex-start; justify-content: center; }
-        .contenedor-principal { width: 400px; flex-shrink: 0; }
+        .contenedor-principal { width: 400px; flex-shrink: 0; padding: 10px; } /* Añadido padding para margen */
         .header { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg-panel); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-general); }
         .head-item { font-size: 0.8em; font-weight: bold; }
-        .head-val { background: var(--input-bg); border: 1px solid #444; border-radius: 4px; font-weight: bold; color: #69db7c; padding: 2px 6px; display: inline-block; font-size: 0.9em; font-family: sans-serif; cursor: pointer; }
+        .head-val { background: var(--input-bg); border: 1px solid #444; border-radius: 4px; font-weight: bold; color: #69db7c; padding: 2px 6px; display: inline-block; font-size: 0.9em; cursor: pointer; }
         .date-input-hidden { position: absolute; opacity: 0; pointer-events: none; }
         .semana-grid { display: grid; gap: 8px; background: var(--bg-panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border-general); }
         .dia-columna { background: var(--input-bg); border-radius: 6px; padding: 8px; border: 1px solid var(--border-general); display: flex; align-items: center; gap: 8px; min-height: 40px; }
-        .dia-nombre { width: 35px; font-size: 0.65em; color: #cbd5e1; text-transform: uppercase; font-weight: bold; text-align: center; background: var(--btn-bg); padding: 4px; border-radius: 4px; pointer-events: none; user-select: none; }
+        .dia-nombre { width: 35px; font-size: 0.65em; color: #cbd5e1; text-transform: uppercase; font-weight: bold; text-align: center; background: var(--btn-bg); padding: 4px; border-radius: 4px; pointer-events: none; }
         .sesion { background: #475569; padding: 5px 8px; border-radius: 4px; cursor: move; border: 1px solid var(--border-general); flex-grow: 1; display: flex; align-items: center; min-height: 35px; text-transform: uppercase; color: #000; font-weight: bold; }
         .sesion.fmax { background-color: var(--fmax) !important; }
         .sesion.reox { background-color: var(--reox) !important; }
@@ -41,7 +41,7 @@
 <body>
 
 <div class="layout-editor">
-    <div class="contenedor-principal">
+    <div class="contenedor-principal" id="areaCaptura">
         <div class="header">
             <div class="head-item">Semana: <span class="head-val" contenteditable="true" id="h1">01</span></div>
             <div class="head-item">Fecha: 
@@ -61,8 +61,9 @@
             <div class="dia-columna" id="d7"><div class="dia-nombre">DOM</div></div>
         </div>
         <div style="margin-top:15px; display:flex; flex-wrap:wrap; gap:8px;">
-            <button class="btn-action" onclick="guardarJSON()">Guardar JSON</button>
+            <button class="btn-action" onclick="guardarJSON()">Guardar</button>
             <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
+            <button class="btn-action" onclick="restablecerLinks()">Limpiar Links</button>
             <button class="btn-action" onclick="exportarPDF()">Exportar PDF</button>
         </div>
     </div>
@@ -99,8 +100,8 @@
     }
 
     function addLink(el) { let u = prompt("Enlace:"); if(u) el.outerHTML = `<a href="${u}" target="_blank" class="link-btn">▶ Ver</a>`; }
+    function restablecerLinks() { document.querySelectorAll('.link-btn').forEach(el => el.outerHTML = '<span class="btn-link" onclick="addLink(this)">Link</span>'); }
 
-    // Guardado JSON con nombre
     function guardarJSON() {
         const nombre = prompt("Nombre del archivo:", "semana.json");
         if (!nombre) return;
@@ -111,11 +112,12 @@
 
     async function exportarPDF() {
         const { jsPDF } = window.jspdf;
-        const elemento = document.querySelector('.contenedor-principal');
-        const canvas = await html2canvas(elemento, { backgroundColor: '#121212', scale: 2 });
+        const elemento = document.getElementById('areaCaptura');
+        // Aumentamos el padding en la captura para asegurar que no corte nada
+        const canvas = await html2canvas(elemento, { backgroundColor: '#121212', scale: 2, y: 0, height: elemento.offsetHeight + 20 });
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
-        pdf.addImage(imgData, 'PNG', 0, 0, 210, (canvas.height * 210) / canvas.width);
+        pdf.addImage(imgData, 'PNG', 5, 5, 200, (canvas.height * 200) / canvas.width);
         pdf.save('Semana_Kaska.pdf');
     }
 
