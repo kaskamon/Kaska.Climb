@@ -3,6 +3,7 @@
   "short_name": "Creador tablas",
   "start_url": "./index.html",
   "display": "standalone",
+  "scope": ".",
   "background_color": "#ffffff",
   "theme_color": "#333333",
   "icons": [
