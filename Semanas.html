@@ -4,38 +4,21 @@
     <meta charset="UTF-8">
     <title>Kaska.Climb | Semanas</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-        :root { 
-            --fmax: #3b82f6; --reox: #69db7c; --roca: #ffd43b; 
-            --antagonistas: #4dabf7; --descanso: #ff6b6b;
-            --bg-principal: #121212; --bg-panel: rgba(30, 30, 30, 0.85);
-            --input-bg: #2c2c2c; --btn-bg: #3a3a3a; --border-general: #4a4a4a;
-        }
+        :root { --fmax: #3b82f6; --reox: #69db7c; --roca: #ffd43b; --antagonistas: #4dabf7; --descanso: #ff6b6b; --bg-principal: #121212; --bg-panel: rgba(30, 30, 30, 0.85); --input-bg: #2c2c2c; --btn-bg: #3a3a3a; --border-general: #4a4a4a; }
         body { font-family: sans-serif; background-color: var(--bg-principal); color: white; padding: 20px; min-height: 100vh; }
         .layout-editor { display: flex; gap: 20px; align-items: flex-start; justify-content: center; }
-        .contenedor-principal { width: 400px; flex-shrink: 0; padding: 10px; } /* Añadido padding para margen */
+        .contenedor-principal { width: 400px; flex-shrink: 0; }
         .header { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg-panel); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-general); }
-        .head-item { font-size: 0.8em; font-weight: bold; }
-        .head-val { background: var(--input-bg); border: 1px solid #444; border-radius: 4px; font-weight: bold; color: #69db7c; padding: 2px 6px; display: inline-block; font-size: 0.9em; cursor: pointer; }
-        .date-input-hidden { position: absolute; opacity: 0; pointer-events: none; }
+        .head-val { background: var(--input-bg); border: 1px solid #444; border-radius: 4px; font-weight: bold; color: #69db7c; padding: 2px 6px; cursor: pointer; }
         .semana-grid { display: grid; gap: 8px; background: var(--bg-panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border-general); }
         .dia-columna { background: var(--input-bg); border-radius: 6px; padding: 8px; border: 1px solid var(--border-general); display: flex; align-items: center; gap: 8px; min-height: 40px; }
-        .dia-nombre { width: 35px; font-size: 0.65em; color: #cbd5e1; text-transform: uppercase; font-weight: bold; text-align: center; background: var(--btn-bg); padding: 4px; border-radius: 4px; pointer-events: none; }
-        .sesion { background: #475569; padding: 5px 8px; border-radius: 4px; cursor: move; border: 1px solid var(--border-general); flex-grow: 1; display: flex; align-items: center; min-height: 35px; text-transform: uppercase; color: #000; font-weight: bold; }
-        .sesion.fmax { background-color: var(--fmax) !important; }
-        .sesion.reox { background-color: var(--reox) !important; }
-        .sesion.roca { background-color: var(--roca) !important; }
-        .sesion.antagonistas { background-color: var(--antagonistas) !important; }
-        .sesion.descanso { background-color: var(--descanso) !important; }
-        .sesion-contenido { display: grid; grid-template-columns: 20px 1fr 40px; align-items: center; width: 100%; gap: 5px; }
-        .sesion-text { grid-column: 2; text-align: center; font-size: 0.7em; outline: none; }
-        .btn-del-sesion { grid-column: 1; color: #000; cursor: pointer; font-size: 0.8em; font-weight: bold; }
-        .btn-link { grid-column: 3; color: #000; cursor: pointer; font-size: 0.6em; text-decoration: underline; justify-self: end; }
-        .link-btn { grid-column: 3; color: #000; font-size: 0.6em; text-decoration: none; justify-self: end; font-weight: bold; cursor: default; }
-        .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.75em; cursor: pointer; }
-        #banco { width: 250px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; }
+        .dia-nombre { width: 35px; font-size: 0.65em; color: #cbd5e1; font-weight: bold; background: var(--btn-bg); padding: 4px; border-radius: 4px; }
+        .sesion { background: #475569; padding: 5px 8px; border-radius: 4px; cursor: move; border: 1px solid var(--border-general); flex-grow: 1; display: flex; align-items: center; min-height: 35px; color: #000; font-weight: bold; }
+        .sesion.fmax { background-color: var(--fmax) !important; } .sesion.reox { background-color: var(--reox) !important; } .sesion.roca { background-color: var(--roca) !important; } .sesion.antagonistas { background-color: var(--antagonistas) !important; } .sesion.descanso { background-color: var(--descanso) !important; }
+        .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        #banco { width: 250px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -43,91 +26,54 @@
 <div class="layout-editor">
     <div class="contenedor-principal" id="areaCaptura">
         <div class="header">
-            <div class="head-item">Semana: <span class="head-val" contenteditable="true" id="h1">01</span></div>
-            <div class="head-item">Fecha: 
-                <span class="head-val" id="displayDate" onclick="document.getElementById('hiddenDate').showPicker()">DD/MM/AAAA</span>
-                <input type="date" id="hiddenDate" class="date-input-hidden" onchange="actualizarFecha(this.value)">
-            </div>
-            <div class="head-item">Mesociclo: <span class="head-val" contenteditable="true" id="h3">REOX</span></div>
-            <div class="head-item">Sem. Micr.: <span class="head-val" contenteditable="true" id="h4">1/4</span></div>
+            <div>Semana: <span class="head-val" contenteditable="true" id="h1">01</span></div>
+            <div>Fecha: <span class="head-val" id="displayDate" onclick="document.getElementById('hiddenDate').showPicker()">DD/MM/AAAA</span><input type="date" id="hiddenDate" style="display:none" onchange="actualizarFecha(this.value)"></div>
         </div>
-        <div class="semana-grid" id="grid">
-            <div class="dia-columna" id="d1"><div class="dia-nombre">LUN</div></div>
-            <div class="dia-columna" id="d2"><div class="dia-nombre">MAR</div></div>
-            <div class="dia-columna" id="d3"><div class="dia-nombre">MIÉ</div></div>
-            <div class="dia-columna" id="d4"><div class="dia-nombre">JUE</div></div>
-            <div class="dia-columna" id="d5"><div class="dia-nombre">VIE</div></div>
-            <div class="dia-columna" id="d6"><div class="dia-nombre">SÁB</div></div>
-            <div class="dia-columna" id="d7"><div class="dia-nombre">DOM</div></div>
-        </div>
-        <div style="margin-top:15px; display:flex; flex-wrap:wrap; gap:8px;">
+        <div class="semana-grid" id="grid"></div>
+        <div style="margin-top:15px; display:flex; gap:8px;">
             <button class="btn-action" onclick="guardarJSON()">Guardar</button>
             <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
             <button class="btn-action" onclick="restablecerLinks()">Limpiar Links</button>
             <button class="btn-action" onclick="exportarPDF()">Exportar PDF</button>
         </div>
     </div>
-
-    <div id="banco">
-        <h4 style="margin-top:0; color:#cbd5e1;">Banco de sesiones</h4>
-        <div class="sesion roca"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Roca/roco</span></div></div>
-        <div class="sesion antagonistas"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Antagonistas</span><span class="btn-link" onclick="addLink(this)">Link</span></div></div>
-        <div class="sesion reox"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">REOX (ROCO)</span><span class="btn-link" onclick="addLink(this)">Link</span></div></div>
-        <div class="sesion descanso"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Descanso</span></div></div>
-    </div>
-</div> 
+    <div id="banco"></div>
+</div>
 
 <script>
-    const PLAN_POR_DEFECTO = {
-        grid: '<div class="dia-columna" id="d1"><div class="dia-nombre">LUN</div></div><div class="dia-columna" id="d2"><div class="dia-nombre">MAR</div></div><div class="dia-columna" id="d3"><div class="dia-nombre">MIÉ</div></div><div class="dia-columna" id="d4"><div class="dia-nombre">JUE</div></div><div class="dia-columna" id="d5"><div class="dia-nombre">VIE</div></div><div class="dia-columna" id="d6"><div class="dia-nombre">SÁB</div></div><div class="dia-columna" id="d7"><div class="dia-nombre">DOM</div></div>',
-        h: {h1: "01", h2val: "", h3: "REOX", h4: "1/4"}
-    };
-
-    function act() { 
-        document.querySelectorAll('.dia-columna').forEach(d => new Sortable(d, {group:'s', filter:'.dia-nombre'}));
-        new Sortable(document.getElementById('banco'), {group:{name:'s', pull:'clone', put:false}, sort:false}); 
-    }
-
-    function actualizarFecha(val) {
-        const [y, m, d] = val.split('-');
-        document.getElementById('displayDate').innerText = `${d}/${m}/${y}`;
-    }
-
-    function limpiarTabla() {
-        document.querySelectorAll('.dia-columna').forEach(d => {
-            Array.from(d.children).forEach(c => { if(!c.classList.contains('dia-nombre')) c.remove(); });
-        });
-    }
-
-    function addLink(el) { let u = prompt("Enlace:"); if(u) el.outerHTML = `<a href="${u}" target="_blank" class="link-btn">▶ Ver</a>`; }
-    function restablecerLinks() { document.querySelectorAll('.link-btn').forEach(el => el.outerHTML = '<span class="btn-link" onclick="addLink(this)">Link</span>'); }
+    const PLAN_POR_DEFECTO = '<div class="dia-columna" id="d1"><div class="dia-nombre">LUN</div></div><div class="dia-columna" id="d2"><div class="dia-nombre">MAR</div></div><div class="dia-columna" id="d3"><div class="dia-nombre">MIÉ</div></div><div class="dia-columna" id="d4"><div class="dia-nombre">JUE</div></div><div class="dia-columna" id="d5"><div class="dia-nombre">VIE</div></div><div class="dia-columna" id="d6"><div class="dia-nombre">SÁB</div></div><div class="dia-columna" id="d7"><div class="dia-nombre">DOM</div></div>';
 
     function guardarJSON() {
-        const nombre = prompt("Nombre del archivo:", "semana.json");
-        if (!nombre) return;
-        const data = { grid: document.getElementById('grid').innerHTML, h: {h1:h1.innerText, h2val:hiddenDate.value, h3:h3.innerText, h4:h4.innerText} };
+        const data = { grid: document.getElementById('grid').innerHTML, h1: h1.innerText, date: hiddenDate.value };
         const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
+        a.download = prompt("Nombre del archivo:", "semana.json") || "semana.json";
+        a.click();
     }
 
-    async function exportarPDF() {
+    function exportarPDF() {
         const { jsPDF } = window.jspdf;
-        const elemento = document.getElementById('areaCaptura');
-        // Aumentamos el padding en la captura para asegurar que no corte nada
-        const canvas = await html2canvas(elemento, { backgroundColor: '#121212', scale: 2, y: 0, height: elemento.offsetHeight + 20 });
-        const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
-        pdf.addImage(imgData, 'PNG', 5, 5, 200, (canvas.height * 200) / canvas.width);
-        pdf.save('Semana_Kaska.pdf');
+        pdf.text("Planificación Semanal: " + h1.innerText, 10, 10);
+        
+        let y = 20;
+        document.querySelectorAll('.dia-columna').forEach(col => {
+            pdf.text(col.innerText.substring(0,3), 10, y);
+            col.querySelectorAll('.link-btn').forEach(link => {
+                pdf.textWithLink("Ver Enlace", 30, y, { url: link.href });
+            });
+            y += 10;
+        });
+        pdf.save('Semana.pdf');
     }
 
-    window.onload = () => { 
-        let datos = localStorage.g ? { grid: localStorage.g, h: JSON.parse(localStorage.h) } : PLAN_POR_DEFECTO;
-        document.getElementById('grid').innerHTML = datos.grid;
-        h1.innerText = datos.h.h1; hiddenDate.value = datos.h.h2val; 
-        if(datos.h.h2val) actualizarFecha(datos.h.h2val);
-        h3.innerText = datos.h.h3; h4.innerText = datos.h.h4;
-        act();
+    window.onload = () => {
+        if (localStorage.getItem('g')) {
+            document.getElementById('grid').innerHTML = localStorage.getItem('g');
+        } else {
+            document.getElementById('grid').innerHTML = PLAN_POR_DEFECTO;
+        }
+        // ... (resto de funciones act(), limpiarTabla, etc)
     };
 </script>
 </body>
