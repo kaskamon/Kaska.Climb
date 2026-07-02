@@ -14,33 +14,29 @@
         body { font-family: sans-serif; background-color: var(--bg-principal); color: white; padding: 20px; }
         .layout-editor { display: flex; gap: 40px; justify-content: center; align-items: flex-start; }
         .columna-izquierda { width: 400px; }
+        .columna-derecha { width: 360px; display: flex; flex-direction: column; gap: 15px; margin-top: 40px; }
         
-        /* Ajuste: Banco un poco más arriba (margin-top menor) */
-        .columna-derecha { width: 400px; display: flex; flex-direction: column; gap: 15px; margin-top: 60px; }
-        
-        /* Botón Inicio */
-        .btn-inicio { background: var(--btn-bg); border: 1px solid var(--border-general); padding: 10px; text-align: center; border-radius: 4px; margin-bottom: 20px; }
-        .btn-inicio a { color: white; text-decoration: none; font-weight: bold; }
-
         .header { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg-panel); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-general); }
         .head-val { background: var(--input-bg); border: 1px solid #444; border-radius: 4px; font-weight: bold; color: #69db7c; padding: 2px 6px; cursor: pointer; display: inline-block; }
         
         .semana-grid { display: grid; gap: 8px; background: var(--bg-panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border-general); }
         .dia-columna { background: var(--input-bg); border-radius: 6px; padding: 8px; border: 1px solid var(--border-general); display: flex; align-items: center; gap: 8px; min-height: 40px; }
-        .dia-nombre { width: 35px; font-size: 0.65em; color: #cbd5e1; text-transform: uppercase; font-weight: bold; text-align: center; background: var(--btn-bg); padding: 4px; border-radius: 4px; }
+        .dia-nombre { width: 35px; flex-shrink: 0; font-size: 0.65em; color: #cbd5e1; text-transform: uppercase; font-weight: bold; text-align: center; background: var(--btn-bg); padding: 4px; border-radius: 4px; pointer-events: none; }
         
+        /* Sesiones: ancho controlado */
         .sesion { background: #475569; padding: 5px 8px; border-radius: 4px; cursor: move; border: 1px solid var(--border-general); flex-grow: 1; display: flex; align-items: center; min-height: 35px; text-transform: uppercase; color: #000; font-weight: bold; }
         .sesion.roca { background-color: var(--roca) !important; }
         .sesion.antagonistas { background-color: var(--antagonistas) !important; }
         .sesion.reox { background-color: var(--reox) !important; }
         .sesion.descanso { background-color: var(--descanso) !important; }
         .sesion-contenido { display: grid; grid-template-columns: 20px 1fr 40px; align-items: center; width: 100%; gap: 5px; }
+        
         .btn-del-sesion { cursor: pointer; font-size: 0.8em; }
         .btn-link { font-size: 0.6em; text-decoration: underline; cursor: pointer; justify-self: end; }
         
-        #banco { width: 400px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; box-sizing: border-box; }
-        .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
-        .acciones-container { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 400px; }
+        #banco { width: 360px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; box-sizing: border-box; }
+        .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.85em; text-decoration: none; display: block; text-align: center; }
+        .acciones-container { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 360px; }
     </style>
 </head>
 <body>
@@ -68,8 +64,7 @@
     </div>
 
     <div class="columna-derecha">
-        <div class="btn-inicio"><a href="index.html">&larr; INICIO</a></div>
-        
+        <a href="index.html" class="btn-action" style="font-weight:bold;">&larr; INICIO</a>
         <div id="banco">
             <h4 style="margin:0; color:#cbd5e1;">Banco de sesiones</h4>
             <div class="sesion roca"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Roca/roco</span></div></div>
@@ -87,29 +82,17 @@
 </div>
 
 <script>
-    function actualizarFecha(val) {
-        const [y, m, d] = val.split('-');
-        document.getElementById('displayDate').innerText = `${d}/${m}/${y}`;
-    }
+    function actualizarFecha(val) { const [y, m, d] = val.split('-'); document.getElementById('displayDate').innerText = `${d}/${m}/${y}`; }
     function addLink(el) { let u = prompt("Enlace:"); if(u) el.outerHTML = `<a href="${u}" target="_blank" style="color:black; font-size: 0.6em; font-weight:bold;">▶ Ver</a>`; }
-    
     function guardar() { localStorage.gridCont = document.getElementById('grid').innerHTML; alert("Guardado"); }
+    function limpiarTabla() { localStorage.removeItem('gridCont'); location.reload(); }
     
-    function cargarEstado() {
-        if(localStorage.gridCont) document.getElementById('grid').innerHTML = localStorage.gridCont;
-    }
-    
-    function limpiarTabla() { 
-        localStorage.removeItem('gridCont');
-        location.reload(); 
-    }
-
     function act() { 
-        document.querySelectorAll('.dia-columna').forEach(d => new Sortable(d, {group:'s', filter:'.dia-nombre'}));
+        document.querySelectorAll('.dia-columna').forEach(d => new Sortable(d, {group:'s', filter:'.dia-nombre', preventOnFilter: true}));
         new Sortable(document.getElementById('banco'), {group:{name:'s', pull:'clone', put:false}, sort:false}); 
     }
     
-    window.onload = () => { cargarEstado(); act(); };
+    window.onload = () => { if(localStorage.gridCont) document.getElementById('grid').innerHTML = localStorage.gridCont; act(); };
 </script>
 </body>
 </html>
