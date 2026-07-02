@@ -156,11 +156,11 @@ function exportarPDF() {
 
     const { jsPDF } = window.jspdf;
     
-    // Formato de página ajustado
+    // Configuramos el PDF: Paisaje, 210mm x 50mm para que quepa todo sin perder info
     const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
-        format: [35, 160] 
+        format: [50, 210] 
     });
 
     const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
@@ -181,48 +181,51 @@ function exportarPDF() {
         tap: [255, 212, 59]
     };
 
-    const outerX = 5;
-    const outerY = 8;
-    const outerW = 150;
-    const outerH = 12; // Altura de la barra
+    const x = 10;
+    const y = 10;
+    const w = 190;
+    const h = 25;
 
-    // 1. Dibujar el marco redondeado que contendrá los bloques
-    // Usamos 'DF' (Draw and Fill) para que el fondo sea blanco o transparente si prefieres
-    pdf.setDrawColor(50, 50, 50);
-    pdf.setFillColor(255, 255, 255); // Fondo interno
-    pdf.roundedRect(outerX, outerY, outerW, outerH, 3, 3, 'FD');
+    // 1. Títulos superiores (Título y Fechas)
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    pdf.setFontSize(12);
+    pdf.text(titulo, x, y - 2);
+    
+    pdf.setFontSize(8);
+    const dateStr = `Inicio: ${fechaInicio}     Fin: ${fechaFin}`;
+    pdf.text(dateStr, x + w - pdf.getTextWidth(dateStr), y - 2);
 
-    // 2. Dibujar los bloques dentro del marco
+    // 2. Dibujar el marco redondeado contenedor
+    pdf.setDrawColor(0, 0, 0);
+    pdf.roundedRect(x, y, w, h, 3, 3, 'D');
+
+    // 3. Dibujar los bloques dentro del marco
     const totalSemanas = bloques.reduce((acc, b) => acc + b.semanas, 0) || 1;
-    let cursorX = outerX;
+    let cursorX = x;
 
-    // Usar un clip para que los bloques no se salgan de las esquinas redondeadas
-    // Esto es un truco técnico: los bloques se dibujarán solo dentro del área del roundedRect
     pdf.saveGraphicsState();
-    pdf.roundedRect(outerX, outerY, outerW, outerH, 3, 3, null);
+    pdf.roundedRect(x, y, w, h, 3, 3, null);
     pdf.clip();
 
     bloques.forEach(b => {
-        const w = (outerW * b.semanas) / totalSemanas;
+        const bW = (w * b.semanas) / totalSemanas;
         pdf.setFillColor(...colores[b.fase]);
-        pdf.rect(cursorX, outerY, w, outerH, 'F');
+        pdf.rect(cursorX, y, bW, h, 'F');
 
-        // Texto: Fase y Semanas
-        pdf.setTextColor(...colores.negro);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(6);
-        pdf.text(b.fase.toUpperCase(), cursorX + w/2, outerY + 5, { align: 'center' });
-        pdf.text(`${b.semanas}S`, cursorX + w/2, outerY + 9, { align: 'center' });
+        // Texto: Fase y Semanas dentro de cada bloque
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(8);
+        pdf.text(b.fase.toUpperCase(), cursorX + bW/2, y + 10, { align: 'center' });
+        pdf.text(`${b.semanas}S`, cursorX + bW/2, y + 18, { align: 'center' });
 
-        cursorX += w;
+        cursorX += bW;
     });
     pdf.restoreGraphicsState();
 
-    // 3. Texto exterior (Título y Total)
-    pdf.setTextColor(0, 0, 0); // Texto negro para el PDF
-    pdf.setFontSize(8);
-    pdf.text(titulo, outerX, outerY - 2);
-    pdf.text(`TOTAL: ${total} SEMANAS`, outerX + outerW - pdf.getTextWidth(`TOTAL: ${total} SEMANAS`), outerY - 2);
+    // 4. Total de semanas inferior
+    pdf.setFontSize(10);
+    pdf.text(`TOTAL: ${total} SEMANAS`, x, y + h + 6);
 
     pdf.save('Macrociclo.pdf');
 }
