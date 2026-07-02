@@ -1,20 +1,14 @@
 {
-  "name": "Creador Kaska.Climb",
-  "short_name": "Creador tablas",
-  "start_url": "./index.html",
+  "name": "Kaska Climb",
+  "short_name": "Kaska",
+  "start_url": "/Semanas.html",
   "display": "standalone",
-  "scope": ".",
-  "background_color": "#ffffff",
-  "theme_color": "#333333",
+  "background_color": "#121212",
+  "theme_color": "#121212",
   "icons": [
     {
-      "src": "logo.png",
+      "src": "/logo.png",
       "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "logo.png",
-      "sizes": "512x512",
       "type": "image/png"
     }
   ]
