@@ -144,24 +144,12 @@
         };
         input.click();
     }
-const PLAN_POR_DEFECTO = {
-        "titulo": "MACROCICLO MIKEL GARCÍA",
-        "inicio": "2026-06-29",
-        "bloques": [
-            {"fase": "reox", "semanas": 6}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 4},
-            {"fase": "desox", "semanas": 4}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 3}, {"fase": "aero", "semanas": 4}
-        ]
-    };
 
-   // --- CONFIGURACIÓN POR DEFECTO ---
-const PLAN_POR_DEFECTO = {
-    "titulo": "MACROCICLO MIKEL GARCÍA",
-    "inicio": "2026-06-29",
-    "bloques": [
-        {"fase": "reox", "semanas": 6}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 4},
-        {"fase": "desox", "semanas": 4}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 3}, {"fase": "aero", "semanas": 4}
-    ]
-};
+    function formatearFecha(iso) {
+        if (!iso) return '';
+        const [y, m, d] = iso.split('-');
+        return `${d}/${m}/${y}`;
+    }
 
 function exportarPDF() {
     calcularTotal();
@@ -264,6 +252,7 @@ function exportarPDF() {
 
     pdf.save('Macrociclo.pdf');
 }
+
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
 </body>
