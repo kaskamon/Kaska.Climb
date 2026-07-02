@@ -177,7 +177,7 @@
         const outerW = 150; 
         const outerX = (pageW - outerW) / 2;
         const outerY = 3;
-        const outerH = 38;
+        const outerH = 8;
 
         // Dibujamos solo la tabla redondeada
         pdf.setDrawColor(...colores.borde);
@@ -188,11 +188,11 @@
 
         pdf.setTextColor(...colores.negro);
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(9.5); // +5%
+        pdf.setFontSize(9.5);
         pdf.text(titulo, left, top);
 
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(8); // +5%
+        pdf.setFontSize(8);
         const dateStr = `Inicio: ${fechaInicio}     Fin: ${fechaFin}`;
         const dateW = pdf.getTextWidth(dateStr);
         pdf.text(dateStr, outerX + outerW - dateW - 4, top);
@@ -211,7 +211,7 @@
 
             pdf.setTextColor(...colores.negro);
             pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(6.3); // +5%
+            pdf.setFontSize(8)
 
             const t1 = b.fase.toUpperCase();
             const t2 = `${b.semanas}S`;
@@ -220,7 +220,7 @@
             cursorX += w;
         });
 
-        pdf.setFontSize(7.5); // +5%
+        pdf.setFontSize(9)
         pdf.text(`TOTAL: ${total} SEMANAS`, left, outerY + outerH - 4);
 
         pdf.save('Macrociclo_Limpio.pdf');
