@@ -145,20 +145,19 @@
         input.click();
     }
 
-    function formatearFecha(iso) {
-        if (!iso) return '';
-        const [y, m, d] = iso.split('-');
-        return `${d}/${m}/${y}`;
-    }
-
 function exportarPDF() {
         calcularTotal();
 
         const { jsPDF } = window.jspdf;
+        
+        // Reducimos el ancho total un 10%: de 210mm a 189mm
+        const pageW = 189; 
+        const pageH = 44; 
+
         const pdf = new jsPDF({
             orientation: 'landscape',
             unit: 'mm',
-            format: [44, 210]
+            format: [pageH, pageW]
         });
 
         const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
@@ -183,15 +182,12 @@ function exportarPDF() {
             tap: [255, 212, 59]
         };
 
-        const pageW = 210;
-        const pageH = 44;
-
+        // Rellenar fondo del nuevo tamaño
         pdf.setFillColor(...colores.fondo);
         pdf.rect(0, 0, pageW, pageH, 'F');
 
-        // AJUSTE: Reducción horizontal del 10%
-        // Aumentamos los márgenes laterales (de 2mm a aprox 12mm) para estrechar el conjunto
-        const mX = 12; 
+        // Márgenes ajustados al nuevo ancho
+        const mX = 4;
         const mY = 4;
         const outerX = mX;
         const outerY = mY;
