@@ -23,7 +23,6 @@
         .dia-columna { background: var(--input-bg); border-radius: 6px; padding: 8px; border: 1px solid var(--border-general); display: flex; align-items: center; gap: 8px; min-height: 40px; }
         .dia-nombre { width: 35px; flex-shrink: 0; font-size: 0.65em; color: #cbd5e1; text-transform: uppercase; font-weight: bold; text-align: center; background: var(--btn-bg); padding: 4px; border-radius: 4px; pointer-events: none; }
         
-        /* Sesiones: ancho controlado */
         .sesion { background: #475569; padding: 5px 8px; border-radius: 4px; cursor: move; border: 1px solid var(--border-general); flex-grow: 1; display: flex; align-items: center; min-height: 35px; text-transform: uppercase; color: #000; font-weight: bold; }
         .sesion.roca { background-color: var(--roca) !important; }
         .sesion.antagonistas { background-color: var(--antagonistas) !important; }
@@ -35,7 +34,8 @@
         .btn-link { font-size: 0.6em; text-decoration: underline; cursor: pointer; justify-self: end; }
         
         #banco { width: 360px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; box-sizing: border-box; }
-        .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.85em; text-decoration: none; display: block; text-align: center; }
+        /* Botones unificados */
+        .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 0.85em; text-decoration: none; display: block; text-align: center; }
         .acciones-container { display:grid; grid-template-columns: 1fr 1fr; gap: 8px; width: 360px; }
     </style>
 </head>
@@ -75,7 +75,7 @@
         <div class="acciones-container">
             <button class="btn-action" onclick="guardar()">Guardar</button>
             <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
-            <button class="btn-action" onclick="alert('Links reiniciados')">Limpiar Links</button>
+            <button class="btn-action" onclick="restablecerLinks()">Limpiar Links</button>
             <button class="btn-action" onclick="window.print()">Exportar PDF</button>
         </div>
     </div>
@@ -83,7 +83,14 @@
 
 <script>
     function actualizarFecha(val) { const [y, m, d] = val.split('-'); document.getElementById('displayDate').innerText = `${d}/${m}/${y}`; }
-    function addLink(el) { let u = prompt("Enlace:"); if(u) el.outerHTML = `<a href="${u}" target="_blank" style="color:black; font-size: 0.6em; font-weight:bold;">▶ Ver</a>`; }
+    function addLink(el) { let u = prompt("Enlace:"); if(u) el.outerHTML = `<a href="${u}" target="_blank" class="link-visual" style="color:black; font-size: 0.6em; font-weight:bold;">▶ Ver</a>`; }
+    
+    function restablecerLinks() {
+        document.querySelectorAll('.link-visual').forEach(el => {
+            el.outerHTML = '<span class="btn-link" onclick="addLink(this)">Link</span>';
+        });
+    }
+    
     function guardar() { localStorage.gridCont = document.getElementById('grid').innerHTML; alert("Guardado"); }
     function limpiarTabla() { localStorage.removeItem('gridCont'); location.reload(); }
     
