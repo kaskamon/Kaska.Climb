@@ -153,104 +153,100 @@ const PLAN_POR_DEFECTO = {
         ]
     };
 
-    function exportarPDF() {
-        calcularTotal();
+   // --- CONFIGURACIÓN POR DEFECTO ---
+const PLAN_POR_DEFECTO = {
+    "titulo": "MACROCICLO MIKEL GARCÍA",
+    "inicio": "2026-06-29",
+    "bloques": [
+        {"fase": "reox", "semanas": 6}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 4},
+        {"fase": "desox", "semanas": 4}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 3}, {"fase": "aero", "semanas": 4}
+    ]
+};
 
-        const { jsPDF } = window.jspdf;
-        
-        // 189mm es el 90% de 210mm (reducido un 10% horizontal)
-        const pageW = 189; 
-        const pageH = 44;
-
-        const pdf = new jsPDF({
-            orientation: 'landscape',
-            unit: 'mm',
-            format: [pageH, pageW]
-        });
-
-        const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
-        const fechaInicio = formatearFecha(document.getElementById('fechaInicio').value);
-        const fechaFin = formatearFecha(document.getElementById('fechaFin').value);
-        const total = document.getElementById('totalSemanas').innerText.trim();
-        const bloques = Array.from(document.querySelectorAll('.bloque')).map(b => ({
-            fase: b.className.split(' ')[1],
-            semanas: parseInt(b.style.flex)
-        }));
-
-        const colores = {
-            fondo: [18, 18, 18],
-            tarjeta: [31, 31, 31],
-            texto: [255, 255, 255],
-            negro: [0, 0, 0],
-            borde: [55, 55, 55],
-            fmax: [255, 107, 107],
-            desox: [77, 171, 247],
-            reox: [105, 219, 124],
-            aero: [177, 151, 252],
-            tap: [255, 212, 59]
-        };
-
-        // Fondo
-        pdf.setFillColor(...colores.fondo);
-        pdf.rect(0, 0, pageW, pageH, 'F');
-
-        // Recuadro redondeado
-        const outerX = 4;
-        const outerY = 4;
-        const outerW = pageW - 8;
-        const outerH = pageH - 8;
-
-        pdf.setFillColor(...colores.tarjeta);
-        pdf.setDrawColor(...colores.borde);
-        pdf.roundedRect(outerX, outerY, outerW, outerH, 3, 3, 'FD');
-
-        // Textos
-        const contentX = outerX + 4;
-        const contentY = outerY + 6;
-
-        pdf.setTextColor(...colores.texto);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(9);
-        pdf.text(titulo, contentX, contentY);
-
-        pdf.setFontSize(7.5);
-        const dateStr = `Inicio: ${fechaInicio}     Fin: ${fechaFin}`;
-        pdf.text(dateStr, outerX + outerW - pdf.getTextWidth(dateStr) - 4, contentY);
-
-        // Barra de bloques
-        const barX = contentX;
-        const barY = outerY + 12;
-        const barW = outerW - 8;
-        const barH = 12;
-        const totalSemanas = bloques.reduce((acc, b) => acc + b.semanas, 0) || 1;
-
-        let cursorX = barX;
-        bloques.forEach(b => {
-            const w = (barW * b.semanas) / totalSemanas;
-            const color = colores[b.fase] || colores.tap;
-            pdf.setFillColor(...color);
-            pdf.rect(cursorX, barY, w, barH, 'F');
-
-            pdf.setTextColor(...colores.negro);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(6);
-
-            const t1 = b.fase.toUpperCase();
-            const t2 = `${b.semanas}S`;
-            pdf.text(t1, cursorX + w/2 - pdf.getTextWidth(t1)/2, barY + 5);
-            pdf.text(t2, cursorX + w/2 - pdf.getTextWidth(t2)/2, barY + 9);
-
-            cursorX += w;
-        });
-
-        // Total
-        pdf.setTextColor(...colores.texto);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(7);
-        pdf.text(`TOTAL: ${total} SEMANAS`, contentX, outerY + outerH - 4);
-
-        pdf.save('Macrociclo.pdf');
+// --- FUNCIÓN EXPORTAR PDF REVISADA LÍNEA A LÍNEA ---
+function exportarPDF() {
+    // 1. Validar que la librería esté cargada
+    if (!window.jspdf) {
+        alert("La librería jsPDF no está cargada.");
+        return;
     }
+
+    calcularTotal(); // Asegura cálculos actualizados
+
+    const { jsPDF } = window.jspdf;
+    
+    // 2. Definir dimensiones: Reducido un 10% (original 210mm -> 189mm)
+    const pW = 189;
+    const pH = 44;
+    const doc = new jsPDF('landscape', 'mm', [pH, pW]);
+
+    // 3. Obtener datos del DOM
+    const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
+    const fI = formatearFecha(document.getElementById('fechaInicio').value);
+    const fF = formatearFecha(document.getElementById('fechaFin').value);
+    const total = document.getElementById('totalSemanas').innerText.trim();
+    const bloques = Array.from(document.querySelectorAll('.bloque')).map(b => ({
+        fase: b.className.split(' ')[1],
+        semanas: parseInt(b.style.flex)
+    }));
+
+    // 4. Dibujar fondo negro (ocupa toda la página reducida)
+    doc.setFillColor(18, 18, 18);
+    doc.rect(0, 0, pW, pH, 'F');
+
+    // 5. Dibujar tarjeta redondeada (ajustada a nuevos márgenes)
+    doc.setFillColor(31, 31, 31);
+    doc.setDrawColor(55, 55, 55);
+    doc.roundedRect(4, 4, pW - 8, pH - 8, 3, 3, 'FD');
+
+    // 6. Títulos y Fechas
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text(titulo, 8, 10);
+    
+    doc.setFontSize(7.5);
+    const fechaText = `Inicio: ${fI}     Fin: ${fF}`;
+    doc.text(fechaText, (pW - 4) - doc.getTextWidth(fechaText), 10);
+
+    // 7. Barra de bloques (Calculada dinámicamente)
+    const totalSemanas = bloques.reduce((acc, b) => acc + b.semanas, 0) || 1;
+    let cursorX = 8;
+    const barW = pW - 16; 
+    const barY = 16;
+    const barH = 12;
+
+    const mapaColores = {
+        'fmax': [255, 107, 107],
+        'desox': [77, 171, 247],
+        'reox': [105, 219, 124],
+        'aero': [177, 151, 252],
+        'tap': [255, 212, 59]
+    };
+
+    bloques.forEach(b => {
+        const w = (barW * b.semanas) / totalSemanas;
+        const color = mapaColores[b.fase] || [255, 212, 59];
+        
+        doc.setFillColor(...color);
+        doc.rect(cursorX, barY, w, barH, 'F');
+        
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(6);
+        doc.text(b.fase.toUpperCase(), cursorX + w/2, barY + 5, {align: 'center'});
+        doc.text(b.semanas + 'S', cursorX + w/2, barY + 9, {align: 'center'});
+        
+        cursorX += w;
+    });
+
+    // 8. Pie de página (Total)
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    doc.text(`TOTAL: ${total} SEMANAS`, 8, pH - 6);
+
+    // 9. Guardar
+    doc.save('Macrociclo.pdf');
+}
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
 </body>
