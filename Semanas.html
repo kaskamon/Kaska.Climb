@@ -16,18 +16,26 @@
         .layout-editor { display: flex; gap: 40px; justify-content: center; align-items: flex-start; }
         
         .columna-izquierda { width: 400px; }
-        .columna-derecha { width: 400px; display: flex; flex-direction: column; gap: 20px; margin-top: 100px; } /* Ajuste de altura */
+        .columna-derecha { width: 400px; display: flex; flex-direction: column; gap: 20px; margin-top: 140px; }
         
         .header { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg-panel); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-general); }
-        .head-val { background: var(--input-bg); border: 1px solid #444; border-radius: 4px; font-weight: bold; color: #69db7c; padding: 2px 6px; cursor: pointer; }
+        .head-val { background: var(--input-bg); border: 1px solid #444; border-radius: 4px; font-weight: bold; color: #69db7c; padding: 2px 6px; cursor: pointer; display: inline-block; }
         
         .semana-grid { display: grid; gap: 8px; background: var(--bg-panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border-general); }
         .dia-columna { background: var(--input-bg); border-radius: 6px; padding: 8px; border: 1px solid var(--border-general); display: flex; align-items: center; gap: 8px; min-height: 40px; }
         .dia-nombre { width: 35px; font-size: 0.65em; color: #cbd5e1; text-transform: uppercase; font-weight: bold; text-align: center; background: var(--btn-bg); padding: 4px; border-radius: 4px; }
         
-        #banco { width: 100%; min-height: 150px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; box-sizing: border-box; }
-        
-        .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 8px; border-radius: 4px; cursor: pointer; }
+        /* Estilos Sesiones */
+        .sesion { background: #475569; padding: 5px 8px; border-radius: 4px; cursor: move; border: 1px solid var(--border-general); flex-grow: 1; display: flex; align-items: center; min-height: 35px; text-transform: uppercase; color: #000; font-weight: bold; }
+        .sesion.roca { background-color: var(--roca) !important; }
+        .sesion.antagonistas { background-color: var(--antagonistas) !important; }
+        .sesion.reox { background-color: var(--reox) !important; }
+        .sesion.descanso { background-color: var(--descanso) !important; }
+        .sesion-contenido { display: grid; grid-template-columns: 20px 1fr 40px; align-items: center; width: 100%; gap: 5px; }
+        .btn-del-sesion { cursor: pointer; font-size: 0.8em; }
+
+        #banco { width: 100%; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; }
+        .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 0.85em; }
     </style>
 </head>
 <body>
@@ -37,7 +45,7 @@
         <div class="header">
             <div class="head-item">Semana: <span class="head-val" contenteditable="true" id="h1">01</span></div>
             <div class="head-item">Fecha: 
-                <span class="head-val" id="displayDate" onclick="document.getElementById('hiddenDate').showPicker()">Seleccionar</span>
+                <span class="head-val" id="displayDate" onclick="document.getElementById('hiddenDate').showPicker()">Fecha</span>
                 <input type="date" id="hiddenDate" style="position:absolute; visibility:hidden;" onchange="actualizarFecha(this.value)">
             </div>
             <div class="head-item">Mesociclo: <span class="head-val" contenteditable="true" id="h3">REOX</span></div>
@@ -57,10 +65,16 @@
     <div class="columna-derecha">
         <div id="banco">
             <h4 style="margin:0; color:#cbd5e1;">Banco de sesiones</h4>
-            </div>
+            <div class="sesion roca"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Roca/roco</span></div></div>
+            <div class="sesion antagonistas"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Antagonistas</span></div></div>
+            <div class="sesion reox"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">REOX (ROCO)</span></div></div>
+            <div class="sesion descanso"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Descanso</span></div></div>
+        </div>
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-            <button class="btn-action" onclick="guardar()">Guardar</button>
-            <button class="btn-action" onclick="limpiarTabla()">Limpiar</button>
+            <button class="btn-action" onclick="alert('Guardado')">Guardar</button>
+            <button class="btn-action" onclick="location.reload()">Limpiar Tabla</button>
+            <button class="btn-action" onclick="alert('Links reiniciados')">Limpiar Links</button>
+            <button class="btn-action" onclick="window.print()">Exportar PDF</button>
         </div>
     </div>
 </div>
