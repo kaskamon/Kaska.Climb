@@ -42,28 +42,30 @@
         .btn-link { grid-column: 3; color: #000; cursor: pointer; font-size: 0.6em; text-decoration: underline; justify-self: end; }
         .link-btn { grid-column: 3; color: #000; font-size: 0.6em; text-decoration: none; justify-self: end; font-weight: bold; cursor: default; }
         
-        /* Botones oscuros, finos y forzados al ancho */
+        /* Ajuste estricto al ancho del banco */
         .btn-action { 
             background: var(--input-bg); 
             border: 1px solid var(--border-general); 
             color: #fff; 
-            padding: 6px 4px; 
+            padding: 8px 0; 
             border-radius: 4px; 
             font-size: 0.7em; 
             cursor: pointer; 
             width: 100%; 
-            box-sizing: border-box; 
+            display: block;
+            box-sizing: border-box; /* Esto es la clave para el ancho */
         }
         
         #banco { width: 250px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; }
         
-        /* Cuadrícula 2x2: Ancho fijo 250px, mayor separación (gap) */
+        /* Cuadrícula 2x2 que ocupa los 250px exactos */
         .grid-botones-abajo { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
-            gap: 15px; 
+            gap: 10px; 
             width: 250px; 
-            margin-top: 15px; 
+            margin-top: 15px;
+            box-sizing: border-box;
         }
 
         @media print {
