@@ -32,12 +32,11 @@
         .sesion.descanso { background-color: var(--descanso) !important; }
         .sesion-contenido { display: grid; grid-template-columns: 20px 1fr 40px; align-items: center; width: 100%; gap: 5px; }
         .sesion-text { grid-column: 2; text-align: center; font-size: 0.7em; outline: none; }
-        .btn-del-sesion { grid-column: 1; color: #000; cursor: pointer; font-size: 0.8em; font-weight: bold; display:none; } /* Oculto en vista edición */
+        .btn-del-sesion { grid-column: 1; color: #000; cursor: pointer; font-size: 0.8em; font-weight: bold; }
         .btn-link { grid-column: 3; color: #000; cursor: pointer; font-size: 0.6em; text-decoration: underline; justify-self: end; }
         .link-btn { grid-column: 3; color: #000; font-size: 0.6em; text-decoration: none; justify-self: end; font-weight: bold; cursor: default; }
         .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 6px 12px; border-radius: 4px; font-size: 0.75em; cursor: pointer; }
         #banco { width: 250px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; }
-        #banco .btn-del-sesion { display: block; } /* Solo visible en banco */
     </style>
 </head>
 <body>
@@ -65,11 +64,12 @@
         <div class="no-print" style="margin-top:15px; display:flex; flex-wrap:wrap; gap:8px;">
             <button class="btn-action" onclick="guardar()">Guardar</button>
             <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
+            <button class="btn-action" onclick="restablecerLinks()">Limpiar Links</button>
             <button class="btn-action" onclick="exportarPDF()">Exportar PDF</button>
         </div>
     </div>
 
-    <div id="banco">
+    <div id="banco" class="no-print">
         <h4 style="margin-top:0; color:#cbd5e1;">Banco de sesiones</h4>
         <div class="sesion roca"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Roca/roco</span></div></div>
         <div class="sesion antagonistas"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Antagonistas</span><span class="btn-link" onclick="addLink(this)">Link</span></div></div>
@@ -77,6 +77,12 @@
         <div class="sesion descanso"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Descanso</span></div></div>
     </div>
 </div> 
+
+<div class="no-print" style="text-align: center; margin-top: 20px; width: 100%;">
+    <a href="index.html" style="text-decoration: none; color: white; font-weight: 900; font-family: sans-serif;">
+        <b>&larr;</b> INICIO
+    </a>
+</div>
 
 <script>
     function act() { 
@@ -108,6 +114,7 @@
     });
 
     function addLink(el) { let u = prompt("Enlace:"); if(u) el.outerHTML = `<a href="${u}" target="_blank" class="link-btn">▶ Ver</a>`; }
+    function restablecerLinks() { document.querySelectorAll('.link-btn').forEach(el => el.outerHTML = '<span class="btn-link" onclick="addLink(this)">Link</span>'); }
     
     function guardar() { 
         localStorage.g = document.getElementById('grid').innerHTML; 
@@ -115,10 +122,9 @@
         alert("Guardado"); 
     }
 
-    // --- FUNCIÓN DE EXPORTACIÓN PDF (jsPDF) ---
+    // --- FUNCIÓN EXPORTAR PDF ---
     function exportarPDF() {
         const { jsPDF } = window.jspdf;
-        // Tamaño personalizado definido en el @media print anterior
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [115, 67] });
 
         pdf.setFont("helvetica", "bold");
@@ -138,7 +144,6 @@
             let x = 15;
             sesiones.forEach(s => {
                 const texto = s.querySelector('.sesion-text').innerText;
-                // Dibujar caja simple
                 pdf.setDrawColor(0);
                 pdf.rect(x, y-4, 15, 6);
                 pdf.setFontSize(6);
@@ -147,7 +152,6 @@
             });
             y += 12;
         });
-
         pdf.save('Semana.pdf');
     }
 
