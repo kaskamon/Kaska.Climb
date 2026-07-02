@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#333333">
     <meta charset="UTF-8">
     <title>Kaska.Climb | Semanas</title>
-<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    </head>
     <style>
         :root { 
             --fmax: #3b82f6; --reox: #69db7c; --roca: #ffd43b; 
@@ -63,15 +60,14 @@
             <div class="dia-columna" id="d6"><div class="dia-nombre">SÁB</div></div>
             <div class="dia-columna" id="d7"><div class="dia-nombre">DOM</div></div>
         </div>
-        <div class="no-print" style="margin-top:15px; display:flex; flex-wrap:wrap; gap:8px;">
-            <button class="btn-action" onclick="guardar()">Guardar</button>
+        <div style="margin-top:15px; display:flex; flex-wrap:wrap; gap:8px;">
+            <button class="btn-action" onclick="guardarJSON()">Guardar JSON</button>
             <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
-            <button class="btn-action" onclick="restablecerLinks()">Limpiar Links</button>
             <button class="btn-action" onclick="exportarPDF()">Exportar PDF</button>
         </div>
     </div>
 
-    <div id="banco" class="no-print">
+    <div id="banco">
         <h4 style="margin-top:0; color:#cbd5e1;">Banco de sesiones</h4>
         <div class="sesion roca"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Roca/roco</span></div></div>
         <div class="sesion antagonistas"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Antagonistas</span><span class="btn-link" onclick="addLink(this)">Link</span></div></div>
@@ -80,71 +76,57 @@
     </div>
 </div> 
 
-<div class="no-print" style="text-align: center; margin-top: 20px; width: 100%;">
-    <a href="index.html" style="text-decoration: none; color: white; font-weight: 900; font-family: sans-serif;">
-        <b>&larr;</b> INICIO
-    </a>
-</div>
-
 <script>
+    const PLAN_POR_DEFECTO = {
+        grid: '<div class="dia-columna" id="d1"><div class="dia-nombre">LUN</div></div><div class="dia-columna" id="d2"><div class="dia-nombre">MAR</div></div><div class="dia-columna" id="d3"><div class="dia-nombre">MIÉ</div></div><div class="dia-columna" id="d4"><div class="dia-nombre">JUE</div></div><div class="dia-columna" id="d5"><div class="dia-nombre">VIE</div></div><div class="dia-columna" id="d6"><div class="dia-nombre">SÁB</div></div><div class="dia-columna" id="d7"><div class="dia-nombre">DOM</div></div>',
+        h: {h1: "01", h2val: "", h3: "REOX", h4: "1/4"}
+    };
+
     function act() { 
         document.querySelectorAll('.dia-columna').forEach(d => new Sortable(d, {group:'s', filter:'.dia-nombre'}));
         new Sortable(document.getElementById('banco'), {group:{name:'s', pull:'clone', put:false}, sort:false}); 
     }
-    
+
     function actualizarFecha(val) {
-        if(!val) return;
         const [y, m, d] = val.split('-');
         document.getElementById('displayDate').innerText = `${d}/${m}/${y}`;
     }
 
     function limpiarTabla() {
         document.querySelectorAll('.dia-columna').forEach(d => {
-            Array.from(d.children).forEach(child => {
-                if(!child.classList.contains('dia-nombre')) child.remove();
-            });
+            Array.from(d.children).forEach(c => { if(!c.classList.contains('dia-nombre')) c.remove(); });
         });
     }
 
-    document.addEventListener('click', (e) => {
-        let s = e.target.closest('.sesion');
-        if (e.target.classList.contains('sesion-text')) return;
-        if(s && !s.parentElement.id.includes('banco')) {
-            e.preventDefault();
-            s.after(s.cloneNode(true));
-        }
-    });
-
     function addLink(el) { let u = prompt("Enlace:"); if(u) el.outerHTML = `<a href="${u}" target="_blank" class="link-btn">▶ Ver</a>`; }
-    function restablecerLinks() { document.querySelectorAll('.link-btn').forEach(el => el.outerHTML = '<span class="btn-link" onclick="addLink(this)">Link</span>'); }
-    
-    function guardar() { 
-        localStorage.g = document.getElementById('grid').innerHTML; 
-        localStorage.h = JSON.stringify({h1:h1.innerText, h2val:hiddenDate.value, h3:h3.innerText, h4:h4.innerText}); 
-        alert("Guardado"); 
+
+    // Guardado JSON con nombre
+    function guardarJSON() {
+        const nombre = prompt("Nombre del archivo:", "semana.json");
+        if (!nombre) return;
+        const data = { grid: document.getElementById('grid').innerHTML, h: {h1:h1.innerText, h2val:hiddenDate.value, h3:h3.innerText, h4:h4.innerText} };
+        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; a.click();
     }
 
-  async function exportarPDF() {
-    const { jsPDF } = window.jspdf;
-    // Seleccionamos solo el contenedor que quieres exportar
-    const elemento = document.querySelector('.contenedor-principal');
+    async function exportarPDF() {
+        const { jsPDF } = window.jspdf;
+        const elemento = document.querySelector('.contenedor-principal');
+        const canvas = await html2canvas(elemento, { backgroundColor: '#121212', scale: 2 });
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        pdf.addImage(imgData, 'PNG', 0, 0, 210, (canvas.height * 210) / canvas.width);
+        pdf.save('Semana_Kaska.pdf');
+    }
 
-    // Usamos html2canvas para convertir el HTML a una imagen (respeta colores y estilos)
-    const canvas = await html2canvas(elemento, {
-        backgroundColor: '#121212', // Fondo oscuro de tu app
-        scale: 2 // Mejora la resolución
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-    
-    // Crear PDF: el tamaño dependerá de la proporción de tu contenedor
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save('MiSemana.pdf');
-}
+    window.onload = () => { 
+        let datos = localStorage.g ? { grid: localStorage.g, h: JSON.parse(localStorage.h) } : PLAN_POR_DEFECTO;
+        document.getElementById('grid').innerHTML = datos.grid;
+        h1.innerText = datos.h.h1; hiddenDate.value = datos.h.h2val; 
+        if(datos.h.h2val) actualizarFecha(datos.h.h2val);
+        h3.innerText = datos.h.h3; h4.innerText = datos.h.h4;
+        act();
+    };
 </script>
 </body>
 </html>
