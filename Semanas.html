@@ -14,66 +14,74 @@
         .head-val { background: var(--input-bg); border: 1px solid #444; border-radius: 4px; font-weight: bold; color: #69db7c; padding: 2px 6px; cursor: pointer; }
         .semana-grid { display: grid; gap: 8px; background: var(--bg-panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border-general); }
         .dia-columna { background: var(--input-bg); border-radius: 6px; padding: 8px; border: 1px solid var(--border-general); display: flex; align-items: center; gap: 8px; min-height: 40px; }
-        .dia-nombre { width: 35px; font-size: 0.65em; color: #cbd5e1; font-weight: bold; background: var(--btn-bg); padding: 4px; border-radius: 4px; }
-        .sesion { background: #475569; padding: 5px 8px; border-radius: 4px; cursor: move; border: 1px solid var(--border-general); flex-grow: 1; display: flex; align-items: center; min-height: 35px; color: #000; font-weight: bold; }
+        .dia-nombre { width: 35px; font-size: 0.65em; color: #cbd5e1; font-weight: bold; text-align: center; background: var(--btn-bg); padding: 4px; border-radius: 4px; }
+        .sesion { background: #475569; padding: 5px 8px; border-radius: 4px; cursor: move; border: 1px solid var(--border-general); flex-grow: 1; display: flex; align-items: center; min-height: 35px; color: #000; font-weight: bold; text-transform: uppercase; }
         .sesion.fmax { background-color: var(--fmax) !important; } .sesion.reox { background-color: var(--reox) !important; } .sesion.roca { background-color: var(--roca) !important; } .sesion.antagonistas { background-color: var(--antagonistas) !important; } .sesion.descanso { background-color: var(--descanso) !important; }
-        .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .btn-del-sesion { color: #000; cursor: pointer; font-weight: bold; margin-right: 5px; }
+        .link-btn { color: #000; font-size: 0.6em; text-decoration: underline; font-weight: bold; margin-left: 5px; }
+        .btn-action { background: var(--btn-bg); border: 1px solid var(--border-general); color: #fff; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-right: 5px; }
         #banco { width: 250px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; }
     </style>
 </head>
 <body>
 
 <div class="layout-editor">
-    <div class="contenedor-principal" id="areaCaptura">
+    <div class="contenedor-principal">
         <div class="header">
             <div>Semana: <span class="head-val" contenteditable="true" id="h1">01</span></div>
             <div>Fecha: <span class="head-val" id="displayDate" onclick="document.getElementById('hiddenDate').showPicker()">DD/MM/AAAA</span><input type="date" id="hiddenDate" style="display:none" onchange="actualizarFecha(this.value)"></div>
         </div>
         <div class="semana-grid" id="grid"></div>
-        <div style="margin-top:15px; display:flex; gap:8px;">
-            <button class="btn-action" onclick="guardarJSON()">Guardar</button>
+        <div style="margin-top:15px;">
+            <button class="btn-action" onclick="guardar()">Guardar</button>
             <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
             <button class="btn-action" onclick="restablecerLinks()">Limpiar Links</button>
             <button class="btn-action" onclick="exportarPDF()">Exportar PDF</button>
         </div>
     </div>
-    <div id="banco"></div>
+    <div id="banco">
+        <h4>Banco</h4>
+        <div class="sesion roca"><div class="btn-del-sesion" onclick="this.parentElement.remove()">X</div><span>Roca</span></div>
+        <div class="sesion reox"><div class="btn-del-sesion" onclick="this.parentElement.remove()">X</div><span>REOX</span><span class="link-btn" onclick="addLink(this)">Link</span></div>
+    </div>
 </div>
 
 <script>
-    const PLAN_POR_DEFECTO = '<div class="dia-columna" id="d1"><div class="dia-nombre">LUN</div></div><div class="dia-columna" id="d2"><div class="dia-nombre">MAR</div></div><div class="dia-columna" id="d3"><div class="dia-nombre">MIÉ</div></div><div class="dia-columna" id="d4"><div class="dia-nombre">JUE</div></div><div class="dia-columna" id="d5"><div class="dia-nombre">VIE</div></div><div class="dia-columna" id="d6"><div class="dia-nombre">SÁB</div></div><div class="dia-columna" id="d7"><div class="dia-nombre">DOM</div></div>';
+    const PREDETERMINADO = '<div class="dia-columna" id="d1"><div class="dia-nombre">LUN</div></div><div class="dia-columna" id="d2"><div class="dia-nombre">MAR</div></div><div class="dia-columna" id="d3"><div class="dia-nombre">MIÉ</div></div><div class="dia-columna" id="d4"><div class="dia-nombre">JUE</div></div><div class="dia-columna" id="d5"><div class="dia-nombre">VIE</div></div><div class="dia-columna" id="d6"><div class="dia-nombre">SÁB</div></div><div class="dia-columna" id="d7"><div class="dia-nombre">DOM</div></div>';
 
-    function guardarJSON() {
-        const data = { grid: document.getElementById('grid').innerHTML, h1: h1.innerText, date: hiddenDate.value };
-        const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); 
-        a.download = prompt("Nombre del archivo:", "semana.json") || "semana.json";
-        a.click();
+    function act() { 
+        document.querySelectorAll('.dia-columna').forEach(d => new Sortable(d, {group:'s', filter:'.dia-nombre'}));
+        new Sortable(document.getElementById('banco'), {group:{name:'s', pull:'clone', put:false}, sort:false}); 
+    }
+
+    function addLink(el) { let u = prompt("Enlace:"); if(u) el.outerHTML = `<a href="${u}" target="_blank" class="link-btn">Ver</a>`; }
+    function restablecerLinks() { document.querySelectorAll('a.link-btn').forEach(el => el.outerHTML = '<span class="link-btn" onclick="addLink(this)">Link</span>'); }
+    function limpiarTabla() { document.querySelectorAll('.dia-columna').forEach(d => { Array.from(d.children).forEach(c => { if(!c.classList.contains('dia-nombre')) c.remove(); }); }); }
+    
+    function guardar() { 
+        localStorage.g = document.getElementById('grid').innerHTML; 
+        alert("Guardado en local"); 
     }
 
     function exportarPDF() {
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        pdf.text("Planificación Semanal: " + h1.innerText, 10, 10);
+        const pdf = new jsPDF();
+        pdf.text("Planificación: " + document.getElementById('h1').innerText, 10, 10);
         
         let y = 20;
         document.querySelectorAll('.dia-columna').forEach(col => {
-            pdf.text(col.innerText.substring(0,3), 10, y);
-            col.querySelectorAll('.link-btn').forEach(link => {
-                pdf.textWithLink("Ver Enlace", 30, y, { url: link.href });
+            pdf.text(col.innerText.split('\n')[0], 10, y);
+            col.querySelectorAll('a').forEach(a => {
+                pdf.textWithLink("Ver Enlace", 40, y, { url: a.href });
             });
             y += 10;
         });
-        pdf.save('Semana.pdf');
+        pdf.save('Planificacion.pdf');
     }
 
     window.onload = () => {
-        if (localStorage.getItem('g')) {
-            document.getElementById('grid').innerHTML = localStorage.getItem('g');
-        } else {
-            document.getElementById('grid').innerHTML = PLAN_POR_DEFECTO;
-        }
-        // ... (resto de funciones act(), limpiarTabla, etc)
+        document.getElementById('grid').innerHTML = localStorage.getItem('g') || PREDETERMINADO;
+        act();
     };
 </script>
 </body>
