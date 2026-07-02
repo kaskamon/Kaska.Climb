@@ -144,7 +144,7 @@
         return `${d}/${m}/${y}`;
     }
 
-    function exportarPDF() {
+   function exportarPDF() {
         calcularTotal();
 
         const { jsPDF } = window.jspdf;
@@ -153,7 +153,7 @@
             unit: 'mm',
             format: [44, 210]
         });
-
+        
         const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
         const fechaInicio = formatearFecha(document.getElementById('fechaInicio').value);
         const fechaFin = formatearFecha(document.getElementById('fechaFin').value);
@@ -164,45 +164,32 @@
         }));
 
         const colores = {
-            fondo: [18, 18, 18],
             tarjeta: [31, 31, 31],
-            texto: [255, 255, 255],
+            texto: [0, 0, 0],
             negro: [0, 0, 0],
-            borde: [55, 55, 55],
-            fmax: [255, 107, 107],
-            desox: [77, 171, 247],
-            reox: [105, 219, 124],
-            aero: [177, 151, 252],
-            tap: [255, 212, 59]
+            borde: [0, 0, 0],
+            fmax: [255, 107, 107], desox: [77, 171, 247], reox: [105, 219, 124], aero: [177, 151, 252], tap: [255, 212, 59]
         };
 
         const pageW = 210;
-        const pageH = 44;
-
-        pdf.setFillColor(...colores.fondo);
-        pdf.rect(0, 0, pageW, pageH, 'F');
-
-        // AJUSTE: Ancho reducido a 150mm y centrado
         const outerW = 150; 
         const outerX = (pageW - outerW) / 2;
         const outerY = 3;
         const outerH = 38;
 
-        pdf.setFillColor(...colores.tarjeta);
         pdf.setDrawColor(...colores.borde);
-        pdf.roundedRect(outerX, outerY, outerW, outerH, 3, 3, 'FD');
+        pdf.roundedRect(outerX, outerY, outerW, outerH, 3, 3, 'D');
 
         const left = outerX + 4;
         const top = outerY + 6;
 
-        pdf.setTextColor(...colores.texto);
+        pdf.setTextColor(...colores.negro);
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(9);
+        pdf.setFontSize(9.5);
         pdf.text(titulo, left, top);
 
-        // FECHAS: Aumentado tamaño de fuente y reposicionado a la derecha del recuadro
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(7.5);
+        pdf.setFontSize(8);
         const dateStr = `Inicio: ${fechaInicio}     Fin: ${fechaFin}`;
         const dateW = pdf.getTextWidth(dateStr);
         pdf.text(dateStr, outerX + outerW - dateW - 4, top);
@@ -210,37 +197,31 @@
         const barX = left + 1;
         const barY = outerY + 12;
         const barW = outerW - 8;
-        const barH = 12; // Un poco más alta la barra
+        const barH = 12;
         const totalSemanas = bloques.reduce((acc, b) => acc + b.semanas, 0) || 1;
 
         let cursorX = barX;
         bloques.forEach(b => {
             const w = (barW * b.semanas) / totalSemanas;
-            const color = colores[b.fase] || colores.tap;
-            pdf.setFillColor(...color);
-            pdf.rect(cursorX, barY, w, barH, 'F');
+            pdf.setFillColor(...colores[b.fase] || colores.tap);
+            pdf.rect(cursorX, barY, w, barH, 'FD');
 
             pdf.setTextColor(...colores.negro);
             pdf.setFont('helvetica', 'bold');
-            pdf.setFontSize(6);
+            pdf.setFontSize(6.3);
 
             const t1 = b.fase.toUpperCase();
             const t2 = `${b.semanas}S`;
             pdf.text(t1, cursorX + w/2 - pdf.getTextWidth(t1)/2, barY + 5);
             pdf.text(t2, cursorX + w/2 - pdf.getTextWidth(t2)/2, barY + 9);
-
             cursorX += w;
         });
 
-        pdf.setTextColor(...colores.texto);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(7);
+        pdf.setFontSize(7.5); // +5%
         pdf.text(`TOTAL: ${total} SEMANAS`, left, outerY + outerH - 4);
 
-        pdf.save('Macrociclo.pdf');
+        pdf.save('Macrociclo_nombrepdf');
     }
-
-    new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
 </body>
 </html>
