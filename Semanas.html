@@ -9,628 +9,158 @@
     <meta name="theme-color" content="#121212">
     <meta charset="UTF-8">
     <title>Kaska.Climb | Semanas</title>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-
     <style>
-        :root{
-            --fmax:#3b82f6;
-            --reox:#69db7c;
-            --roca:#ffd43b;
-            --antagonistas:#4dabf7;
-            --descanso:#ff6b6b;
-
-            --bg-principal:#121212;
-            --bg-panel:rgba(30,30,30,.85);
-            --input-bg:#2c2c2c;
-            --btn-bg:#3a3a3a;
-            --border-general:#4a4a4a;
+        :root { 
+            --fmax: #3b82f6; --reox: #69db7c; --roca: #ffd43b; 
+            --antagonistas: #4dabf7; --descanso: #ff6b6b;
+            --bg-principal: #121212; --bg-panel: rgba(30, 30, 30, 0.85);
+            --input-bg: #2c2c2c; --btn-bg: #3a3a3a; --border-general: #4a4a4a;
+        }
+        body { font-family: sans-serif; background-color: var(--bg-principal); color: white; padding: 20px; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        
+        .fondo-logo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-image: url('logo.png'); background-repeat: no-repeat; background-position: center; background-size: 100%; opacity: 0.2; z-index: -10; }
+        
+        .layout-editor { display: flex; gap: 20px; align-items: flex-start; justify-content: center; }
+        .contenedor-principal { width: 400px; flex-shrink: 0; background: var(--bg-panel); padding: 20px; border-radius: 10px; border: 1px solid var(--border-general); }
+        .header { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--bg-panel); padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--border-general); }
+        .head-item { font-size: 0.8em; font-weight: bold; }
+        .head-val { background: var(--input-bg); border: 1px solid #444; border-radius: 4px; font-weight: bold; color: #69db7c; padding: 2px 6px; display: inline-block; font-size: 0.9em; cursor: pointer; }
+        .date-input-hidden { position: absolute; opacity: 0; pointer-events: none; }
+        .semana-grid { display: grid; gap: 8px; background: var(--bg-panel); padding: 12px; border-radius: 10px; border: 1px solid var(--border-general); }
+        .dia-columna { background: var(--input-bg); border-radius: 6px; padding: 8px; border: 1px solid var(--border-general); display: flex; align-items: center; gap: 8px; min-height: 40px; }
+        .dia-nombre { width: 35px; font-size: 0.65em; color: #cbd5e1; text-transform: uppercase; font-weight: bold; text-align: center; background: var(--btn-bg); padding: 4px; border-radius: 4px; pointer-events: none; user-select: none; }
+        .sesion { background: #475569; padding: 5px 8px; border-radius: 4px; cursor: move; border: 1px solid var(--border-general); flex-grow: 1; display: flex; align-items: center; min-height: 35px; text-transform: uppercase; color: #000; font-weight: bold; }
+        .sesion.fmax { background-color: var(--fmax) !important; }
+        .sesion.reox { background-color: var(--reox) !important; }
+        .sesion.roca { background-color: var(--roca) !important; }
+        .sesion.antagonistas { background-color: var(--antagonistas) !important; }
+        .sesion.descanso { background-color: var(--descanso) !important; }
+        .sesion-contenido { display: grid; grid-template-columns: 20px 1fr 40px; align-items: center; width: 100%; gap: 5px; }
+        .sesion-text { grid-column: 2; text-align: center; font-size: 0.7em; outline: none; }
+        .btn-del-sesion { grid-column: 1; color: #000; cursor: pointer; font-size: 0.8em; font-weight: bold; }
+        .btn-link { grid-column: 3; color: #000; cursor: pointer; font-size: 0.6em; text-decoration: underline; justify-self: end; }
+        .link-btn { grid-column: 3; color: #000; font-size: 0.6em; text-decoration: none; justify-self: end; font-weight: bold; cursor: default; }
+        
+        /* Ajuste estricto al ancho del banco */
+        .btn-action { 
+            background: var(--input-bg); 
+            border: 1px solid var(--border-general); 
+            color: #fff; 
+            padding: 8px 0; 
+            border-radius: 4px; 
+            font-size: 0.7em; 
+            cursor: pointer; 
+            width: 100%; 
+            display: block;
+            box-sizing: border-box; /* Esto es la clave para el ancho */
+        }
+        
+        #banco { width: 250px; padding: 15px; border: 1px dashed var(--border-general); background: var(--bg-panel); border-radius: 10px; display:flex; flex-direction:column; gap:8px; }
+        
+        /* Cuadrícula 2x2 que ocupa los 250px exactos */
+        .grid-botones-abajo { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: 10px; 
+            width: 250px; 
+            margin-top: 15px;
+            box-sizing: border-box;
         }
 
-        body{
-            font-family:sans-serif;
-            background:var(--bg-principal);
-            color:#fff;
-            padding:20px;
-            min-height:100vh;
-            display:flex;
-            justify-content:center;
-            align-items:center;
-        }
+        
+.panel-derecho{
+    width:300px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    min-height:100%;
+}
 
-        .fondo-logo{
-            position:fixed;
-            inset:0;
-            background-image:url("logo.png");
-            background-repeat:no-repeat;
-            background-position:center;
-            background-size:100%;
-            opacity:.20;
-            z-index:-10;
-        }
+.btn-inicio{
+    width:100%;
+    font-weight:900;
+    text-transform:uppercase;
+    margin-bottom:15px;
+}
 
-        .layout-editor{
-            display:flex;
-            gap:20px;
-            align-items:flex-start;
-            justify-content:center;
-        }
+#banco{
+    width:300px;
+    box-sizing:border-box;
+}
 
-        .contenedor-principal{
-            width:400px;
-            flex-shrink:0;
-            background:var(--bg-panel);
-            padding:20px;
-            border-radius:10px;
-            border:1px solid var(--border-general);
-        }
+.grid-botones-abajo{
+    width:300px;
+    box-sizing:border-box;
+}
 
-        .header{
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:8px;
-            background:var(--bg-panel);
-            padding:12px;
-            border-radius:8px;
-            margin-bottom:12px;
-            border:1px solid var(--border-general);
-        }
-
-        .head-item{
-            font-size:.8em;
-            font-weight:bold;
-        }
-
-        .head-val{
-            background:var(--input-bg);
-            border:1px solid #444;
-            border-radius:4px;
-            font-weight:bold;
-            color:#69db7c;
-            padding:2px 6px;
-            display:inline-block;
-            font-size:.9em;
-            cursor:pointer;
-        }
-
-        .date-input-hidden{
-            position:absolute;
-            opacity:0;
-            pointer-events:none;
-        }
-
-        .semana-grid{
-            display:grid;
-            gap:8px;
-            background:var(--bg-panel);
-            padding:12px;
-            border-radius:10px;
-            border:1px solid var(--border-general);
-        }
-
-        .dia-columna{
-            background:var(--input-bg);
-            border-radius:6px;
-            padding:8px;
-            border:1px solid var(--border-general);
-            display:flex;
-            align-items:center;
-            gap:8px;
-            min-height:40px;
-        }
-
-        .dia-nombre{
-            width:35px;
-            font-size:.65em;
-            color:#cbd5e1;
-            text-transform:uppercase;
-            font-weight:bold;
-            text-align:center;
-            background:var(--btn-bg);
-            padding:4px;
-            border-radius:4px;
-            pointer-events:none;
-            user-select:none;
-        }
-
-        .sesion{
-            background:#475569;
-            padding:5px 8px;
-            border-radius:4px;
-            cursor:move;
-            border:1px solid var(--border-general);
-            flex-grow:1;
-            display:flex;
-            align-items:center;
-            min-height:35px;
-            text-transform:uppercase;
-            color:#000;
-            font-weight:bold;
-        }
-
-        .sesion.fmax{background:var(--fmax)!important;}
-        .sesion.reox{background:var(--reox)!important;}
-        .sesion.roca{background:var(--roca)!important;}
-        .sesion.antagonistas{background:var(--antagonistas)!important;}
-        .sesion.descanso{background:var(--descanso)!important;}
-
-        .sesion-contenido{
-            display:grid;
-            grid-template-columns:20px 1fr 40px;
-            width:100%;
-            align-items:center;
-            gap:5px;
-        }
-
-        .sesion-text{
-            grid-column:2;
-            text-align:center;
-            font-size:.7em;
-            outline:none;
-        }
-
-        .btn-del-sesion{
-            grid-column:1;
-            color:#000;
-            cursor:pointer;
-            font-size:.8em;
-            font-weight:bold;
-        }
-
-        .btn-link{
-            grid-column:3;
-            color:#000;
-            cursor:pointer;
-            font-size:.6em;
-            text-decoration:underline;
-            justify-self:end;
-        }
-
-        .link-btn{
-            grid-column:3;
-            color:#000;
-            font-size:.6em;
-            text-decoration:none;
-            justify-self:end;
-            font-weight:bold;
-            cursor:default;
-        }
-
-        /* BOTONES */
-
-        .btn-action{
-            width:100%;
-            display:block;
-            box-sizing:border-box;
-            background:var(--input-bg);
-            border:1px solid var(--border-general);
-            color:#fff;
-            padding:11px 0;
-            border-radius:6px;
-            font-size:.78em;
-            cursor:pointer;
-            transition:.2s;
-        }
-
-        .btn-action:hover{
-            background:#454545;
-        }
-
-        .panel-derecho{
-            width:250px;
-            display:flex;
-            flex-direction:column;
-        }
-
-        /* INICIO */
-
-        .btn-inicio{
-            width:50%;
-            align-self:flex-start;
-            margin-bottom:15px;
-            font-weight:900;
-            text-transform:uppercase;
-        }
-
-        /* BANCO */
-
-        #banco{
-            width:250px;
-            padding:15px;
-            border:1px dashed var(--border-general);
-            background:var(--bg-panel);
-            border-radius:10px;
-            display:flex;
-            flex-direction:column;
-            gap:8px;
-
-            /* alineado aproximadamente con el inicio de la tabla */
-            margin-top:58px;
-        }
-
-        .grid-botones-abajo{
-            display:grid;
-            grid-template-columns:1fr 1fr;
-            gap:14px;
-            width:250px;
-            margin-top:22px;
-            box-sizing:border-box;
-        }
-
-        @media print{
-
-            @page{
-                size:67mm 115mm;
-                margin:0;
-            }
-
-            body{
-                background:#121212!important;
-                margin:0!important;
-                width:100mm!important;
-            }
-
-            .layout-editor{
-                display:block!important;
-                width:90mm!important;
-            }
-
-            .contenedor-principal{
-                width:90mm!important;
-            }
-
-            #banco,
-            .no-print{
-                display:none!important;
-            }
-
+@media print {
+            @page { size: 67mm 115mm; margin: 0; }
+            body { background-color: #121212 !important; margin: 0 !important; width: 100mm !important; }
+            .layout-editor { display: block !important; width: 90mm !important; }
+            .contenedor-principal { width: 90mm !important; }
+            #banco, .no-print { display: none !important; }
         }
     </style>
 </head>
-
 <body>
 
 <div class="fondo-logo"></div>
 
 <div class="layout-editor">
-
     <div class="contenedor-principal">
-
         <div class="header">
-
-            <div class="head-item">
-                Semana:
-                <span class="head-val" contenteditable="true" id="h1">01</span>
+            <div class="head-item">Semana: <span class="head-val" contenteditable="true" id="h1">01</span></div>
+            <div class="head-item">Fecha: 
+                <span class="head-val" id="displayDate" onclick="document.getElementById('hiddenDate').showPicker()">DD/MM/AAAA</span>
+                <input type="date" id="hiddenDate" class="date-input-hidden" onchange="actualizarFecha(this.value)">
             </div>
-
-            <div class="head-item">
-                Fecha:
-                <span class="head-val"
-                      id="displayDate"
-                      onclick="document.getElementById('hiddenDate').showPicker()">
-                    DD/MM/AAAA
-                </span>
-
-                <input
-                    type="date"
-                    id="hiddenDate"
-                    class="date-input-hidden"
-                    onchange="actualizarFecha(this.value)">
-            </div>
-                        <div class="head-item">
-                Mesociclo:
-                <span class="head-val" contenteditable="true" id="h3">REOX</span>
-            </div>
-
-            <div class="head-item">
-                Sem. Micr.:
-                <span class="head-val" contenteditable="true" id="h4">1/4</span>
-            </div>
-
+            <div class="head-item">Mesociclo: <span class="head-val" contenteditable="true" id="h3">REOX</span></div>
+            <div class="head-item">Sem. Micr.: <span class="head-val" contenteditable="true" id="h4">1/4</span></div>
         </div>
-
         <div class="semana-grid" id="grid">
-
-            <div class="dia-columna" id="d1">
-                <div class="dia-nombre">LUN</div>
-            </div>
-
-            <div class="dia-columna" id="d2">
-                <div class="dia-nombre">MAR</div>
-            </div>
-
-            <div class="dia-columna" id="d3">
-                <div class="dia-nombre">MIÉ</div>
-            </div>
-
-            <div class="dia-columna" id="d4">
-                <div class="dia-nombre">JUE</div>
-            </div>
-
-            <div class="dia-columna" id="d5">
-                <div class="dia-nombre">VIE</div>
-            </div>
-
-            <div class="dia-columna" id="d6">
-                <div class="dia-nombre">SÁB</div>
-            </div>
-
-            <div class="dia-columna" id="d7">
-                <div class="dia-nombre">DOM</div>
-            </div>
-
+            <div class="dia-columna" id="d1"><div class="dia-nombre">LUN</div></div>
+            <div class="dia-columna" id="d2"><div class="dia-nombre">MAR</div></div>
+            <div class="dia-columna" id="d3"><div class="dia-nombre">MIÉ</div></div>
+            <div class="dia-columna" id="d4"><div class="dia-nombre">JUE</div></div>
+            <div class="dia-columna" id="d5"><div class="dia-nombre">VIE</div></div>
+            <div class="dia-columna" id="d6"><div class="dia-nombre">SÁB</div></div>
+            <div class="dia-columna" id="d7"><div class="dia-nombre">DOM</div></div>
         </div>
-
     </div>
 
     <div class="panel-derecho">
-
-        <button
-            class="btn-action btn-inicio"
-            onclick="window.location.href='index.html'">
-            ← INICIO
-        </button>
-
+        <button class="btn-action btn-inicio" onclick="window.location.href='index.html'">&larr; INICIO</button>
+        
         <div id="banco" class="no-print">
-
-            <h4 style="margin-top:0;color:#cbd5e1;">
-                Banco de sesiones
-            </h4>
-
-            <div class="sesion roca">
-                <div class="sesion-contenido">
-                    <div class="btn-del-sesion"
-                         onclick="this.parentElement.parentElement.remove()">
-                        X
-                    </div>
-
-                    <span class="sesion-text"
-                          contenteditable="true">
-                        Roca/roco
-                    </span>
-                </div>
-            </div>
-
-            <div class="sesion antagonistas">
-                <div class="sesion-contenido">
-
-                    <div class="btn-del-sesion"
-                         onclick="this.parentElement.parentElement.remove()">
-                        X
-                    </div>
-
-                    <span class="sesion-text"
-                          contenteditable="true">
-                        Antagonistas
-                    </span>
-
-                    <span class="btn-link"
-                          onclick="addLink(this)">
-                        Link
-                    </span>
-
-                </div>
-            </div>
-
-            <div class="sesion reox">
-                <div class="sesion-contenido">
-
-                    <div class="btn-del-sesion"
-                         onclick="this.parentElement.parentElement.remove()">
-                        X
-                    </div>
-
-                    <span class="sesion-text"
-                          contenteditable="true">
-                        REOX (ROCO)
-                    </span>
-
-                    <span class="btn-link"
-                          onclick="addLink(this)">
-                        Link
-                    </span>
-
-                </div>
-            </div>
-
-            <div class="sesion descanso">
-
-                <div class="sesion-contenido">
-
-                    <div class="btn-del-sesion"
-                         onclick="this.parentElement.parentElement.remove()">
-                        X
-                    </div>
-
-                    <span class="sesion-text"
-                          contenteditable="true">
-                        Descanso
-                    </span>
-
-                </div>
-
-            </div>
-
+            <h4 style="margin-top:0; color:#cbd5e1;">Banco de sesiones</h4>
+            <div class="sesion roca"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Roca/roco</span></div></div>
+            <div class="sesion antagonistas"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Antagonistas</span><span class="btn-link" onclick="addLink(this)">Link</span></div></div>
+            <div class="sesion reox"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">REOX (ROCO)</span><span class="btn-link" onclick="addLink(this)">Link</span></div></div>
+            <div class="sesion descanso"><div class="sesion-contenido"><div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div><span class="sesion-text" contenteditable="true">Descanso</span></div></div>
         </div>
 
-        <div class="grid-botones-abajo no-print">
-
-            <button class="btn-action"
-                    onclick="guardar()">
-                Guardar
-            </button>
-
-            <button class="btn-action"
-                    onclick="limpiarTabla()">
-                Limpiar Tabla
-            </button>
-
-            <button class="btn-action"
-                    onclick="restablecerLinks()">
-                Limpiar Links
-            </button>
-
-            <button class="btn-action"
-                    onclick="window.print()">
-                Exportar PDF
-            </button>
-
+        <div class="no-print grid-botones-abajo">
+            <button class="btn-action" onclick="guardar()">Guardar</button>
+            <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
+            <button class="btn-action" onclick="restablecerLinks()">Limpiar Links</button>
+            <button class="btn-action" onclick="window.print()">Exportar PDF</button>
         </div>
-
     </div>
-
-</div>
+</div> 
 
 <script>
-
-function act(){
-
-    document
-        .querySelectorAll(".dia-columna")
-        .forEach(d=>new Sortable(d,{
-            group:"s",
-            filter:".dia-nombre"
-        }));
-
-    new Sortable(
-        document.getElementById("banco"),
-                {
-            group:{
-                name:"s",
-                pull:"clone",
-                put:false
-            },
-            sort:false
-        }
-    );
-
-}
-
-function actualizarFecha(val){
-
-    if(!val) return;
-
-    const [y,m,d]=val.split("-");
-
-    document.getElementById("displayDate").innerText=`${d}/${m}/${y}`;
-
-}
-
-function limpiarTabla(){
-
-    document
-        .querySelectorAll(".dia-columna")
-        .forEach(d=>{
-
-            Array.from(d.children).forEach(child=>{
-
-                if(!child.classList.contains("dia-nombre")){
-                    child.remove();
-                }
-
-            });
-
-        });
-
-}
-
-document.addEventListener("click",(e)=>{
-
-    let s=e.target.closest(".sesion");
-
-    if(e.target.classList.contains("sesion-text")) return;
-
-    if(
-        s &&
-        !s.parentElement.id.includes("banco")
-    ){
-
-        e.preventDefault();
-
-        s.after(
-            s.cloneNode(true)
-        );
-
+    function act() { 
+        document.querySelectorAll('.dia-columna').forEach(d => new Sortable(d, {group:'s', filter:'.dia-nombre'}));
+        new Sortable(document.getElementById('banco'), {group:{name:'s', pull:'clone', put:false}, sort:false}); 
     }
-
-});
-
-function addLink(el){
-
-    let u=prompt("Enlace:");
-
-    if(u){
-
-        el.outerHTML=
-        `<a href="${u}"
-            target="_blank"
-            class="link-btn">
-            ▶ Ver
-        </a>`;
-
-    }
-
-}
-
-function restablecerLinks(){
-
-    document
-        .querySelectorAll(".link-btn")
-        .forEach(el=>{
-
-            el.outerHTML=
-            '<span class="btn-link" onclick="addLink(this)">Link</span>';
-
-        });
-
-}
-
-function guardar(){
-
-    localStorage.g=
-        document.getElementById("grid").innerHTML;
-
-    localStorage.h=
-        JSON.stringify({
-
-            h1:h1.innerText,
-            h2val:hiddenDate.value,
-            h3:h3.innerText,
-            h4:h4.innerText
-
-        });
-
-    alert("Guardado");
-
-}
-
-window.onload=()=>{
-
-    if(localStorage.g){
-
-        document.getElementById("grid").innerHTML=
-            localStorage.g;
-
-        let h=
-            JSON.parse(localStorage.h);
-
-        h1.innerText=h.h1;
-
-        hiddenDate.value=h.h2val;
-
-        actualizarFecha(h.h2val);
-
-        h3.innerText=h.h3;
-
-        h4.innerText=h.h4;
-
-    }
-
-    act();
-
-};
-
+    function actualizarFecha(val) { if(!val) return; const [y, m, d] = val.split('-'); document.getElementById('displayDate').innerText = `${d}/${m}/${y}`; }
+    function limpiarTabla() { document.querySelectorAll('.dia-columna').forEach(d => { Array.from(d.children).forEach(child => { if(!child.classList.contains('dia-nombre')) child.remove(); }); }); }
+    document.addEventListener('click', (e) => { let s = e.target.closest('.sesion'); if (e.target.classList.contains('sesion-text')) return; if(s && !s.parentElement.id.includes('banco')) { e.preventDefault(); s.after(s.cloneNode(true)); } });
+    function addLink(el) { let u = prompt("Enlace:"); if(u) el.outerHTML = `<a href="${u}" target="_blank" class="link-btn">▶ Ver</a>`; }
+    function restablecerLinks() { document.querySelectorAll('.link-btn').forEach(el => el.outerHTML = '<span class="btn-link" onclick="addLink(this)">Link</span>'); }
+    function guardar() { localStorage.g = document.getElementById('grid').innerHTML; localStorage.h = JSON.stringify({h1:h1.innerText, h2val:hiddenDate.value, h3:h3.innerText, h4:h4.innerText}); alert("Guardado"); }
+    window.onload = () => { if(localStorage.g) { document.getElementById('grid').innerHTML = localStorage.g; let h = JSON.parse(localStorage.h); h1.innerText=h.h1; hiddenDate.value=h.h2val; actualizarFecha(h.h2val); h3.innerText=h.h3; h4.innerText=h.h4; } act(); };
 </script>
-
 </body>
 </html>
