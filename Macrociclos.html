@@ -1,680 +1,239 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<link rel="manifest" href="manifest.json">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Kaska.Climb">
-<link rel="apple-touch-icon" href="logo-192.png">
-<meta name="theme-color" content="#121212">
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kaska.Climb | Semanas</title>
-
-<script src="libs/Sortable.min.js"></script>
-<script src="libs/html2canvas.min.js"></script>
-<script src="libs/jspdf.umd.min.js"></script>
-
-<style>
-:root {
-  --fmax: #3b82f6;
-  --reox: #69db7c;
-  --roca: #ffd43b;
-  --antagonistas: #4dabf7;
-  --descanso: #ff6b6b;
-  --bg-principal: #121212;
-  --bg-panel: rgba(30, 30, 30, 0.85);
-  --input-bg: #2c2c2c;
-  --btn-bg: #3a3a3a;
-  --border-general: #4a4a4a;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  font-family: sans-serif;
-  background-color: var(--bg-principal);
-  color: white;
-  padding: 20px;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-}
-
-.fondo-logo {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-image: url('logo.png');
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 100%;
-  opacity: 0.2;
-  z-index: -10;
-}
-
-.layout-editor {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-  justify-content: center;
-}
-
-.contenedor-principal {
-  width: 400px;
-  flex-shrink: 0;
-  background: var(--bg-panel);
-  padding: 20px;
-  border-radius: 10px;
-  border: 1px solid var(--border-general);
-}
-
-.header {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  background: var(--bg-panel);
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  border: 1px solid var(--border-general);
-}
-
-.head-item {
-  font-size: 0.8em;
-  font-weight: bold;
-}
-
-.head-val {
-  background: var(--input-bg);
-  border: 1px solid #444;
-  border-radius: 4px;
-  font-weight: bold;
-  color: #69db7c;
-  padding: 2px 6px;
-  display: inline-block;
-  font-size: 0.9em;
-  cursor: pointer;
-}
-
-.date-input-hidden {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.semana-grid {
-  display: grid;
-  gap: 8px;
-  background: var(--bg-panel);
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid var(--border-general);
-}
-
-.dia-columna {
-  background: var(--input-bg);
-  border-radius: 6px;
-  padding: 8px;
-  border: 1px solid var(--border-general);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-}
-
-.dia-nombre {
-  width: 35px;
-  min-width: 35px;
-  font-size: 0.65em;
-  color: #cbd5e1;
-  text-transform: uppercase;
-  font-weight: bold;
-  text-align: center;
-  background: var(--btn-bg);
-  padding: 4px;
-  border-radius: 4px;
-  pointer-events: none;
-  user-select: none;
-}
-
-.sesion {
-  background: #475569;
-  padding: 8px 12px; 
-  border-radius: 6px; 
-  cursor: move;
-  border: 1px solid var(--border-general);
-  flex-grow: 1;
-  display: flex;
-  align-items: center;
-  min-height: 45px; 
-  text-transform: uppercase;
-  color: #000;
-  font-weight: bold;
-}
-
-.sesion.fmax {
-  background-color: var(--fmax) !important;
-}
-
-.sesion.reox {
-  background-color: var(--reox) !important;
-}
-
-.sesion.roca {
-  background-color: var(--roca) !important;
-}
-
-.sesion.antagonistas {
-  background-color: var(--antagonistas) !important;
-}
-
-.sesion.descanso {
-  background-color: var(--descanso) !important;
-}
-
-.sesion-contenido {
-  display: grid;
-  grid-template-columns: 20px 1fr 40px;
-  align-items: center;
-  width: 100%;
-  gap: 5px;
-}
-
-.sesion-text {
-  grid-column: 2;
-  text-align: center;
-  font-size: 0.7em;
-  outline: none;
-}
-
-.btn-del-sesion {
-  grid-column: 1;
-  color: #000;
-  cursor: pointer;
-  font-size: 0.8em;
-  font-weight: bold;
-}
-
-.btn-link {
-  grid-column: 3;
-  color: #000;
-  cursor: pointer;
-  font-size: 0.6em;
-  text-decoration: underline;
-  justify-self: end;
-}
-
-.link-btn {
-  grid-column: 3;
-  color: #000;
-  font-size: 0.6em;
-  text-decoration: none;
-  justify-self: end;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.btn-action {
-  background: var(--input-bg);
-  border: 1px solid var(--border-general);
-  color: #fff;
-  padding: 8px 0;
-  border-radius: 4px;
-  font-size: 0.7em;
-  cursor: pointer;
-  width: 100%;
-  display: block;
-  box-sizing: border-box;
-}
-
-#banco {
-  width: 300px;
-  padding: 15px;
-  border: 1px dashed var(--border-general);
-  background: var(--bg-panel);
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  box-sizing: border-box;
-}
-
-.grid-botones-abajo {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  width: 300px;
-  margin-top: 15px;
-  box-sizing: border-box;
-}
-
-.panel-derecho {
-  width: 300px;
-  display: flex;
-  flex-direction: column;
-}
-
-.btn-inicio {
-  width: calc((300px - 10px) / 2);
-  font-weight: 900;
-  text-transform: uppercase;
-  display: block;
-  margin: 30px auto 0 auto;
-}
-
-@media screen and (max-width: 820px) {
-  body {
-    align-items: flex-start;
-    justify-content: flex-start;
-    padding: 12px;
-    overflow-x: auto;
-  }
-
-  .layout-editor {
-    flex-direction: row;
-    align-items: flex-start;
-    justify-content: flex-start;
-    width: max-content;
-  }
-
-  .contenedor-principal {
-    width: 400px;
-  }
-
-  .panel-derecho {
-    width: 300px;
-  }
-
-  #banco,
-  .grid-botones-abajo {
-    width: 300px;
-  }
-}
-
-@media print {
-  @page {
-    size: 67mm 100mm;
-    margin: 0;
-  }
-
-  html,
-  body {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 67mm !important;
-    background: #000 !important;
-    color: #fff !important;
-    overflow: visible !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  .fondo-logo,
-  .panel-derecho,
-  #banco,
-  .no-print,
-  .btn-action,
-  .grid-botones-abajo {
-    display: none !important;
-    visibility: hidden !important;
-  }
-
-  .layout-editor {
-    display: block !important;
-    width: 67mm !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #000 !important;
-  }
-
-  .contenedor-principal {
-    display: block !important;
-    width: 67mm !important;
-    height: auto !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 2mm !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: #000 !important;
-  }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaska.Climb | Macrociclos</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root { --bg-principal: #121212; --bg-panel: rgba(30, 30, 30, 0.95); --border-general: rgba(255, 255, 255, 0.1); }
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-principal); color: #e0e0e0; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        
+        .fondo-logo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-image: url('logo.png'); background-repeat: no-repeat; background-position: center; background-size: 100%; opacity: 0.2; z-index: -10; }
+        
+        .container { position: relative; width: 100%; max-width: 1000px; background: var(--bg-panel); padding: 30px; border-radius: 20px; border: 1px solid var(--border-general); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        #header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        #titulo { font-size: 18px; font-weight: 700; text-transform: uppercase; margin: 0; color: #fff; outline: none; }
+        .fechas { display: flex; gap: 15px; font-size: 14px; }
+        .fechas input { background: #2c2c2c; color: #fff; border: 1px solid #444; padding: 4px; border-radius: 4px; }
+        .controls { display: flex; gap: 6px; margin-bottom: 20px; }
+        button { background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; text-transform: capitalize; }
+        select { background: #2c2c2c; color: #ffffff; border: 1px solid #4a4a4a; padding: 6px; font-size: 11px; border-radius: 4px; }
+        
+        #pantalla-wrapper { position: relative; width: 100%; padding: 3px; }
+        #pantalla { display: flex; width: 100%; height: 60px; border: 1px solid rgba(255,255,255,0.01); overflow: hidden; }
+        .bloque { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; cursor: grab; color: #000; }
+        .btn-borrar { margin-top: 2px; background: rgba(0,0,0,0.15); border: none; font-size: 9px; cursor: pointer; border-radius: 3px; }
+        .fmax { background-color: #ff6b6b; } .desox { background-color: #4dabf7; }
+        .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
+        .tap { background-color: #ffd43b; }
+        .fechas-semanales { display: flex; justify-content: space-around; width: 100%; font-size: 8px; color: #666; margin-top: 2px; }
+    </style>
 </head>
-
 <body>
 <div class="fondo-logo"></div>
-
-<div class="layout-editor">
-  <div class="contenedor-principal" id="panelExportable">
-    <div class="header">
-      <div class="head-item">
-        Semana:
-        <span class="head-val" contenteditable="true" id="h1">01</span>
-      </div>
-
-      <div class="head-item">
-        Fecha:
-        <span class="head-val" id="displayDate" onclick="abrirSelectorFecha()">DD/MM/AAAA</span>
-        <input type="date" id="hiddenDate" class="date-input-hidden" onchange="actualizarFecha(this.value)">
-      </div>
-
-      <div class="head-item">
-        Mesociclo:
-        <span class="head-val" contenteditable="true" id="h3">REOX</span>
-      </div>
-
-      <div class="head-item">
-        Sem. Meso.:
-        <span class="head-val" contenteditable="true" id="h4">1/4</span>
-      </div>
-    </div>
-
-    <div class="semana-grid" id="grid">
-      <div class="dia-columna" id="d1">
-        <div class="dia-nombre">LUN</div>
-      </div>
-
-      <div class="dia-columna" id="d2">
-        <div class="dia-nombre">MAR</div>
-      </div>
-
-      <div class="dia-columna" id="d3">
-        <div class="dia-nombre">MIÉ</div>
-      </div>
-
-      <div class="dia-columna" id="d4">
-        <div class="dia-nombre">JUE</div>
-      </div>
-
-      <div class="dia-columna" id="d5">
-        <div class="dia-nombre">VIE</div>
-      </div>
-
-      <div class="dia-columna" id="d6">
-        <div class="dia-nombre">SÁB</div>
-      </div>
-
-      <div class="dia-columna" id="d7">
-        <div class="dia-nombre">DOM</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="panel-derecho">
-    <div id="banco" class="no-print">
-      <h4 style="margin-top:0; color:#cbd5e1;">Banco de sesiones</h4>
-
-      <div class="sesion roca">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">Roca/roco</span>
+<div class="container">
+    <div id="header-info">
+        <h1 id="titulo" contenteditable="true" onblur="autoGuardar()">Macrociclo</h1>
+        <div class="fechas">
+            <div>Inicio: <input type="date" id="fechaInicio" onchange="calcularTotal(); autoGuardar();"></div>
+            <div>Fin: <input type="date" id="fechaFin" readonly></div>
         </div>
-      </div>
-
-      <div class="sesion antagonistas">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">Antagonistas</span>
-          <span class="btn-link" onclick="addLink(this)">Link</span>
-        </div>
-      </div>
-
-      <div class="sesion reox">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">REOX (ROCO)</span>
-          <span class="btn-link" onclick="addLink(this)">Link</span>
-        </div>
-      </div>
-
-      <div class="sesion descanso">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">Descanso</span>
-        </div>
-      </div>
     </div>
-
-    <div class="no-print grid-botones-abajo">
-      <button class="btn-action" onclick="guardar()">Guardar</button>
-      <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
-      <button class="btn-action" onclick="restablecerLinks()">Limpiar Links</button>
-      <button class="btn-action" onclick="exportarPDFReal(event)">Exportar PDF</button>
+    <div class="controls">
+        <select id="fase"><option value="fmax">FMAX</option><option value="desox">DESOX</option><option value="reox">REOX</option><option value="aero">AERO</option><option value="tap">TAP</option></select>
+        <select id="duracion"><script>for(let i=1; i<=8; i++) document.write(`<option value="${i}">${i}S</option>`);</script></select>
+        <button onclick="agregarBloque()">Añadir</button>
+        <button onclick="guardarArchivo()">Guardar</button>
+        <button onclick="cargarArchivo()">Cargar</button>
+        <button onclick="limpiarPlan()">Limpiar</button>
+        <button onclick="exportarPDF()">Exportar PDF</button>
     </div>
-
-    <button class="btn-action btn-inicio no-print" onclick="window.location.href='index.html'">&larr; INICIO</button>
-  </div>
+    <div id="pantalla-wrapper">
+        <div id="pantalla"></div>
+        <div id="contenedor-fechas" style="display: flex; width: 100%;"></div>
+    </div>
+    <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
+    
+    <div style="text-align: center; margin-top: 20px;">
+        <button onclick="window.location.href='index.html'" style="padding: 8px 16px; font-weight: 900;">&larr; INICIO</button>
+    </div>
 </div>
 
 <script>
-function act() {
-  if (window.Sortable) {
-    document.querySelectorAll('.dia-columna').forEach(d => {
-      new Sortable(d, {
-        group: 's',
-        filter: '.dia-nombre'
-      });
-    });
+    const PLAN_POR_DEFECTO = {
+        "titulo": "MACROCICLO MIKEL GARCÍA",
+        "inicio": "2026-06-29",
+        "bloques": [
+            {"fase": "reox", "semanas": 6}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 4},
+            {"fase": "desox", "semanas": 4}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 3}, {"fase": "aero", "semanas": 4}
+        ]
+    };
 
-    new Sortable(document.getElementById('banco'), {
-      group: {
-        name: 's',
-        pull: 'clone',
-        put: false
-      },
-      sort: false
-    });
-  } else {
-    alert("No se ha cargado Sortable.min.js. Revisa que esté en la carpeta libs.");
-  }
-}
-
-function abrirSelectorFecha() {
-  const input = document.getElementById('hiddenDate');
-
-  if (input.showPicker) {
-    input.showPicker();
-  } else {
-    input.click();
-  }
-}
-
-function actualizarFecha(val) {
-  if (!val) return;
-
-  const [y, m, d] = val.split('-');
-  document.getElementById('displayDate').innerText = `${d}/${m}/${y}`;
-}
-
-function limpiarTabla() {
-  document.querySelectorAll('.dia-columna').forEach(d => {
-    Array.from(d.children).forEach(child => {
-      if (!child.classList.contains('dia-nombre')) {
-        child.remove();
-      }
-    });
-  });
-}
-
-document.addEventListener('click', e => {
-  const s = e.target.closest('.sesion');
-
-  if (e.target.classList.contains('sesion-text')) return;
-  if (e.target.classList.contains('btn-del-sesion')) return;
-  if (e.target.classList.contains('btn-link')) return;
-  if (e.target.classList.contains('link-btn')) return;
-
-  if (s && s.parentElement && !s.parentElement.id.includes('banco')) {
-    e.preventDefault();
-    s.after(s.cloneNode(true));
-  }
-});
-
-function normalizarUrl(url) {
-  const limpia = url.trim();
-
-  if (!limpia) return "";
-
-  if (
-    limpia.startsWith("http://") ||
-    limpia.startsWith("https://") ||
-    limpia.startsWith("mailto:") ||
-    limpia.startsWith("tel:") ||
-    limpia.startsWith("file:")
-  ) {
-    return limpia;
-  }
-
-  return limpia;
-}
-
-function addLink(el) {
-  const u = prompt("Enlace:");
-
-  if (u) {
-    const url = normalizarUrl(u);
-    el.outerHTML = `<a href="${url}" target="_blank" rel="noopener" class="link-btn">▶ Ver</a>`;
-  }
-}
-
-function restablecerLinks() {
-  document.querySelectorAll('.link-btn').forEach(el => {
-    el.outerHTML = '<span class="btn-link" onclick="addLink(this)">Link</span>';
-  });
-}
-
-function guardar() {
-  const grid = document.getElementById('grid');
-
-  localStorage.g = grid.innerHTML;
-
-  localStorage.h = JSON.stringify({
-    h1: document.getElementById('h1').innerText,
-    h2val: document.getElementById('hiddenDate').value,
-    h3: document.getElementById('h3').innerText,
-    h4: document.getElementById('h4').innerText
-  });
-
-  alert("Guardado");
-}
-
-async function exportarPDFReal(evento) {
-  if (!window.html2canvas) {
-    alert("No se ha cargado html2canvas.min.js. Revisa que esté en la carpeta libs.");
-    return;
-  }
-
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    alert("No se ha cargado jspdf.umd.min.js. Revisa que esté en la carpeta libs.");
-    return;
-  }
-
-  const panel = document.getElementById('panelExportable');
-
-  if (!panel) {
-    alert("No encuentro el panel exportable.");
-    return;
-  }
-
-  const boton = evento && evento.target ? evento.target : null;
-
-  if (boton) {
-    boton.disabled = true;
-    boton.innerText = "Generando PDF...";
-  }
-
-  try {
-    const rect = panel.getBoundingClientRect();
-
-    const canvas = await html2canvas(panel, {
-      backgroundColor: '#000000',
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      width: Math.ceil(rect.width),
-      height: Math.ceil(panel.scrollHeight),
-      windowWidth: Math.ceil(rect.width),
-      windowHeight: Math.ceil(panel.scrollHeight),
-      scrollX: 0,
-      scrollY: 0
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-
-    const escalaCanvas = 2;
-    const pxToMm = 0.264583;
-
-    const pdfWidth = canvas.width * pxToMm / escalaCanvas;
-    const pdfHeight = canvas.height * pxToMm / escalaCanvas;
-
-    const { jsPDF } = window.jspdf;
-
-    const pdf = new jsPDF({
-      orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
-      unit: 'mm',
-      format: [pdfWidth, pdfHeight],
-      compress: true
-    });
-
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-    const panelRect = panel.getBoundingClientRect();
-    const enlaces = panel.querySelectorAll('a.link-btn[href]');
-
-    enlaces.forEach(enlace => {
-      const enlaceRect = enlace.getBoundingClientRect();
-
-      const x = (enlaceRect.left - panelRect.left) * pxToMm;
-      const y = (enlaceRect.top - panelRect.top) * pxToMm;
-      const w = enlaceRect.width * pxToMm;
-      const h = enlaceRect.height * pxToMm;
-
-      pdf.link(x, y, w, h, {
-        url: enlace.href
-      });
-    });
-
-    pdf.save('kaska-climb-semana.pdf');
-  } catch (error) {
-    alert("No se ha podido generar el PDF. Revisa que las librerías estén bien subidas en GitHub.");
-    console.error(error);
-  } finally {
-    if (boton) {
-      boton.disabled = false;
-      boton.innerText = "Exportar PDF";
+    function autoGuardar() {
+        const data = {
+            titulo: document.getElementById('titulo').innerText,
+            inicio: document.getElementById('fechaInicio').value,
+            bloques: Array.from(document.querySelectorAll('.bloque')).map(b => ({
+                fase: b.className.split(' ')[1],
+                semanas: parseInt(b.style.flex)
+            }))
+        };
+        localStorage.setItem('kaskaPlan', JSON.stringify(data));
     }
-  }
-}
 
-window.onload = () => {
-  if (localStorage.g) {
-    document.getElementById('grid').innerHTML = localStorage.g;
-
-    if (localStorage.h) {
-      const h = JSON.parse(localStorage.h);
-
-      document.getElementById('h1').innerText = h.h1 || '01';
-      document.getElementById('hiddenDate').value = h.h2val || '';
-
-      if (h.h2val) {
-        actualizarFecha(h.h2val);
-      }
-
-      document.getElementById('h3').innerText = h.h3 || 'REOX';
-      document.getElementById('h4').innerText = h.h4 || '1/4';
+    function agregarBloque(fase = document.getElementById('fase').value, duracion = parseInt(document.getElementById('duracion').value)) {
+        const b = document.createElement('div');
+        b.className = 'bloque ' + fase;
+        b.style.flex = duracion;
+        b.innerHTML = `<span>${fase.toUpperCase()}</span><span>${duracion}S</span><button class="btn-borrar" onclick="this.parentElement.remove(); calcularTotal(); autoGuardar();">X</button>`;
+        document.getElementById('pantalla').appendChild(b);
+        calcularTotal();
+        autoGuardar();
     }
-  }
+    
+    function limpiarPlan() {
+        document.getElementById('pantalla').innerHTML = '';
+        document.getElementById('contenedor-fechas').innerHTML = '';
+        localStorage.setItem('kaskaPlan', 'vacio');
+        document.getElementById('totalSemanas').innerText = '0';
+        document.getElementById('fechaFin').value = '';
+        document.getElementById('titulo').innerText = 'Macrociclo';
+        document.getElementById('fechaInicio').value = '';
+    }
 
-  act();
-};
+    window.onload = () => {
+        const dataGuardada = localStorage.getItem('kaskaPlan');
+        let data = (!dataGuardada || dataGuardada === 'vacio') ? PLAN_POR_DEFECTO : JSON.parse(dataGuardada);
+        document.getElementById('titulo').innerText = data.titulo;
+        document.getElementById('fechaInicio').value = data.inicio;
+        data.bloques.forEach(b => agregarBloque(b.fase, b.semanas));
+    };
+
+    function calcularTotal() {
+        let t = 0;
+        const bloques = document.querySelectorAll('.bloque');
+        const contenedorFechas = document.getElementById('contenedor-fechas');
+        contenedorFechas.innerHTML = ''; 
+
+        const inicio = document.getElementById('fechaInicio').value;
+        let fechaActual = inicio ? new Date(inicio) : null;
+
+        bloques.forEach(b => {
+            const duracion = parseInt(b.style.flex);
+            t += duracion;
+
+            if (fechaActual) {
+                const subContenedor = document.createElement('div');
+                subContenedor.className = 'fechas-semanales';
+                subContenedor.style.flex = duracion;
+                
+                for(let i = 0; i < duracion; i++) {
+                    const span = document.createElement('span');
+                    span.innerText = `${fechaActual.getDate().toString().padStart(2,'0')}/${(fechaActual.getMonth()+1).toString().padStart(2,'0')}`;
+                    subContenedor.appendChild(span);
+                    fechaActual.setDate(fechaActual.getDate() + 7);
+                }
+                contenedorFechas.appendChild(subContenedor);
+            }
+        });
+
+        document.getElementById('totalSemanas').innerText = t;
+        if (inicio && t > 0) {
+            document.getElementById('fechaFin').value = fechaActual.toISOString().split('T')[0];
+        }
+    }
+
+    function guardarArchivo() { 
+        const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan.json'; a.click(); 
+    }
+
+    function cargarArchivo() {
+        const input = document.createElement('input'); input.type = 'file';
+        input.onchange = e => {
+            const reader = new FileReader();
+            reader.onload = event => { localStorage.setItem('kaskaPlan', event.target.result); location.reload(); };
+            reader.readAsText(e.target.files[0]);
+        };
+        input.click();
+    }
+
+    function formatearFecha(iso) {
+        if (!iso) return '';
+        const [y, m, d] = iso.split('-');
+        return `${d}/${m}/${y}`;
+    }
+
+    function exportarPDF() {
+        calcularTotal();
+        const { jsPDF } = window.jspdf;
+        const pW = 189; const pH = 50;
+        const pdf = new jsPDF('landscape', 'mm', [pH, pW]);
+        const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
+        const inicioVal = document.getElementById('fechaInicio').value;
+        const fechaInicio = formatearFecha(inicioVal);
+        const fechaFin = formatearFecha(document.getElementById('fechaFin').value);
+        const total = document.getElementById('totalSemanas').innerText.trim();
+        const bloques = Array.from(document.querySelectorAll('.bloque')).map(b => ({
+            fase: b.className.split(' ')[1],
+            semanas: parseInt(b.style.flex)
+        }));
+
+        pdf.setFillColor(18, 18, 18);
+        pdf.rect(0, 0, pW, pH, 'F');
+        pdf.setFillColor(31, 31, 31);
+        pdf.setDrawColor(55, 55, 55);
+        pdf.roundedRect(4, 4, pW - 8, pH - 8, 3, 3, 'FD');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.text(titulo, 8, 10);
+        pdf.setFontSize(7.5);
+        const dS = `Inicio: ${fechaInicio}     Fin: ${fechaFin}`;
+        pdf.text(dS, pW - pdf.getTextWidth(dS) - 8, 10);
+
+        const tS = bloques.reduce((acc, b) => acc + b.semanas, 0) || 1;
+        let cX = 8;
+        const bW = pW - 16;
+        const colores = { fmax:[255,107,107], desox:[77,171,247], reox:[105,219,124], aero:[177,151,252], tap:[255,212,59] };
+
+        let fechaActual = inicioVal ? new Date(inicioVal) : null;
+
+        bloques.forEach(b => {
+            const w = (bW * b.semanas) / tS;
+            pdf.setFillColor(...(colores[b.fase] || [255,212,59]));
+            pdf.rect(cX, 16, w, 12, 'F');
+            pdf.setTextColor(0,0,0);
+            pdf.setFontSize(6);
+            pdf.text(b.fase.toUpperCase(), cX + w/2, 21, {align:'center'});
+            pdf.text(b.semanas + 'S', cX + w/2, 25, {align:'center'});
+
+            if (fechaActual) {
+                const semanaW = w / b.semanas;
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(5);
+                pdf.setTextColor(150, 150, 150);
+                for (let i = 0; i < b.semanas; i++) {
+                    const etiqueta = `${fechaActual.getDate().toString().padStart(2,'0')}/${(fechaActual.getMonth()+1).toString().padStart(2,'0')}`;
+                    pdf.text(etiqueta, cX + semanaW * i + semanaW / 2, 32, {align:'center'});
+                    fechaActual.setDate(fechaActual.getDate() + 7);
+                }
+                pdf.setFont('helvetica', 'bold');
+            }
+
+            cX += w;
+        });
+
+        pdf.setTextColor(255,255,255);
+        pdf.setFontSize(7);
+        pdf.text(`TOTAL: ${total} SEMANAS`, 8, 44);
+        pdf.save('Macrociclo.pdf');
+    }
+
+    new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
 </body>
 </html>
