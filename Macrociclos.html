@@ -29,7 +29,7 @@
         .fmax { background-color: #ff6b6b; } .desox { background-color: #4dabf7; }
         .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
         .tap { background-color: #ffd43b; }
-        .fechas-semanales { display: flex; justify-content: space-around; width: 100%; font-size: 8px; color: #666; margin-top: 2px; }
+        .fecha-item { font-size: 9px; color: #aaa; text-align: center; }
     </style>
 </head>
 <body>
@@ -53,7 +53,7 @@
     </div>
     <div id="pantalla-wrapper">
         <div id="pantalla"></div>
-        <div id="contenedor-fechas" style="display: flex; width: 100%; position: relative;"></div>
+        <div id="contenedor-fechas" style="display: flex; width: 100%; margin-top: 5px;"></div>
     </div>
     <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
     
@@ -115,44 +115,31 @@
     function calcularTotal() {
         let t = 0;
         const bloques = document.querySelectorAll('.bloque');
-        const contenedorFechas = document.getElementById('contenedor-fechas');
-        contenedorFechas.innerHTML = ''; 
-
+        const cont = document.getElementById('contenedor-fechas');
+        cont.innerHTML = ''; 
         const inicio = document.getElementById('fechaInicio').value;
-        let fechaActual = inicio ? new Date(inicio) : null;
+        if (!inicio) return;
+        let fecha = new Date(inicio);
 
         bloques.forEach(b => {
-            const duracion = parseInt(b.style.flex);
-            t += duracion;
-
-            if (fechaActual) {
-                const subContenedor = document.createElement('div');
-                subContenedor.className = 'fechas-semanales';
-                subContenedor.style.flex = duracion;
-                
-                for(let i = 0; i < duracion; i++) {
-                    const span = document.createElement('span');
-                    span.innerText = `${fechaActual.getDate().toString().padStart(2,'0')}/${(fechaActual.getMonth()+1).toString().padStart(2,'0')}`;
-                    subContenedor.appendChild(span);
-                    fechaActual.setDate(fechaActual.getDate() + 7);
-                }
-                contenedorFechas.appendChild(subContenedor);
-            }
+            const dur = parseInt(b.style.flex);
+            t += dur;
+            const div = document.createElement('div');
+            div.style.flex = dur;
+            div.className = 'fecha-item';
+            div.innerText = `${fecha.getDate().toString().padStart(2,'0')}/${(fecha.getMonth()+1).toString().padStart(2,'0')}`;
+            cont.appendChild(div);
+            fecha.setDate(fecha.getDate() + (dur * 7));
         });
 
-        // Añadir fecha final al final de la línea
-        if (fechaActual) {
-            const final = document.createElement('span');
-            final.style.position = 'absolute';
-            final.style.right = '0';
-            final.innerText = `${fechaActual.getDate().toString().padStart(2,'0')}/${(fechaActual.getMonth()+1).toString().padStart(2,'0')}`;
-            contenedorFechas.appendChild(final);
-        }
+        const final = document.createElement('div');
+        final.className = 'fecha-item';
+        final.style.flex = '0';
+        final.innerText = `${fecha.getDate().toString().padStart(2,'0')}/${(fecha.getMonth()+1).toString().padStart(2,'0')}`;
+        cont.appendChild(final);
 
         document.getElementById('totalSemanas').innerText = t;
-        if (inicio && t > 0) {
-            document.getElementById('fechaFin').value = fechaActual.toISOString().split('T')[0];
-        }
+        document.getElementById('fechaFin').value = fecha.toISOString().split('T')[0];
     }
 
     function guardarArchivo() { 
