@@ -270,162 +270,53 @@ body {
 }
 
 /* EXPORTACIÓN COMPACTA A PDF */
+/* REEMPLAZA TU BLOQUE @media print ACTUAL POR ESTE */
 @media print {
-  @page {
-    size: 45mm 77mm;
-    margin: 0;
-  }
+    @page {
+        size: A4 portrait; /* Mantenemos A4 porque el navegador no permite cambiarlo */
+        margin: 0;
+    }
 
-  html,
-  body {
-    margin: 0 !important;
-    padding: 0 !important;
-    width: 67mm !important;
-    min-width: 67mm !important;
-    max-width: 67mm !important;
-    height: auto !important;
-    min-height: 0 !important;
-    background: #000 !important;
-    color: #fff !important;
-    overflow: visible !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
+    /* Forzamos que toda la hoja sea negra */
+    html, body {
+        background-color: #000 !important;
+        color: #fff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        display: flex !important;
+        justify-content: center !important; /* Centra horizontalmente */
+        align-items: center !important;    /* Centra verticalmente */
+    }
 
-  body {
-    display: block !important;
-  }
+    /* Ocultamos todo lo que no queremos */
+    .fondo-logo, .panel-derecho, #banco, .no-print, .btn-action, .grid-botones-abajo {
+        display: none !important;
+    }
 
-  .fondo-logo,
-  .panel-derecho,
-  #banco,
-  .no-print,
-  .btn-action,
-  .grid-botones-abajo {
-    display: none !important;
-    visibility: hidden !important;
-  }
+    /* Tu tabla con el tamaño fijo que querías */
+    .contenedor-principal {
+        display: block !important;
+        width: 45mm !important;
+        height: 77mm !important;
+        background: #1e1e1e !important;
+        border: 1px solid #4a4a4a !important;
+        padding: 2mm !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+    }
 
-  .layout-editor {
-    display: block !important;
-    width: 67mm !important;
-    height: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: #000 !important;
-  }
-
-  .contenedor-principal {
-    display: block !important;
-    box-sizing: border-box !important;
-    width: 67mm !important;
-    height: auto !important;
-    min-height: 0 !important;
-    margin: 0 !important;
-    padding: 2mm !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: #000 !important;
-  }
-
-  .header {
-    box-sizing: border-box !important;
-    width: 100% !important;
-    margin: 0 0 1.5mm 0 !important;
-    padding: 2mm !important;
-    gap: 1.3mm !important;
-    border-radius: 1.5mm !important;
-    background: #1e1e1e !important;
-    border: 0.3mm solid #4a4a4a !important;
-  }
-
-  .head-item {
-    font-size: 6.5pt !important;
-    line-height: 1.15 !important;
-  }
-
-  .head-val {
-    font-size: 6.5pt !important;
-    padding: 0.4mm 1mm !important;
-    background: #2c2c2c !important;
-    color: #69db7c !important;
-    border: 0.3mm solid #444 !important;
-  }
-
-  .semana-grid {
-    box-sizing: border-box !important;
-    width: 100% !important;
-    gap: 1.4mm !important;
-    padding: 2mm !important;
-    border-radius: 1.5mm !important;
-    background: #1e1e1e !important;
-    border: 0.3mm solid #4a4a4a !important;
-  }
-
-  .dia-columna {
-    box-sizing: border-box !important;
-    min-height: 8mm !important;
-    padding: 1.2mm !important;
-    gap: 1.2mm !important;
-    border-radius: 1.2mm !important;
-    background: #2c2c2c !important;
-    border: 0.3mm solid #4a4a4a !important;
-  }
-
-  .dia-nombre {
-    width: 8mm !important;
-    min-width: 8mm !important;
-    font-size: 5.2pt !important;
-    padding: 0.8mm !important;
-    border-radius: 0.8mm !important;
-    background: #3a3a3a !important;
-    color: #cbd5e1 !important;
-  }
-
-  .sesion {
-    min-height: 6.8mm !important;
-    padding: 0.8mm 1.2mm !important;
-    border-radius: 0.8mm !important;
-    border: 0.3mm solid #4a4a4a !important;
-    color: #000 !important;
-  }
-
-  .sesion-contenido {
-    grid-template-columns: 4.5mm 1fr 7mm !important;
-    gap: 0.8mm !important;
-  }
-
-  .sesion-text {
-    font-size: 5.2pt !important;
-  }
-
-  .btn-del-sesion,
-  .btn-link,
-  .link-btn {
-    font-size: 4.8pt !important;
-  }
-
-  .sesion.fmax {
-    background-color: #3b82f6 !important;
-  }
-
-  .sesion.reox {
-    background-color: #69db7c !important;
-  }
-
-  .sesion.roca {
-    background-color: #ffd43b !important;
-  }
-
-  .sesion.antagonistas {
-    background-color: #4dabf7 !important;
-  }
-
-  .sesion.descanso {
-    background-color: #ff6b6b !important;
-  }
+    /* Ajustes internos para que todo quepa en esos 45x77mm */
+    .header, .semana-grid {
+        background: transparent !important;
+        border: none !important;
+        padding: 0 !important;
+        margin-bottom: 2mm !important;
+    }
 }
-
 </style>
 </head>
 
