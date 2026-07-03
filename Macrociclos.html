@@ -26,7 +26,7 @@
         .fmax { background-color: #ff6b6b; } .desox { background-color: #4dabf7; }
         .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
         .tap { background-color: #ffd43b; }
-        #calendario { display: flex; gap: 2px; flex-wrap: wrap; margin-top: 10px; }
+        #calendario { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -50,10 +50,12 @@
     </div>
     <div id="pantalla-wrapper"><div id="pantalla"></div></div>
     <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
+    
     <div style="margin-top: 20px;">
-        <h3 style="font-size: 14px; margin-bottom: 10px; color: #aaa;">Calendario semanal</h3>
+        <h3 style="font-size: 14px; margin-bottom: 10px; color: #aaa;">Calendario Real</h3>
         <div id="calendario"></div>
     </div>
+
     <div style="text-align: center; margin-top: 20px;">
         <button onclick="window.location.href='index.html'" style="padding: 8px 16px; font-weight: 900;">&larr; INICIO</button>
     </div>
@@ -89,36 +91,49 @@
         const contenedor = document.getElementById('calendario');
         contenedor.innerHTML = '';
         const bloques = Array.from(document.querySelectorAll('.bloque'));
+        const fechaInicio = new Date(document.getElementById('fechaInicio').value);
+        
+        if (isNaN(fechaInicio.getTime())) return;
+
+        let semanaGlobal = 0;
         bloques.forEach(b => {
             const fase = b.className.split(' ')[1];
             const semanas = parseInt(b.style.flex);
             for (let i = 0; i < semanas; i++) {
+                let fechaSem = new Date(fechaInicio);
+                fechaSem.setDate(fechaSem.getDate() + (semanaGlobal * 7));
+                
                 const sem = document.createElement('div');
                 sem.className = `bloque ${fase}`;
-                sem.style.width = '30px'; sem.style.height = '30px'; sem.style.fontSize = '8px';
-                sem.style.borderRadius = '3px'; sem.style.color = '#000';
-                sem.innerText = `S${i+1}`;
+                sem.style.width = '42px'; sem.style.height = '42px';
+                sem.style.fontSize = '8px'; sem.style.borderRadius = '4px';
+                sem.style.color = '#000'; sem.style.textAlign = 'center';
+                sem.style.paddingTop = '5px';
+                sem.innerHTML = `<div>S${semanaGlobal + 1}</div><div style="font-weight:bold;">${String(fechaSem.getDate()).padStart(2,'0')}/${String(fechaSem.getMonth()+1).padStart(2,'0')}</div>`;
                 contenedor.appendChild(sem);
+                semanaGlobal++;
             }
         });
     }
     
     function limpiarPlan() {
         document.getElementById('pantalla').innerHTML = '';
-        localStorage.setItem('kaskaPlan', 'vacio');
         document.getElementById('totalSemanas').innerText = '0';
         document.getElementById('fechaFin').value = '';
-        document.getElementById('titulo').innerText = 'Macrociclo';
         document.getElementById('fechaInicio').value = '';
+        localStorage.setItem('kaskaPlan', 'vacio');
         generarCalendario();
     }
 
     window.onload = () => {
         const dataGuardada = localStorage.getItem('kaskaPlan');
-        let data = (!dataGuardada || dataGuardada === 'vacio') ? PLAN_POR_DEFECTO : JSON.parse(dataGuardada);
-        document.getElementById('titulo').innerText = data.titulo;
-        document.getElementById('fechaInicio').value = data.inicio;
-        data.bloques.forEach(b => agregarBloque(b.fase, b.semanas));
+        if(dataGuardada && dataGuardada !== 'vacio') {
+            const data = JSON.parse(dataGuardada);
+            document.getElementById('titulo').innerText = data.titulo;
+            document.getElementById('fechaInicio').value = data.inicio;
+            data.bloques.forEach(b => agregarBloque(b.fase, b.semanas));
+            calcularTotal();
+        }
         generarCalendario();
     };
 
@@ -134,27 +149,7 @@
         }
     }
 
-    function guardarArchivo() { 
-        const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan.json'; a.click(); 
-    }
-
-    function cargarArchivo() {
-        const input = document.createElement('input'); input.type = 'file';
-        input.onchange = e => {
-            const reader = new FileReader();
-            reader.onload = event => { localStorage.setItem('kaskaPlan', event.target.result); location.reload(); };
-            reader.readAsText(e.target.files[0]);
-        };
-        input.click();
-    }
-
-    function exportarPDF() {
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('l', 'mm', [60, 200]);
-        pdf.text("Exportación de Macrociclo", 10, 10);
-        pdf.save('Macrociclo.pdf');
-    }
+    function exportarPDF() { alert("Función de exportación de calendario real pendiente de configuración."); }
 
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); generarCalendario(); } });
 </script>
