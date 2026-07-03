@@ -52,7 +52,7 @@
     </div>
     <div id="pantalla-wrapper">
         <div id="pantalla"></div>
-        <div id="contenedor-fechas" style="display: flex; width: 100%; height: 20px; margin-top: 5px; font-size: 10px; color: #888;"></div>
+        <div id="contenedor-fechas" style="display: flex; width: 100%; margin-top: 5px; font-size: 9px; color: #aaa; text-align: center;"></div>
     </div>
     <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
     
@@ -127,7 +127,7 @@
             if (fechaActual) {
                 const fechaLabel = document.createElement('div');
                 fechaLabel.style.flex = duracion;
-                fechaLabel.style.textAlign = 'center';
+                // Formato de inicio de bloque
                 fechaLabel.innerText = `${fechaActual.getDate().toString().padStart(2,'0')}/${(fechaActual.getMonth()+1).toString().padStart(2,'0')}`;
                 contenedorFechas.appendChild(fechaLabel);
                 fechaActual.setDate(fechaActual.getDate() + (duracion * 7));
@@ -166,7 +166,6 @@
         const { jsPDF } = window.jspdf;
         const pW = 189; const pH = 44;
         const pdf = new jsPDF('landscape', 'mm', [pH, pW]);
-
         const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
         const fechaInicio = formatearFecha(document.getElementById('fechaInicio').value);
         const fechaFin = formatearFecha(document.getElementById('fechaFin').value);
@@ -181,7 +180,6 @@
         pdf.setFillColor(31, 31, 31);
         pdf.setDrawColor(55, 55, 55);
         pdf.roundedRect(4, 4, pW - 8, pH - 8, 3, 3, 'FD');
-
         pdf.setTextColor(255, 255, 255);
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(9);
