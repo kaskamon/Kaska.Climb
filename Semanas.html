@@ -1,19 +1,19 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="manifest.json">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Kaska.Climb">
-<link rel="apple-touch-icon" href="/logo-192.png">
+<link rel="apple-touch-icon" href="logo-192.png">
 <meta name="theme-color" content="#121212">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kaska.Climb | Semanas</title>
 
-<script src="[cdnjs.cloudflare.com](https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js)"></script>
-<script src="[cdnjs.cloudflare.com](https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js)"></script>
-<script src="[cdnjs.cloudflare.com](https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js)"></script>
+<script src="libs/Sortable.min.js"></script>
+<script src="libs/html2canvas.min.js"></script>
+<script src="libs/jspdf.umd.min.js"></script>
 
 <style>
 :root {
@@ -218,7 +218,7 @@ body {
   text-decoration: none;
   justify-self: end;
   font-weight: bold;
-  cursor: default;
+  cursor: pointer;
 }
 
 .btn-action {
@@ -231,6 +231,7 @@ body {
   cursor: pointer;
   width: 100%;
   display: block;
+  box-sizing: border-box;
 }
 
 #banco {
@@ -269,31 +270,35 @@ body {
   margin-bottom: 15px;
 }
 
-/* En tablet/móvil, acomoda el editor en columna para usarlo mejor */
 @media screen and (max-width: 820px) {
   body {
     align-items: flex-start;
+    justify-content: flex-start;
     padding: 12px;
+    overflow-x: auto;
   }
 
   .layout-editor {
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: flex-start;
+    width: max-content;
   }
 
   .contenedor-principal {
-    width: min(400px, 100%);
+    width: 400px;
   }
 
-  .panel-derecho,
+  .panel-derecho {
+    width: 300px;
+  }
+
   #banco,
   .grid-botones-abajo {
-    width: min(400px, 100%);
+    width: 300px;
   }
 }
 
-/* Se mantiene por si alguna vez quieres usar imprimir desde PC */
 @media print {
   @page {
     size: 67mm 100mm;
@@ -340,80 +345,6 @@ body {
     border: none !important;
     border-radius: 0 !important;
     background: #000 !important;
-  }
-
-  .header {
-    width: 100% !important;
-    margin: 0 0 1.5mm 0 !important;
-    padding: 2mm !important;
-    gap: 1.3mm !important;
-    border-radius: 1.5mm !important;
-    background: #1e1e1e !important;
-    border: 0.3mm solid #4a4a4a !important;
-  }
-
-  .head-item {
-    font-size: 6.5pt !important;
-    line-height: 1.15 !important;
-  }
-
-  .head-val {
-    font-size: 6.5pt !important;
-    padding: 0.4mm 1mm !important;
-    background: #2c2c2c !important;
-    color: #69db7c !important;
-    border: 0.3mm solid #444 !important;
-  }
-
-  .semana-grid {
-    width: 100% !important;
-    gap: 1.4mm !important;
-    padding: 2mm !important;
-    border-radius: 1.5mm !important;
-    background: #1e1e1e !important;
-    border: 0.3mm solid #4a4a4a !important;
-  }
-
-  .dia-columna {
-    min-height: 8mm !important;
-    padding: 1.2mm !important;
-    gap: 1.2mm !important;
-    border-radius: 1.2mm !important;
-    background: #2c2c2c !important;
-    border: 0.3mm solid #4a4a4a !important;
-  }
-
-  .dia-nombre {
-    width: 8mm !important;
-    min-width: 8mm !important;
-    font-size: 5.2pt !important;
-    padding: 0.8mm !important;
-    border-radius: 0.8mm !important;
-    background: #3a3a3a !important;
-    color: #cbd5e1 !important;
-  }
-
-  .sesion {
-    min-height: 6.8mm !important;
-    padding: 0.8mm 1.2mm !important;
-    border-radius: 0.8mm !important;
-    border: 0.3mm solid #4a4a4a !important;
-    color: #000 !important;
-  }
-
-  .sesion-contenido {
-    grid-template-columns: 4.5mm 1fr 7mm !important;
-    gap: 0.8mm !important;
-  }
-
-  .sesion-text {
-    font-size: 5.2pt !important;
-  }
-
-  .btn-del-sesion,
-  .btn-link,
-  .link-btn {
-    font-size: 4.8pt !important;
   }
 }
 </style>
@@ -519,29 +450,32 @@ body {
       <button class="btn-action" onclick="guardar()">Guardar</button>
       <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
       <button class="btn-action" onclick="restablecerLinks()">Limpiar Links</button>
-      <button class="btn-action" onclick="exportarPNG()">Exportar PNG</button>
-      <button class="btn-action" onclick="exportarPDFReal()">Exportar PDF</button>
+      <button class="btn-action" onclick="exportarPDFReal(event)">Exportar PDF</button>
     </div>
   </div>
 </div>
 
 <script>
 function act() {
-  document.querySelectorAll('.dia-columna').forEach(d => {
-    new Sortable(d, {
-      group: 's',
-      filter: '.dia-nombre'
+  if (window.Sortable) {
+    document.querySelectorAll('.dia-columna').forEach(d => {
+      new Sortable(d, {
+        group: 's',
+        filter: '.dia-nombre'
+      });
     });
-  });
 
-  new Sortable(document.getElementById('banco'), {
-    group: {
-      name: 's',
-      pull: 'clone',
-      put: false
-    },
-    sort: false
-  });
+    new Sortable(document.getElementById('banco'), {
+      group: {
+        name: 's',
+        pull: 'clone',
+        put: false
+      },
+      sort: false
+    });
+  } else {
+    alert("No se ha cargado Sortable.min.js. Revisa que esté en la carpeta libs.");
+  }
 }
 
 function abrirSelectorFecha() {
@@ -585,11 +519,30 @@ document.addEventListener('click', e => {
   }
 });
 
+function normalizarUrl(url) {
+  const limpia = url.trim();
+
+  if (!limpia) return "";
+
+  if (
+    limpia.startsWith("http://") ||
+    limpia.startsWith("https://") ||
+    limpia.startsWith("mailto:") ||
+    limpia.startsWith("tel:") ||
+    limpia.startsWith("file:")
+  ) {
+    return limpia;
+  }
+
+  return limpia;
+}
+
 function addLink(el) {
   const u = prompt("Enlace:");
 
   if (u) {
-    el.outerHTML = `<a href="${u}" target="_blank" rel="noopener" class="link-btn">▶ Ver</a>`;
+    const url = normalizarUrl(u);
+    el.outerHTML = `<a href="${url}" target="_blank" rel="noopener" class="link-btn">▶ Ver</a>`;
   }
 }
 
@@ -614,88 +567,92 @@ function guardar() {
   alert("Guardado");
 }
 
-function prepararPanelParaExportar() {
+async function exportarPDFReal(evento) {
+  if (!window.html2canvas) {
+    alert("No se ha cargado html2canvas.min.js. Revisa que esté en la carpeta libs.");
+    return;
+  }
+
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    alert("No se ha cargado jspdf.umd.min.js. Revisa que esté en la carpeta libs.");
+    return;
+  }
+
   const panel = document.getElementById('panelExportable');
-  const rect = panel.getBoundingClientRect();
 
-  return {
-    panel,
-    width: Math.ceil(rect.width),
-    height: Math.ceil(panel.scrollHeight)
-  };
-}
+  if (!panel) {
+    alert("No encuentro el panel exportable.");
+    return;
+  }
 
-async function crearCanvasExportacion() {
-  const datos = prepararPanelParaExportar();
+  const boton = evento && evento.target ? evento.target : null;
 
-  const canvas = await html2canvas(datos.panel, {
-    backgroundColor: '#000000',
-    scale: 3,
-    useCORS: true,
-    allowTaint: true,
-    width: datos.width,
-    height: datos.height,
-    windowWidth: datos.width,
-    windowHeight: datos.height,
-    scrollX: 0,
-    scrollY: 0
-  });
+  if (boton) {
+    boton.disabled = true;
+    boton.innerText = "Generando PDF...";
+  }
 
-  return {
-    canvas,
-    panel: datos.panel
-  };
-}
+  try {
+    const rect = panel.getBoundingClientRect();
 
-async function exportarPNG() {
-  const { canvas } = await crearCanvasExportacion();
-
-  const link = document.createElement('a');
-  link.download = 'kaska-climb-semana.png';
-  link.href = canvas.toDataURL('image/png');
-  link.click();
-}
-
-async function exportarPDFReal() {
-  const { canvas, panel } = await crearCanvasExportacion();
-
-  const imgData = canvas.toDataURL('image/png');
-
-  const escalaCanvas = 3;
-  const pxToMm = 0.264583;
-
-  const pdfWidth = canvas.width * pxToMm / escalaCanvas;
-  const pdfHeight = canvas.height * pxToMm / escalaCanvas;
-
-  const { jsPDF } = window.jspdf;
-
-  const pdf = new jsPDF({
-    orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
-    unit: 'mm',
-    format: [pdfWidth, pdfHeight],
-    compress: true
-  });
-
-  pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-  const panelRect = panel.getBoundingClientRect();
-  const enlaces = panel.querySelectorAll('a.link-btn[href]');
-
-  enlaces.forEach(enlace => {
-    const rect = enlace.getBoundingClientRect();
-
-    const x = (rect.left - panelRect.left) * pxToMm;
-    const y = (rect.top - panelRect.top) * pxToMm;
-    const w = rect.width * pxToMm;
-    const h = rect.height * pxToMm;
-    const url = enlace.href;
-
-    pdf.link(x, y, w, h, {
-      url: url
+    const canvas = await html2canvas(panel, {
+      backgroundColor: '#000000',
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      width: Math.ceil(rect.width),
+      height: Math.ceil(panel.scrollHeight),
+      windowWidth: Math.ceil(rect.width),
+      windowHeight: Math.ceil(panel.scrollHeight),
+      scrollX: 0,
+      scrollY: 0
     });
-  });
 
-  pdf.save('kaska-climb-semana.pdf');
+    const imgData = canvas.toDataURL('image/png');
+
+    const escalaCanvas = 2;
+    const pxToMm = 0.264583;
+
+    const pdfWidth = canvas.width * pxToMm / escalaCanvas;
+    const pdfHeight = canvas.height * pxToMm / escalaCanvas;
+
+    const { jsPDF } = window.jspdf;
+
+    const pdf = new jsPDF({
+      orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
+      unit: 'mm',
+      format: [pdfWidth, pdfHeight],
+      compress: true
+    });
+
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+    const panelRect = panel.getBoundingClientRect();
+    const enlaces = panel.querySelectorAll('a.link-btn[href]');
+
+    enlaces.forEach(enlace => {
+      const enlaceRect = enlace.getBoundingClientRect();
+
+      const x = (enlaceRect.left - panelRect.left) * pxToMm;
+      const y = (enlaceRect.top - panelRect.top) * pxToMm;
+      const w = enlaceRect.width * pxToMm;
+      const h = enlaceRect.height * pxToMm;
+
+      pdf.link(x, y, w, h, {
+        url: enlace.href
+      });
+    });
+
+    pdf.save('kaska-climb-semana.pdf');
+  } catch (error) {
+    alert("No se ha podido generar el PDF. Revisa que las librerías estén bien subidas en GitHub.");
+    console.error(error);
+  } finally {
+    if (boton) {
+      boton.disabled = false;
+      boton.innerText = "Exportar PDF";
+    }
+  }
 }
 
 window.onload = () => {
