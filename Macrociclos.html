@@ -29,6 +29,7 @@
         .fmax { background-color: #ff6b6b; } .desox { background-color: #4dabf7; }
         .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
         .tap { background-color: #ffd43b; }
+        .fechas-semanales { display: flex; justify-content: space-around; width: 100%; font-size: 8px; color: #666; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -52,7 +53,7 @@
     </div>
     <div id="pantalla-wrapper">
         <div id="pantalla"></div>
-        <div id="contenedor-fechas" style="display: flex; width: 100%; margin-top: 5px; font-size: 9px; color: #aaa; text-align: center;"></div>
+        <div id="contenedor-fechas" style="display: flex; width: 100%;"></div>
     </div>
     <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
     
@@ -125,12 +126,17 @@
             t += duracion;
 
             if (fechaActual) {
-                const fechaLabel = document.createElement('div');
-                fechaLabel.style.flex = duracion;
-                // Formato de inicio de bloque
-                fechaLabel.innerText = `${fechaActual.getDate().toString().padStart(2,'0')}/${(fechaActual.getMonth()+1).toString().padStart(2,'0')}`;
-                contenedorFechas.appendChild(fechaLabel);
-                fechaActual.setDate(fechaActual.getDate() + (duracion * 7));
+                const subContenedor = document.createElement('div');
+                subContenedor.className = 'fechas-semanales';
+                subContenedor.style.flex = duracion;
+                
+                for(let i = 0; i < duracion; i++) {
+                    const span = document.createElement('span');
+                    span.innerText = `${fechaActual.getDate().toString().padStart(2,'0')}/${(fechaActual.getMonth()+1).toString().padStart(2,'0')}`;
+                    subContenedor.appendChild(span);
+                    fechaActual.setDate(fechaActual.getDate() + 7);
+                }
+                contenedorFechas.appendChild(subContenedor);
             }
         });
 
