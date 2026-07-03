@@ -53,7 +53,7 @@
     </div>
     <div id="pantalla-wrapper">
         <div id="pantalla"></div>
-        <div id="contenedor-fechas" style="display: flex; width: 100%;"></div>
+        <div id="contenedor-fechas" style="display: flex; width: 100%; position: relative;"></div>
     </div>
     <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
     
@@ -139,6 +139,15 @@
                 contenedorFechas.appendChild(subContenedor);
             }
         });
+
+        // Añadir fecha final al final de la línea
+        if (fechaActual) {
+            const final = document.createElement('span');
+            final.style.position = 'absolute';
+            final.style.right = '0';
+            final.innerText = `${fechaActual.getDate().toString().padStart(2,'0')}/${(fechaActual.getMonth()+1).toString().padStart(2,'0')}`;
+            contenedorFechas.appendChild(final);
+        }
 
         document.getElementById('totalSemanas').innerText = t;
         if (inicio && t > 0) {
