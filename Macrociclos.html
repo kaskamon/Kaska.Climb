@@ -170,10 +170,11 @@
     function exportarPDF() {
         calcularTotal();
         const { jsPDF } = window.jspdf;
-        const pW = 189; const pH = 44;
+        const pW = 189; const pH = 50;
         const pdf = new jsPDF('landscape', 'mm', [pH, pW]);
         const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
-        const fechaInicio = formatearFecha(document.getElementById('fechaInicio').value);
+        const inicioVal = document.getElementById('fechaInicio').value;
+        const fechaInicio = formatearFecha(inicioVal);
         const fechaFin = formatearFecha(document.getElementById('fechaFin').value);
         const total = document.getElementById('totalSemanas').innerText.trim();
         const bloques = Array.from(document.querySelectorAll('.bloque')).map(b => ({
@@ -199,6 +200,8 @@
         const bW = pW - 16;
         const colores = { fmax:[255,107,107], desox:[77,171,247], reox:[105,219,124], aero:[177,151,252], tap:[255,212,59] };
 
+        let fechaActual = inicioVal ? new Date(inicioVal) : null;
+
         bloques.forEach(b => {
             const w = (bW * b.semanas) / tS;
             pdf.setFillColor(...(colores[b.fase] || [255,212,59]));
@@ -207,12 +210,26 @@
             pdf.setFontSize(6);
             pdf.text(b.fase.toUpperCase(), cX + w/2, 21, {align:'center'});
             pdf.text(b.semanas + 'S', cX + w/2, 25, {align:'center'});
+
+            if (fechaActual) {
+                const semanaW = w / b.semanas;
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(5);
+                pdf.setTextColor(150, 150, 150);
+                for (let i = 0; i < b.semanas; i++) {
+                    const etiqueta = `${fechaActual.getDate().toString().padStart(2,'0')}/${(fechaActual.getMonth()+1).toString().padStart(2,'0')}`;
+                    pdf.text(etiqueta, cX + semanaW * i + semanaW / 2, 32, {align:'center'});
+                    fechaActual.setDate(fechaActual.getDate() + 7);
+                }
+                pdf.setFont('helvetica', 'bold');
+            }
+
             cX += w;
         });
 
         pdf.setTextColor(255,255,255);
         pdf.setFontSize(7);
-        pdf.text(`TOTAL: ${total} SEMANAS`, 8, 38);
+        pdf.text(`TOTAL: ${total} SEMANAS`, 8, 44);
         pdf.save('Macrociclo.pdf');
     }
 
