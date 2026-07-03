@@ -29,10 +29,7 @@
         .fmax { background-color: #ff6b6b; } .desox { background-color: #4dabf7; }
         .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
         .tap { background-color: #ffd43b; }
-        
-        /* Contenedor de fechas modificado */
-        .fechas-bloque { display: flex; justify-content: space-around; padding: 0 5px; }
-        .fecha-semana { font-size: 8px; color: #aaa; text-align: center; }
+        .fechas-semanales { display: flex; justify-content: space-around; width: 100%; font-size: 8px; color: #666; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -56,16 +53,23 @@
     </div>
     <div id="pantalla-wrapper">
         <div id="pantalla"></div>
-        <div id="contenedor-fechas" style="display: flex; width: 100%; margin-top: 5px;"></div>
+        <div id="contenedor-fechas" style="display: flex; width: 100%;"></div>
     </div>
     <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
+    
+    <div style="text-align: center; margin-top: 20px;">
+        <button onclick="window.location.href='index.html'" style="padding: 8px 16px; font-weight: 900;">&larr; INICIO</button>
+    </div>
 </div>
 
 <script>
     const PLAN_POR_DEFECTO = {
-        "titulo": "MACROCICLO",
-        "inicio": new Date().toISOString().split('T')[0],
-        "bloques": []
+        "titulo": "MACROCICLO MIKEL GARCÍA",
+        "inicio": "2026-06-29",
+        "bloques": [
+            {"fase": "reox", "semanas": 6}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 4},
+            {"fase": "desox", "semanas": 4}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 3}, {"fase": "aero", "semanas": 4}
+        ]
     };
 
     function autoGuardar() {
@@ -96,6 +100,8 @@
         localStorage.setItem('kaskaPlan', 'vacio');
         document.getElementById('totalSemanas').innerText = '0';
         document.getElementById('fechaFin').value = '';
+        document.getElementById('titulo').innerText = 'Macrociclo';
+        document.getElementById('fechaInicio').value = '';
     }
 
     window.onload = () => {
@@ -109,40 +115,107 @@
     function calcularTotal() {
         let t = 0;
         const bloques = document.querySelectorAll('.bloque');
-        const cont = document.getElementById('contenedor-fechas');
-        cont.innerHTML = ''; 
+        const contenedorFechas = document.getElementById('contenedor-fechas');
+        contenedorFechas.innerHTML = ''; 
 
         const inicio = document.getElementById('fechaInicio').value;
-        if (!inicio) return;
-        let fecha = new Date(inicio);
+        let fechaActual = inicio ? new Date(inicio) : null;
 
         bloques.forEach(b => {
-            const dur = parseInt(b.style.flex);
-            t += dur;
+            const duracion = parseInt(b.style.flex);
+            t += duracion;
 
-            const divBloque = document.createElement('div');
-            divBloque.className = 'fechas-bloque';
-            divBloque.style.flex = dur;
-            
-            for(let i = 0; i < dur; i++) {
-                const span = document.createElement('span');
-                span.className = 'fecha-semana';
-                span.innerText = `${fecha.getDate().toString().padStart(2,'0')}/${(fecha.getMonth()+1).toString().padStart(2,'0')}`;
-                divBloque.appendChild(span);
-                fecha.setDate(fecha.getDate() + 7);
+            if (fechaActual) {
+                const subContenedor = document.createElement('div');
+                subContenedor.className = 'fechas-semanales';
+                subContenedor.style.flex = duracion;
+                
+                for(let i = 0; i < duracion; i++) {
+                    const span = document.createElement('span');
+                    span.innerText = `${fechaActual.getDate().toString().padStart(2,'0')}/${(fechaActual.getMonth()+1).toString().padStart(2,'0')}`;
+                    subContenedor.appendChild(span);
+                    fechaActual.setDate(fechaActual.getDate() + 7);
+                }
+                contenedorFechas.appendChild(subContenedor);
             }
-            cont.appendChild(divBloque);
         });
 
         document.getElementById('totalSemanas').innerText = t;
-        document.getElementById('fechaFin').value = fecha.toISOString().split('T')[0];
+        if (inicio && t > 0) {
+            document.getElementById('fechaFin').value = fechaActual.toISOString().split('T')[0];
+        }
     }
 
-    // ... (Mantener funciones de guardarArchivo, cargarArchivo y exportarPDF igual que en tu código original)
-    function guardarArchivo() { const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'}); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan.json'; a.click(); }
-    function cargarArchivo() { const input = document.createElement('input'); input.type = 'file'; input.onchange = e => { const reader = new FileReader(); reader.onload = event => { localStorage.setItem('kaskaPlan', event.target.result); location.reload(); }; reader.readAsText(e.target.files[0]); }; input.click(); }
-    function formatearFecha(iso) { if (!iso) return ''; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; }
-    function exportarPDF() { /* Mismo código de exportación */ }
+    function guardarArchivo() { 
+        const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan.json'; a.click(); 
+    }
+
+    function cargarArchivo() {
+        const input = document.createElement('input'); input.type = 'file';
+        input.onchange = e => {
+            const reader = new FileReader();
+            reader.onload = event => { localStorage.setItem('kaskaPlan', event.target.result); location.reload(); };
+            reader.readAsText(e.target.files[0]);
+        };
+        input.click();
+    }
+
+    function formatearFecha(iso) {
+        if (!iso) return '';
+        const [y, m, d] = iso.split('-');
+        return `${d}/${m}/${y}`;
+    }
+
+    function exportarPDF() {
+        calcularTotal();
+        const { jsPDF } = window.jspdf;
+        const pW = 189; const pH = 44;
+        const pdf = new jsPDF('landscape', 'mm', [pH, pW]);
+        const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
+        const fechaInicio = formatearFecha(document.getElementById('fechaInicio').value);
+        const fechaFin = formatearFecha(document.getElementById('fechaFin').value);
+        const total = document.getElementById('totalSemanas').innerText.trim();
+        const bloques = Array.from(document.querySelectorAll('.bloque')).map(b => ({
+            fase: b.className.split(' ')[1],
+            semanas: parseInt(b.style.flex)
+        }));
+
+        pdf.setFillColor(18, 18, 18);
+        pdf.rect(0, 0, pW, pH, 'F');
+        pdf.setFillColor(31, 31, 31);
+        pdf.setDrawColor(55, 55, 55);
+        pdf.roundedRect(4, 4, pW - 8, pH - 8, 3, 3, 'FD');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.text(titulo, 8, 10);
+        pdf.setFontSize(7.5);
+        const dS = `Inicio: ${fechaInicio}     Fin: ${fechaFin}`;
+        pdf.text(dS, pW - pdf.getTextWidth(dS) - 8, 10);
+
+        const tS = bloques.reduce((acc, b) => acc + b.semanas, 0) || 1;
+        let cX = 8;
+        const bW = pW - 16;
+        const colores = { fmax:[255,107,107], desox:[77,171,247], reox:[105,219,124], aero:[177,151,252], tap:[255,212,59] };
+
+        bloques.forEach(b => {
+            const w = (bW * b.semanas) / tS;
+            pdf.setFillColor(...(colores[b.fase] || [255,212,59]));
+            pdf.rect(cX, 16, w, 12, 'F');
+            pdf.setTextColor(0,0,0);
+            pdf.setFontSize(6);
+            pdf.text(b.fase.toUpperCase(), cX + w/2, 21, {align:'center'});
+            pdf.text(b.semanas + 'S', cX + w/2, 25, {align:'center'});
+            cX += w;
+        });
+
+        pdf.setTextColor(255,255,255);
+        pdf.setFontSize(7);
+        pdf.text(`TOTAL: ${total} SEMANAS`, 8, 38);
+        pdf.save('Macrociclo.pdf');
+    }
+
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
 </body>
