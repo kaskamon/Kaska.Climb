@@ -22,6 +22,9 @@
   --roca: #ffd43b;
   --antagonistas: #4dabf7;
   --descanso: #ff6b6b;
+  --aero: #b197fc;
+  --gym: #f783ac;
+  --pausa: #ffa94d;
   --bg-principal: #121212;
   --bg-panel: rgba(30, 30, 30, 0.85);
   --input-bg: #2c2c2c;
@@ -177,6 +180,18 @@ body {
 
 .sesion.descanso {
   background-color: var(--descanso) !important;
+}
+
+.sesion.aero {
+  background-color: var(--aero) !important;
+}
+
+.sesion.gym {
+  background-color: var(--gym) !important;
+}
+
+.sesion.pausa {
+  background-color: var(--pausa) !important;
 }
 
 .sesion-contenido {
@@ -412,17 +427,10 @@ body {
     <div id="banco" class="no-print">
       <h4 style="margin-top:0; color:#cbd5e1;">Banco de sesiones</h4>
 
-      <div class="sesion roca">
+      <div class="sesion descanso">
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">Roca/roco</span>
-        </div>
-      </div>
-
-      <div class="sesion antagonistas">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">Antagonistas</span>
+          <span class="sesion-text" contenteditable="true">FMAX (ROCO)</span>
           <span class="btn-link" onclick="addLink(this)">Link</span>
         </div>
       </div>
@@ -435,7 +443,38 @@ body {
         </div>
       </div>
 
-      <div class="sesion descanso">
+      <div class="sesion antagonistas">
+        <div class="sesion-contenido">
+          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
+          <span class="sesion-text" contenteditable="true">DESOX (ROCO)</span>
+          <span class="btn-link" onclick="addLink(this)">Link</span>
+        </div>
+      </div>
+
+      <div class="sesion aero">
+        <div class="sesion-contenido">
+          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
+          <span class="sesion-text" contenteditable="true">AERO (ROCO)</span>
+          <span class="btn-link" onclick="addLink(this)">Link</span>
+        </div>
+      </div>
+
+      <div class="sesion gym">
+        <div class="sesion-contenido">
+          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
+          <span class="sesion-text" contenteditable="true">GYM/ANTAGON.</span>
+          <span class="btn-link" onclick="addLink(this)">Link</span>
+        </div>
+      </div>
+
+      <div class="sesion roca">
+        <div class="sesion-contenido">
+          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
+          <span class="sesion-text" contenteditable="true">Roca/roco</span>
+        </div>
+      </div>
+
+      <div class="sesion pausa">
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
           <span class="sesion-text" contenteditable="true">Descanso</span>
@@ -533,7 +572,7 @@ function normalizarUrl(url) {
     return limpia;
   }
 
-  return limpia;
+  return "https://" + limpia;
 }
 
 function addLink(el) {
