@@ -88,8 +88,29 @@
         const b = document.createElement('div');
         b.className = 'bloque ' + fase;
         b.style.flex = duracion;
-        b.innerHTML = `<span>${fase.toUpperCase()}</span><span>${duracion}S</span><button class="btn-borrar" onclick="this.parentElement.remove(); calcularTotal(); autoGuardar();">X</button>`;
+        b.innerHTML = `<span>${fase.toUpperCase()}</span><span class="semanas-label">${duracion}S</span><button class="btn-borrar" onclick="event.stopPropagation(); this.parentElement.remove(); calcularTotal(); autoGuardar();">X</button>`;
+        b.addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn-borrar')) return;
+            editarDuracion(b);
+        });
         document.getElementById('pantalla').appendChild(b);
+        calcularTotal();
+        autoGuardar();
+    }
+
+    function editarDuracion(bloque) {
+        const actual = parseInt(bloque.style.flex);
+        const entrada = prompt('Duración del mesociclo (semanas):', actual);
+        if (entrada === null) return;
+
+        const nueva = parseInt(entrada);
+        if (!nueva || nueva < 1) {
+            alert('Introduce un número de semanas válido.');
+            return;
+        }
+
+        bloque.style.flex = nueva;
+        bloque.querySelector('.semanas-label').innerText = nueva + 'S';
         calcularTotal();
         autoGuardar();
     }
