@@ -14,7 +14,6 @@
 <script src="libs/Sortable.min.js"></script>
 <script src="libs/html2canvas.min.js"></script>
 <script src="libs/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
 <style>
 :root {
@@ -617,34 +616,6 @@ async function exportarPDFReal(evento) {
     return;
   }
 
-  if (!window.QRCode) {
-    alert("No se ha cargado qrcode.min.js. Revisa tu conexión a internet o añade la librería a la carpeta libs.");
-    return;
-  }
-
-  function generarQRDataURL(texto, tamano) {
-    return new Promise((resolve) => {
-      const contenedor = document.createElement('div');
-      contenedor.style.position = 'fixed';
-      contenedor.style.left = '-9999px';
-      contenedor.style.top = '-9999px';
-      document.body.appendChild(contenedor);
-
-      new QRCode(contenedor, {
-        text: texto,
-        width: tamano,
-        height: tamano,
-        correctLevel: QRCode.CorrectLevel.M
-      });
-
-      // qrcode.js dibuja de forma síncrona en un <canvas> (o <img> como fallback)
-      const canvas = contenedor.querySelector('canvas');
-      const dataUrl = canvas ? canvas.toDataURL('image/png') : contenedor.querySelector('img').src;
-      document.body.removeChild(contenedor);
-      resolve(dataUrl);
-    });
-  }
-
   const panel = document.getElementById('panelExportable');
 
   if (!panel) {
@@ -653,22 +624,6 @@ async function exportarPDFReal(evento) {
   }
 
   const boton = evento && evento.target ? evento.target : null;
-
-  // Pedimos el archivo AHORA, mientras el clic todavía cuenta como
-  // "gesto de usuario". Si lo pedimos después de generar el PDF con
-  // html2canvas, el navegador ya no deja abrir el diálogo.
-  let handlePrevio = null;
-  if ('showSaveFilePicker' in window) {
-    try {
-      handlePrevio = await window.showSaveFilePicker({
-        suggestedName: 'kaska-climb-semana.pdf',
-        types: [{ description: 'PDF', accept: { 'application/pdf': ['.pdf'] } }]
-      });
-    } catch (err) {
-      if (err.name === 'AbortError') return; // el usuario canceló el diálogo
-      handlePrevio = null; // seguimos con el método clásico más abajo
-    }
-  }
 
   if (boton) {
     boton.disabled = true;
@@ -712,7 +667,6 @@ async function exportarPDFReal(evento) {
 
     const panelRect = panel.getBoundingClientRect();
     const enlaces = panel.querySelectorAll('a.link-btn[href]');
-    const enlacesInfo = [];
 
     enlaces.forEach(enlace => {
       const enlaceRect = enlace.getBoundingClientRect();
@@ -722,105 +676,12 @@ async function exportarPDFReal(evento) {
       const w = enlaceRect.width * pxToMm;
       const h = enlaceRect.height * pxToMm;
 
-      // Dejamos el link clicable por si el visor de PDF lo soporta,
-      // pero NO nos podemos fiar solo de esto (muchos visores en Android lo ignoran).
       pdf.link(x, y, w, h, {
-        url: enlace.href
-      });
-
-      const contenedorSesion = enlace.closest('.sesion-contenido');
-      const nombreSesion = contenedorSesion ? (contenedorSesion.querySelector('.sesion-text')?.innerText.trim() || 'Sesión') : 'Sesión';
-      const columnaDia = enlace.closest('.dia-columna');
-      const nombreDia = columnaDia ? (columnaDia.querySelector('.dia-nombre')?.innerText.trim() || '') : '';
-
-      enlacesInfo.push({
-        label: (nombreDia ? nombreDia + ' – ' : '') + nombreSesion,
         url: enlace.href
       });
     });
 
-    // Página adicional con cada enlace en texto grande y real (seleccionable/copiable
-    // y detectado automáticamente como URL por muchos visores), más un área clicable
-    // encima, y un QR como extra para cuando se vea en OTRO dispositivo.
-    if (enlacesInfo.length > 0) {
-      pdf.addPage('a4', 'portrait');
-
-      const margenX = 15;
-      const anchoUtil = 210 - margenX * 2;
-      const qrSize = 22;
-      let cursorY = 18;
-
-      const fondoPagina = () => {
-        pdf.setFillColor(18, 18, 18);
-        pdf.rect(0, 0, 210, 297, 'F');
-      };
-
-      fondoPagina();
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setFontSize(14);
-      pdf.text('Enlaces a vídeos', margenX, cursorY);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(8);
-      pdf.setTextColor(160, 160, 160);
-      pdf.text('Toca la URL para abrirla. Si no responde, selecciónala y cópiala.', margenX, cursorY + 6);
-      cursorY += 16;
-
-      for (const item of enlacesInfo) {
-        if (cursorY > 250) {
-          pdf.addPage('a4', 'portrait');
-          fondoPagina();
-          cursorY = 18;
-        }
-
-        // Etiqueta de la sesión
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(10);
-        pdf.setTextColor(255, 255, 255);
-        pdf.text(item.label, margenX, cursorY);
-
-        // URL grande, en azul, simulando un link — texto real, no imagen
-        const urlY = cursorY + 6;
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(10);
-        pdf.setTextColor(90, 160, 255);
-        pdf.textWithLink(item.url, margenX, urlY, { url: item.url });
-
-        // Área clicable extra sobre todo el ancho de la línea, más generosa que
-        // el texto en sí, para que sea fácil de tocar en pantallas pequeñas
-        const anchoTexto = pdf.getTextWidth(item.url);
-        pdf.link(margenX - 1, urlY - 4, Math.max(anchoTexto, 60) + 4, 7, { url: item.url });
-
-        // QR pequeño al lado, como extra por si se ve en OTRO dispositivo
-        const dataUrlQR = await generarQRDataURL(item.url, 180);
-        pdf.setFillColor(255, 255, 255);
-        pdf.rect(210 - margenX - qrSize - 2, cursorY - 4, qrSize + 4, qrSize + 4, 'F');
-        pdf.addImage(dataUrlQR, 'PNG', 210 - margenX - qrSize, cursorY - 2, qrSize, qrSize);
-
-        // Línea separadora sutil
-        cursorY += qrSize + 4;
-        pdf.setDrawColor(60, 60, 60);
-        pdf.line(margenX, cursorY, 210 - margenX, cursorY);
-        cursorY += 10;
-      }
-    }
-
-    const blobPdf = pdf.output('blob');
-
-    if (handlePrevio) {
-      const writable = await handlePrevio.createWritable();
-      await writable.write(blobPdf);
-      await writable.close();
-    } else {
-      const url = URL.createObjectURL(blobPdf);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'kaska-climb-semana.pdf';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 100);
-    }
+    pdf.save('kaska-climb-semana.pdf');
   } catch (error) {
     alert("No se ha podido generar el PDF. Revisa que las librerías estén bien subidas en GitHub.");
     console.error(error);
