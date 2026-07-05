@@ -450,17 +450,34 @@
             const nombreSugerido = (inputTituloPrincipal.value.trim() || 'tabla-entrenamiento').toLowerCase().replace(/[^a-z0-9]/gi, '_') + '.json';
 
             const blob = new Blob([textoJson], { type: 'application/json' });
+
+            // showSaveFilePicker SÍ abre el diálogo nativo "Guardar como"
+            // (el método <a download> de abajo NO lo hace en Android/tablets).
+            if ('showSaveFilePicker' in window) {
+                try {
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: nombreSugerido,
+                        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+                    });
+                    const writable = await handle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return;
+                } catch (err) {
+                    if (err.name === 'AbortError') return; // el usuario canceló el diálogo
+                    // si falla por otro motivo, seguimos con el método clásico de abajo
+                }
+            }
+
             const url = URL.createObjectURL(blob);
-            
             const enlace = document.createElement('a');
             enlace.href = url;
             enlace.download = nombreSugerido;
-            
-            // Esto fuerza al navegador a abrir el diálogo de "Guardar como" del sistema
+
             document.body.appendChild(enlace);
             enlace.click();
             document.body.removeChild(enlace);
-            
+
             // Limpieza
             setTimeout(() => URL.revokeObjectURL(url), 100);
         });
