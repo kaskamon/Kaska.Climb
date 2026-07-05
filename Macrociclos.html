@@ -256,5 +256,8 @@
 
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
 </script>
+    <button onclick="alert('showSaveFilePicker: ' + ('showSaveFilePicker' in window) + '\n\nUA: ' + navigator.userAgent)">
+  Diagnóstico
+</button>
 </body>
 </html>
