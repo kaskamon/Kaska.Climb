@@ -188,7 +188,33 @@
         return `${d}/${m}/${y}`;
     }
 
-    function exportarPDF() {
+    async function guardarBlobComoArchivo(blob, nombreSugerido, mime) {
+        if ('showSaveFilePicker' in window) {
+            try {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: nombreSugerido,
+                    types: [{ description: mime, accept: { [blob.type || 'application/octet-stream']: ['.' + nombreSugerido.split('.').pop()] } }]
+                });
+                const writable = await handle.createWritable();
+                await writable.write(blob);
+                await writable.close();
+                return;
+            } catch (err) {
+                if (err.name === 'AbortError') return; // el usuario canceló el diálogo
+                // si falla por otro motivo, seguimos con el método clásico de abajo
+            }
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nombreSugerido;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 100);
+    }
+
+    async function exportarPDF() {
         calcularTotal();
         const { jsPDF } = window.jspdf;
         const pW = 189; const pH = 50;
@@ -251,7 +277,9 @@
         pdf.setTextColor(255,255,255);
         pdf.setFontSize(7);
         pdf.text(`TOTAL: ${total} SEMANAS`, 8, 44);
-        pdf.save('Macrociclo.pdf');
+
+        const blobPdf = pdf.output('blob');
+        await guardarBlobComoArchivo(blobPdf, 'Macrociclo.pdf', 'PDF');
     }
 
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
