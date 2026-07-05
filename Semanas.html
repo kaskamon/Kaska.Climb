@@ -625,6 +625,22 @@ async function exportarPDFReal(evento) {
 
   const boton = evento && evento.target ? evento.target : null;
 
+  // Pedimos el archivo AHORA, mientras el clic todavía cuenta como
+  // "gesto de usuario". Si lo pedimos después de generar el PDF con
+  // html2canvas, el navegador ya no deja abrir el diálogo.
+  let handlePrevio = null;
+  if ('showSaveFilePicker' in window) {
+    try {
+      handlePrevio = await window.showSaveFilePicker({
+        suggestedName: 'kaska-climb-semana.pdf',
+        types: [{ description: 'PDF', accept: { 'application/pdf': ['.pdf'] } }]
+      });
+    } catch (err) {
+      if (err.name === 'AbortError') return; // el usuario canceló el diálogo
+      handlePrevio = null; // seguimos con el método clásico más abajo
+    }
+  }
+
   if (boton) {
     boton.disabled = true;
     boton.innerText = "Generando PDF...";
@@ -681,7 +697,22 @@ async function exportarPDFReal(evento) {
       });
     });
 
-    pdf.save('kaska-climb-semana.pdf');
+    const blobPdf = pdf.output('blob');
+
+    if (handlePrevio) {
+      const writable = await handlePrevio.createWritable();
+      await writable.write(blobPdf);
+      await writable.close();
+    } else {
+      const url = URL.createObjectURL(blobPdf);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'kaska-climb-semana.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+    }
   } catch (error) {
     alert("No se ha podido generar el PDF. Revisa que las librerías estén bien subidas en GitHub.");
     console.error(error);
