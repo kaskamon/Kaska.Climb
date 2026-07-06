@@ -287,7 +287,7 @@
             
             <div class="zona-botones">
                 <button id="btn-nueva-parte" class="btn-principal">Añadir Nueva Parte</button>
-                <button id="btn-exportar" class="btn-principal" onclick="guardarPDF()">Guardar como PDF</button>
+                <button id="btn-exportar" class="btn-principal" onclick="window.print()">Guardar como PDF</button>
                 <button id="btn-descargar-json" class="btn-principal">Guardar Tabla Modificable</button>
                 
                 <input type="file" id="input-cargar-json" accept=".json" style="display: none;">
@@ -319,15 +319,6 @@
         const inputCambiarLogo = document.getElementById('input-cambiar-logo');
 
         let contadorPartes = 0;
-
-function guardarPDF(){
- if(window.showSaveFilePicker){
-   window.print();
- } else {
-   window.print();
- }
-}
-
         
         function obtenerDatosEstructura() {
             const datosEntreno = { tituloPrincipal: inputTituloPrincipal.value, partes: [] };
@@ -531,5 +522,14 @@ function guardarPDF(){
             crearParteUI();
         });
     </script>
-</body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+async function guardarPDF(){
+ const el=document.getElementById('vistaPrincipalApp');
+ const nombre=((document.getElementById('titulo-entreno-principal').value.trim())||'tabla-entrenamiento')+'.pdf';
+ const opt={margin:15/25.4,filename:nombre,image:{type:'jpeg',quality:1},html2canvas:{scale:2},jsPDF:{unit:'in',format:'a4','orientation':'portrait'}};
+ html2pdf().set(opt).from(el).save();
+}
+document.getElementById('btn-exportar').onclick=guardarPDF;
+</script></body>
 </html>
