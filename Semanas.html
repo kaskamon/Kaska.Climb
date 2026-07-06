@@ -605,32 +605,6 @@ function guardar() {
   alert("Guardado");
 }
 
-async function guardarPDF(pdf, nombreSugerido) {
-  // Si el navegador soporta elegir nombre y carpeta al guardar, lo usamos
-  if (window.showSaveFilePicker) {
-    try {
-      const blob = pdf.output('blob');
-      const handle = await window.showSaveFilePicker({
-        suggestedName: nombreSugerido,
-        types: [{
-          description: 'Documento PDF',
-          accept: { 'application/pdf': ['.pdf'] }
-        }]
-      });
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      return;
-    } catch (err) {
-      if (err && err.name === 'AbortError') return; // el usuario canceló el diálogo
-      console.warn('No se pudo usar el selector nativo, se usa la descarga estándar.', err);
-      // seguimos hacia el método clásico si falla por otro motivo
-    }
-  }
-  // Método clásico (descarga directa a Descargas)
-  pdf.save(nombreSugerido);
-}
-
 async function exportarPDFReal(evento) {
   if (!window.html2canvas) {
     alert("No se ha cargado html2canvas.min.js. Revisa que esté en la carpeta libs.");
@@ -707,7 +681,7 @@ async function exportarPDFReal(evento) {
       });
     });
 
-    await guardarPDF(pdf, 'kaska-climb-semana.pdf');
+    pdf.save('kaska-climb-semana.pdf');
   } catch (error) {
     alert("No se ha podido generar el PDF. Revisa que las librerías estén bien subidas en GitHub.");
     console.error(error);
