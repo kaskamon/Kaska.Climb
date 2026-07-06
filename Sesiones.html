@@ -5,52 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaska.Climb | Sesiones</title>
     <style>
-        /* Tu CSS actual aquí... */
+        /* MANTÉN TU CSS ORIGINAL AQUÍ. He añadido la regla de impresión necesaria: */
         @media print {
-            .cuerpo-app { padding: 0 !important; padding-top: 2mm !important; }
-            body { background: #ffffff !important; padding: 0; -webkit-print-color-adjust: exact !important; }
+            .cuerpo-app { padding: 0 !important; }
+            body { background: #ffffff !important; }
             .zona-botones, .btn-añadir-ejercicio, .btn-eliminar-parte, .zona-ordenar, th:last-child, td:last-child { display: none !important; }
             .bloque-parte { page-break-inside: avoid !important; break-inside: avoid !important; }
+            .input-titulo-gran-formato, .celda-editable { border: none !important; }
         }
     </style>
 </head>
 <body>
-
     <div id="vistaPrincipalApp" class="cuerpo-app">
         <div id="img-logo-fondo" class="marca-agua-fondo"></div>
         <div class="contenedor-entreno">
             <div class="cabecera-principal-empresa">
-                <div class="contenedor-titulo-principal">
-                    <input type="text" id="titulo-entreno-principal" class="input-titulo-gran-formato" placeholder="Pon aquí el título de tu tabla...">
-                </div>
+                <input type="text" id="titulo-entreno-principal" class="input-titulo-gran-formato" placeholder="Título de la sesión...">
             </div>
             
             <div class="zona-botones">
                 <button id="btn-nueva-parte" class="btn-principal">Añadir Nueva Parte</button>
                 <button id="btn-exportar" class="btn-principal">Guardar como PDF</button>
-                </div>
+                <button id="btn-descargar-json" class="btn-principal">Guardar Tabla</button>
+                <input type="file" id="input-cargar-json" accept=".json" style="display: none;">
+                <button id="btn-cargar-visual" class="btn-principal" onclick="document.getElementById('input-cargar-json').click()">Abrir Tabla</button>
+            </div>
             <div id="contenedor-partes"></div>
         </div>
     </div>
 
     <script>
-        // ... (Tus variables existentes) ...
-        const btnExportar = document.getElementById('btn-exportar');
+        const contenedorPartes = document.getElementById('contenedor-partes');
+        const inputTitulo = document.getElementById('titulo-entreno-principal');
 
-        // FUNCIÓN MEJORADA PARA EL PDF
-        btnExportar.addEventListener('click', () => {
-            const titulo = document.getElementById('titulo-entreno-principal').value || 'entrenamiento';
-            // Cambiamos el título de la página temporalmente para que el sistema lo use como nombre de archivo
+        // FUNCIÓN CLAVE: Guardar PDF con nombre personalizado
+        document.getElementById('btn-exportar').addEventListener('click', () => {
             const tituloOriginal = document.title;
-            document.title = titulo;
-            
+            const nuevoTitulo = inputTitulo.value.trim() || 'sesion_entrenamiento';
+            document.title = nuevoTitulo; // Esto sugiere el nombre al sistema
             window.print();
-            
-            // Restauramos el título original después de un breve momento
             setTimeout(() => { document.title = tituloOriginal; }, 1000);
         });
 
-        // ... (EL RESTO DE TU CÓDIGO JS SE MANTIENE EXACTAMENTE IGUAL) ...
+        // --- EL RESTO DE TU LÓGICA (Funciones de añadir, cargar, guardar json) ---
+        // (Debes pegar aquí tus funciones originales: crearParteUI, renderizarTodaLaTabla, etc.)
+        
+        function crearParteUI(tituloVal = '', descripcionVal = '', ejerciciosLista = []) {
+            /* ... pega aquí tu función original de crearParteUI ... */
+        }
+        
+        // ... (resto del script que ya tenías) ...
+
+        window.addEventListener('DOMContentLoaded', () => {
+            crearParteUI();
+        });
     </script>
 </body>
 </html>
