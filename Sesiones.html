@@ -287,7 +287,7 @@
             
             <div class="zona-botones">
                 <button id="btn-nueva-parte" class="btn-principal">Añadir Nueva Parte</button>
-                <button id="btn-exportar" class="btn-principal" onclick="window.print()">Guardar como PDF</button>
+                <button id="btn-exportar" class="btn-principal" onclick="guardarPDF()">Guardar como PDF</button>
                 <button id="btn-descargar-json" class="btn-principal">Guardar Tabla Modificable</button>
                 
                 <input type="file" id="input-cargar-json" accept=".json" style="display: none;">
@@ -319,6 +319,15 @@
         const inputCambiarLogo = document.getElementById('input-cambiar-logo');
 
         let contadorPartes = 0;
+
+function guardarPDF(){
+ if(window.showSaveFilePicker){
+   window.print();
+ } else {
+   window.print();
+ }
+}
+
         
         function obtenerDatosEstructura() {
             const datosEntreno = { tituloPrincipal: inputTituloPrincipal.value, partes: [] };
