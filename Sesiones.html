@@ -287,7 +287,7 @@
             
             <div class="zona-botones">
                 <button id="btn-nueva-parte" class="btn-principal">Añadir Nueva Parte</button>
-                <button id="btn-exportar" class="btn-principal" onclick="window.print()">Guardar como PDF</button>
+                <button id="btn-exportar" class="btn-principal">Guardar como PDF</button>
                 <button id="btn-descargar-json" class="btn-principal">Guardar Tabla Modificable</button>
                 
                 <input type="file" id="input-cargar-json" accept=".json" style="display: none;">
@@ -317,6 +317,7 @@
         const inputUnirJson = document.getElementById('input-unir-json');
         const btnConfigLogo = document.getElementById('btn-config-logo');
         const inputCambiarLogo = document.getElementById('input-cambiar-logo');
+        const btnExportar = document.getElementById('btn-exportar');
 
         let contadorPartes = 0;
         
@@ -444,7 +445,18 @@
 
         btnNuevaParte.addEventListener('click', () => crearParteUI());
 
-       btnDescargarJson.addEventListener('click', async () => {
+        // MODIFICACIÓN PARA ASIGNAR EL TÍTULO DINÁMICO AL IMPRIMIR/GUARDAR PDF
+        btnExportar.addEventListener('click', () => {
+            const tituloOriginal = document.title;
+            const nuevoTitulo = (inputTituloPrincipal.value.trim() || 'tabla-entrenamiento').replace(/[^a-z0-9áéíóúñ_-]/gi, '_');
+            document.title = nuevoTitulo;
+            window.print();
+            setTimeout(() => {
+                document.title = tituloOriginal;
+            }, 1000);
+        });
+
+        btnDescargarJson.addEventListener('click', async () => {
             const datos = obtenerDatosEstructura();
             const textoJson = JSON.stringify(datos, null, 2);
             const nombreSugerido = (inputTituloPrincipal.value.trim() || 'tabla-entrenamiento').toLowerCase().replace(/[^a-z0-9]/gi, '_') + '.json';
@@ -456,12 +468,10 @@
             enlace.href = url;
             enlace.download = nombreSugerido;
             
-            // Esto fuerza al navegador a abrir el diálogo de "Guardar como" del sistema
             document.body.appendChild(enlace);
             enlace.click();
             document.body.removeChild(enlace);
             
-            // Limpieza
             setTimeout(() => URL.revokeObjectURL(url), 100);
         });
 
