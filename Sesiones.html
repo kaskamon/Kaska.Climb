@@ -1,526 +1,117 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<link rel="manifest" href="/manifest.json">
-
-<meta name="mobile-web-app-capable" content="yes">
-
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Kaska.Climb">
-<link rel="apple-touch-icon" href="/logo-192.png">
-
-<meta name="theme-color" content="#121212">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaska.Climb | Sesiones</title>
     <style>
-        /* ===================================================
-           DISEÑO EXCLUSIVO PREMIUM COMPACTO
-           =================================================== */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: #0f172a; 
-            padding: 30px; 
-            -webkit-font-smoothing: antialiased;
-            background-color: #ffffff;
-            position: relative;
-        }
-
-        .cuerpo-app {
-            position: relative;
-            min-height: 99vh;
-        }
-
-        .marca-agua-fondo {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw; 
-            height: 99vh;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: cover; 
-            transform: scale(0.88); 
-            opacity: 0.35; 
-            z-index: 0; 
-            pointer-events: none; 
-        }
-
-        .contenedor-entreno {
-            position: relative;
-            z-index: 1;
-        }
-
-        .cabecera-principal-empresa {
-            display: flex;
-            justify-content: space-between;
-            align-items: center; 
-            padding-top: 0px; 
-            margin-top: 0px;  
-            margin-bottom: 20px; 
-            gap: 40px;
-            padding-bottom: 12px; 
-            border-bottom: 2px solid #0f172a; 
-        }
-
-        #contenedor-partes .cabecera-principal-empresa {
-            margin-top: 20px; 
-        }
-
-        .contenedor-titulo-principal {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            margin-top: 12px; 
-        }
-
-        .input-titulo-gran-formato {
-            width: 100%;
-            font-size: 28px; 
-            font-weight: 800;
-            border: none;
-            background: transparent;
-            color: #0f172a;
-            letter-spacing: -0.04em;
-            outline: none;
-            line-height: 1.1;
-        }
-
-        .zona-botones {
-            margin-bottom: 25px; 
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        /* Formato unificado de botones */
-        .btn-principal {
-            color: #ffffff;
-            background-color: #0f172a;
-            padding: 6px 12px; 
-            border: none;
-            border-radius: 5px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 11px; 
-            transition: all 0.15s ease-in-out;
-        }
-
-        .btn-principal:hover {
-            background-color: #334155;
-        }
-
-        .bloque-parte {
-            background: rgba(248, 250, 252, 0.85); 
-            backdrop-filter: blur(4px); 
-            -webkit-backdrop-filter: blur(4px);
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 12px 16px 4px 16px; 
-            margin-bottom: 12px; 
-            border-left: 5px solid #0f172a; 
-            position: relative;
-            overflow: hidden; 
-        }
-
-        .cabecera-parte {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 8px; 
-            align-items: center; 
-            background-color: rgba(237, 242, 247, 0.85); 
-            padding: 6px 12px; 
-            border-radius: 6px;
-            border: 1px solid #cbd5e0;
-        }
-
-        .celda-cabecera-editable {
-            outline: none;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            word-break: break-word;
-            font-size: 13px;
-        }
-
-        .input-titulo {
-            font-size: 14px; 
-            font-weight: 800;
-            flex: 2;
-            color: #0f172a;
-            letter-spacing: 0.02em;
-        }
-
-        .input-descripcion {
-            flex: 4;
-            color: #475569;
-            font-size: 12px; 
-            font-style: italic;
-            border-left: 1px solid #cbd5e0;
-            padding-left: 12px;
-            background: transparent;
-        }
-
-        .celda-cabecera-editable:focus, .celda-editable:focus, .input-titulo-gran-formato:focus {
-            box-shadow: 0 1px 0 0 #0f172a; 
-        }
-
-        .zona-ordenar {
-            display: flex;
-            gap: 2px;
-        }
-
-        .btn-orden {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            font-size: 12px;
-            padding: 2px 4px;
-            color: #64748b;
-            transition: color 0.1s ease;
-        }
-
-        .btn-orden:hover { color: #0f172a; }
-
-        .tabla-ejercicios {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 0px; 
-            table-layout: fixed; 
-            background: transparent;
-        }
-
-        .tabla-ejercicios th {
-            color: #0f172a;
-            padding: 4px 4px; 
-            text-align: left;
-            font-size: 10px; 
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-weight: 800;
-            border-bottom: 2px solid #0f172a; 
-        }
-
-        .tabla-ejercicios th:nth-child(1), .tabla-ejercicios td:nth-child(1) { width: 32%; } 
-        .tabla-ejercicios th:nth-child(2), .tabla-ejercicios td:nth-child(2) { width: 30%; } 
-        .tabla-ejercicios th:nth-child(3), .tabla-ejercicios td:nth-child(3) { width: 30%; } 
-        .tabla-ejercicios th:nth-child(4), .tabla-ejercicios td:nth-child(4) { width: 8%; text-align: right; } 
-
-        .tabla-ejercicios td {
-            padding: 5px 4px 5px 0; 
-            vertical-align: top; 
-        }
-
-        .celda-editable {
-            outline: none;
-            font-size: 12px; 
-            white-space: pre-wrap;       
-            word-wrap: break-word;       
-            word-break: break-word;
-            min-height: 18px;
-        }
-
-        .celda-editable:empty:before, .celda-cabecera-editable:empty:before {
-            content: attr(placeholder);
-            color: #94a3b8;
-            font-weight: normal;
-        }
-
-        .tabla-ejercicios tr td:first-child {
-            font-weight: 600;
-            color: #0f172a;
-        }
-
-        .btn-accion {
-            padding: 4px 8px; 
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 10px; 
-        }
-
-        .btn-añadir-ejercicio {
-            background-color: rgba(255, 255, 255, 0.7);
-            color: #0f172a;
-            border: 1px solid #cbd5e0;
-        }
-
-        .btn-añadir-ejercicio:hover { background-color: #0f172a; color: #ffffff; }
-        .btn-eliminar { background-color: transparent; color: #94a3b8; text-align: right; }
-        .btn-eliminar:hover { color: #ef4444; }
-        .btn-eliminar-parte { background-color: rgba(255, 255, 255, 0.7); color: #64748b; border: 1px solid #e2e8f0; }
-        .btn-eliminar-parte:hover { background-color: #fee2e2; color: #dc2626; border-color: #fee2e2; }
-
-        @page { size: A4 portrait; margin: 15mm; }
-
-        @media print {
-            .cuerpo-app { padding: 0 !important; padding-top: 2mm !important; }
-            body { background: #ffffff !important; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .marca-agua-fondo { display: block !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; transform: scale(0.88) !important; opacity: 0.20 !important; z-index: 0 !important; }
-            .cabecera-principal-empresa { padding-top: 0 !important; margin-top: 0 !important; padding-bottom: 8px !important; margin-bottom: 20px !important; border-bottom: 2px solid #000000 !important; display: flex !important; align-items: center !important; page-break-after: avoid !important; break-after: avoid !important; }
-            .zona-botones, .btn-añadir-ejercicio, .btn-eliminar-parte, .zona-ordenar, th:last-child, td:last-child { display: none !important; }
-            .celda-editable, .celda-cabecera-editable, .input-titulo-gran-formato { border: none !important; color: #000000 !important; font-size: 11px !important; }
-            .input-titulo-gran-formato { font-size: 24px; }
-            .bloque-parte { background: rgba(248, 250, 252, 0.85) !important; border: none !important; border-left: 5px solid #000000 !important; border-radius: 8px !important; padding: 8px 0px 2px 14px !important; page-break-inside: avoid !important; break-inside: avoid !important; }
-            .tabla-ejercicios tr { page-break-inside: avoid !important; break-inside: avoid !important; }
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; padding: 30px; background-color: #ffffff; }
+        .contenedor-entreno { max-width: 800px; margin: auto; }
+        .cabecera-principal-empresa { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #0f172a; }
+        .input-titulo-gran-formato { width: 100%; font-size: 28px; font-weight: 800; border: none; background: transparent; outline: none; }
+        .btn-principal { color: #ffffff; background-color: #0f172a; padding: 8px 12px; border: none; border-radius: 5px; font-weight: 600; cursor: pointer; font-size: 12px; margin-right: 5px; margin-bottom: 5px;}
+        .bloque-parte { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; margin-bottom: 20px; border-left: 5px solid #0f172a; }
+        .cabecera-parte { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .celda-editable { outline: none; padding: 5px; border-bottom: 1px dashed #cbd5e0; min-height: 20px; }
+        .btn-orden { background: #e2e8f0; border: none; padding: 2px 8px; cursor: pointer; border-radius: 4px; font-size: 10px; }
+        .btn-accion { padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: 600; }
+        .btn-eliminar { background: #fee2e2; color: #dc2626; }
+        .btn-añadir-ejercicio { background: #dcfce7; color: #166534; margin-top: 10px; }
+        .tabla-ejercicios { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; font-size: 10px; text-transform: uppercase; border-bottom: 1px solid #0f172a; padding: 5px; }
+        td { padding: 5px; }
     </style>
 </head>
 <body>
 
-    <div id="vistaPrincipalApp" class="cuerpo-app">
-        
-        <div id="img-logo-fondo" class="marca-agua-fondo"></div>
-
-        <div class="contenedor-entreno">
-            <div class="cabecera-principal-empresa">
-                <div class="contenedor-titulo-principal">
-                    <input type="text" id="titulo-entreno-principal" class="input-titulo-gran-formato" placeholder="Pon aquí el título de tu tabla...">
-                </div>
-            </div>
-            
-            <div class="zona-botones">
-                <button id="btn-nueva-parte" class="btn-principal">Añadir Nueva Parte</button>
-                <button id="btn-exportar" class="btn-principal" onclick="window.print()">Guardar como PDF</button>
-                <button id="btn-descargar-json" class="btn-principal">Guardar Tabla Modificable</button>
-                
-                <input type="file" id="input-cargar-json" accept=".json" style="display: none;">
-                <button id="btn-cargar-visual" class="btn-principal" onclick="document.getElementById('input-cargar-json').click()">Abrir Tabla Existente</button>
-
-                <input type="file" id="input-unir-json" accept=".json" style="display: none;">
-                <button id="btn-unir-visual" class="btn-principal" onclick="document.getElementById('input-unir-json').click()">Unir con Otra Tabla</button>
-
-                <input type="file" id="input-cambiar-logo" accept="image/*" style="display: none;">
-                <button id="btn-config-logo" class="btn-principal" onclick="document.getElementById('input-cambiar-logo').click()">Cambiar Logo de Fondo</button>
-		<a href="index.html" class="btn-principal no-print" style="text-decoration: none; margin-left: auto; font-weight: 900;"><b>&larr;</b> INICIO</a>
-</div>
-
-            <div id="contenedor-partes"></div>
-		
-        </div>
+<div class="contenedor-entreno">
+    <div class="cabecera-principal-empresa">
+        <input type="text" id="titulo-entreno-principal" class="input-titulo-gran-formato" placeholder="Título de la sesión...">
+    </div>
+    
+    <div class="zona-botones">
+        <button id="btn-nueva-parte" class="btn-principal">＋ Añadir Parte</button>
+        <button id="btn-guardar-local" class="btn-principal" style="background:#059669;">Guardar Cambios</button>
     </div>
 
-    <script>
-        const btnNuevaParte = document.getElementById('btn-nueva-parte');
-        const contenedorPartes = document.getElementById('contenedor-partes');
-        const inputTituloPrincipal = document.getElementById('titulo-entreno-principal');
-        const btnDescargarJson = document.getElementById('btn-descargar-json');
-        const inputCargarJson = document.getElementById('input-cargar-json');
-        const btnCargarVisual = document.getElementById('btn-cargar-visual');
-        const btnUnirVisual = document.getElementById('btn-unir-visual');
-        const inputUnirJson = document.getElementById('input-unir-json');
-        const btnConfigLogo = document.getElementById('btn-config-logo');
-        const inputCambiarLogo = document.getElementById('input-cambiar-logo');
+    <div id="contenedor-partes"></div>
+</div>
 
-        let contadorPartes = 0;
-        
-        function obtenerDatosEstructura() {
-            const datosEntreno = { tituloPrincipal: inputTituloPrincipal.value, partes: [] };
-            const elementos = contenedorPartes.querySelectorAll('.bloque-parte, .cabecera-principal-empresa');
-            
-            elementos.forEach(el => {
-                if (el.classList.contains('cabecera-principal-empresa')) {
-                    datosEntreno.partes.push({
-                        tipo: 'cabecera_separadora',
-                        tituloPrincipal: el.querySelector('.input-titulo-gran-formato').value
-                    });
-                } else {
-                    const ejercicios = [];
-                    el.querySelectorAll('.cuerpo-tabla-ejercicios tr').forEach(fila => {
-                        const celdas = fila.querySelectorAll('.celda-editable');
-                        if(celdas.length >= 3) {
-                            ejercicios.push({
-                                nombre: celdas[0].innerText,
-                                series: celdas[1].innerText,
-                                notas: celdas[2].innerText
-                            });
-                        }
-                    });
-                    datosEntreno.partes.push({
-                        tipo: 'bloque_ejercicios',
-                        titulo: el.querySelector('.input-titulo').innerText,
-                        descripcion: el.querySelector('.input-descripcion').innerText,
-                        ejercicios: ejercicios
-                    });
-                }
-            });
-            return datosEntreno;
+<script>
+    const contenedorPartes = document.getElementById('contenedor-partes');
+    const inputTitulo = document.getElementById('titulo-entreno-principal');
+
+    // Cargar al iniciar
+    window.onload = () => {
+        const guardado = localStorage.getItem('kaska_data');
+        if (guardado) {
+            const data = JSON.parse(guardado);
+            inputTitulo.value = data.titulo;
+            data.partes.forEach(p => crearParteUI(p.titulo, p.descripcion, p.ejercicios));
         }
+    };
 
-        function crearCabeceraUI(tituloTexto) {
-            const div = document.createElement('div');
-            div.className = 'cabecera-principal-empresa';
-            div.innerHTML = `<div class="contenedor-titulo-principal"><input type="text" class="input-titulo-gran-formato" value="${tituloTexto}"></div>`;
-            contenedorPartes.appendChild(div);
-        }
+    function crearParteUI(t = '', d = '', ejercicios = []) {
+        const div = document.createElement('div');
+        div.className = 'bloque-parte';
+        div.innerHTML = `
+            <div class="cabecera-parte">
+                <button class="btn-orden" onclick="mover(this.closest('.bloque-parte'), -1)">▲</button>
+                <button class="btn-orden" onclick="mover(this.closest('.bloque-parte'), 1)">▼</button>
+                <div class="celda-editable" contenteditable="true" style="flex:1; font-weight:bold" placeholder="Título Parte">${t}</div>
+                <div class="celda-editable" contenteditable="true" style="flex:2" placeholder="Descripción">${d}</div>
+                <button class="btn-accion btn-eliminar" onclick="this.closest('.bloque-parte').remove()">Eliminar</button>
+            </div>
+            <table class="tabla-ejercicios">
+                <thead><tr><th>Ejercicio</th><th>Series</th><th>Notas</th><th>Acción</th></tr></thead>
+                <tbody></tbody>
+            </table>
+            <button class="btn-accion btn-añadir-ejercicio" onclick="añadirFila(this.previousElementSibling.querySelector('tbody'))">＋ Ejercicio</button>
+        `;
+        contenedorPartes.appendChild(div);
+        const tbody = div.querySelector('tbody');
+        ejercicios.forEach(ej => añadirFila(tbody, ej));
+        if (ejercicios.length === 0) añadirFila(tbody);
+    }
 
-        function crearParteUI(tituloVal = '', descripcionVal = '', ejerciciosLista = []) {
-            contadorPartes++;
-            const bloqueParte = document.createElement('div');
-            bloqueParte.className = 'bloque-parte';
-            
-            bloqueParte.innerHTML = `
-                <div class="cabecera-parte">
-                    <div class="zona-ordenar">
-                        <button class="btn-orden btn-subir-parte" title="Subir parte">▲</button>
-                        <button class="btn-orden btn-bajar-parte" title="Bajar parte">▼</button>
-                    </div>
-                    <div class="input-titulo celda-cabecera-editable" contenteditable="true" placeholder="Ej: Parte ${contadorPartes} - Movilidad">${tituloVal}</div>
-                    <div class="input-descripcion celda-cabecera-editable" contenteditable="true" placeholder="Explicación general de esta parte...">${descripcionVal}</div>
-                    <button class="btn-accion btn-eliminar btn-eliminar-parte">Eliminar Parte</button>
-                </div>
-                <table class="tabla-ejercicios">
-                    <thead>
-                        <tr>
-                            <th style="width: 32%;">Ejercicio</th>
-                            <th style="width: 30%;">Series / Tiempo</th>
-                            <th style="width: 30%;">Notas</th>
-                            <th style="width: 8%;">Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody class="cuerpo-tabla-ejercicios"></tbody>
-                </table>
-                <button class="btn-accion btn-añadir-ejercicio">＋ Añadir Ejercicio</button>
-            `;
-            
-            contenedorPartes.appendChild(bloqueParte);
-            const cuerpoTabla = bloqueParte.querySelector('.cuerpo-tabla-ejercicios');
-            
-            function añadirFilaEjercicio(ej = {nombre:'', series:'', notas:''}) {
-                const fila = document.createElement('tr');
-                fila.innerHTML = `
-                    <td class="celda-editable" contenteditable="true" placeholder="Nombre del ejercicio">${ej.nombre}</td>
-                    <td class="celda-editable" contenteditable="true" placeholder="Ej: 3x10">${ej.series}</td>
-                    <td class="celda-editable" contenteditable="true" placeholder="Notas...">${ej.notas}</td>
-                    <td><button class="btn-accion btn-eliminar btn-eliminar-ejercicio">✖</button></td>
-                `;
-                cuerpoTabla.appendChild(fila);
-                fila.querySelector('.btn-eliminar-ejercicio').addEventListener('click', () => fila.remove());
-            }
+    function añadirFila(tbody, ej = {n:'', s:'', nt:''}) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><div class="celda-editable" contenteditable="true">${ej.n}</div></td>
+            <td><div class="celda-editable" contenteditable="true">${ej.s}</div></td>
+            <td><div class="celda-editable" contenteditable="true">${ej.nt}</div></td>
+            <td>
+                <button class="btn-orden" onclick="mover(this.closest('tr'), -1)">▲</button>
+                <button class="btn-orden" onclick="mover(this.closest('tr'), 1)">▼</button>
+                <button class="btn-accion btn-eliminar" onclick="this.closest('tr').remove()">✖</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    }
 
-            bloqueParte.querySelector('.btn-subir-parte').addEventListener('click', () => {
-                const ant = bloqueParte.previousElementSibling;
-                if (ant) contenedorPartes.insertBefore(bloqueParte, ant);
-            });
+    function mover(el, dir) {
+        if (dir === -1 && el.previousElementSibling) el.parentNode.insertBefore(el, el.previousElementSibling);
+        else if (dir === 1 && el.nextElementSibling) el.parentNode.insertBefore(el.nextElementSibling, el);
+    }
 
-            bloqueParte.querySelector('.btn-bajar-parte').addEventListener('click', () => {
-                const sig = bloqueParte.nextElementSibling;
-                if (sig) contenedorPartes.insertBefore(sig, bloqueParte);
-            });
+    document.getElementById('btn-nueva-parte').onclick = () => crearParteUI();
 
-            bloqueParte.querySelector('.btn-añadir-ejercicio').addEventListener('click', () => añadirFilaEjercicio());
-            bloqueParte.querySelector('.btn-eliminar-parte').addEventListener('click', () => bloqueParte.remove());
+    document.getElementById('btn-guardar-local').onclick = () => {
+        const data = {
+            titulo: inputTitulo.value,
+            partes: Array.from(document.querySelectorAll('.bloque-parte')).map(p => ({
+                titulo: p.children[0].children[2].innerText,
+                descripcion: p.children[0].children[3].innerText,
+                ejercicios: Array.from(p.querySelectorAll('tbody tr')).map(tr => ({
+                    n: tr.cells[0].innerText, s: tr.cells[1].innerText, nt: tr.cells[2].innerText
+                }))
+            }))
+        };
+        localStorage.setItem('kaska_data', JSON.stringify(data));
+        alert('Sesión guardada correctamente.');
+    };
+</script>
 
-            if(ejerciciosLista.length > 0) {
-                ejerciciosLista.forEach(ej => añadirFilaEjercicio(ej));
-            } else {
-                añadirFilaEjercicio();
-            }
-        }
-
-        function renderizarTodaLaTabla(appDatos) {
-            contenedorPartes.innerHTML = '';
-            contadorPartes = 0;
-            inputTituloPrincipal.value = appDatos.tituloPrincipal || '';
-            
-            if(appDatos.partes && appDatos.partes.length > 0) {
-                appDatos.partes.forEach(p => {
-                    if (p.tipo === 'cabecera_separadora') {
-                        crearCabeceraUI(p.tituloPrincipal);
-                    } else {
-                        crearParteUI(p.titulo, p.descripcion, p.ejercicios);
-                    }
-                });
-            } else {
-                crearParteUI();
-            }
-        }
-
-        btnNuevaParte.addEventListener('click', () => crearParteUI());
-
-       btnDescargarJson.addEventListener('click', async () => {
-            const datos = obtenerDatosEstructura();
-            const textoJson = JSON.stringify(datos, null, 2);
-            const nombreSugerido = (inputTituloPrincipal.value.trim() || 'tabla-entrenamiento').toLowerCase().replace(/[^a-z0-9]/gi, '_') + '.json';
-
-            const blob = new Blob([textoJson], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            
-            const enlace = document.createElement('a');
-            enlace.href = url;
-            enlace.download = nombreSugerido;
-            
-            // Esto fuerza al navegador a abrir el diálogo de "Guardar como" del sistema
-            document.body.appendChild(enlace);
-            enlace.click();
-            document.body.removeChild(enlace);
-            
-            // Limpieza
-            setTimeout(() => URL.revokeObjectURL(url), 100);
-        });
-
-        inputCargarJson.addEventListener('change', (e) => {
-            const archivos = e.target.files;
-            if (!archivos || archivos.length === 0) return;
-            const lector = new FileReader();
-            lector.onload = function(evt) {
-                try {
-                    renderizarTodaLaTabla(JSON.parse(evt.target.result));
-                    inputCargarJson.value = '';
-                } catch (error) { alert('El archivo seleccionado no es válido.'); }
-            };
-            lector.readAsText(archivos[0]);
-        });
-
-        inputUnirJson.addEventListener('change', (e) => {
-            const archivos = e.target.files;
-            if (!archivos || archivos.length === 0) return;
-            const lector = new FileReader();
-            lector.onload = function(evt) {
-                try {
-                    const datosNuevos = JSON.parse(evt.target.result);
-                    if(datosNuevos.partes && datosNuevos.partes.length > 0) {
-                        if (datosNuevos.tituloPrincipal && datosNuevos.tituloPrincipal !== inputTituloPrincipal.value) {
-                            crearCabeceraUI(datosNuevos.tituloPrincipal);
-                        }
-                        datosNuevos.partes.forEach(p => {
-                            if (p.tipo === 'cabecera_separadora') {
-                                crearCabeceraUI(p.tituloPrincipal);
-                            } else {
-                                crearParteUI(p.titulo, p.descripcion, p.ejercicios);
-                            }
-                        });
-                    }
-                    inputUnirJson.value = '';
-                } catch (error) { alert('No se pudo unir la tabla.'); }
-            };
-            lector.readAsText(archivos[0]);
-        });
-
-        inputCambiarLogo.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const lectorImg = new FileReader();
-                lectorImg.onload = function(e) {
-                    localStorage.setItem('empresa_logo_real', e.target.result);
-                    document.getElementById('img-logo-fondo').style.backgroundImage = "url('" + e.target.result + "')";
-                };
-                lectorImg.readAsDataURL(this.files[0]);
-            }
-        });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const logoGuardado = localStorage.getItem('empresa_logo_real');
-            if(logoGuardado) {
-                document.getElementById('img-logo-fondo').style.backgroundImage = "url('" + logoGuardado + "')";
-            }
-            crearParteUI();
-        });
-    </script>
 </body>
 </html>
