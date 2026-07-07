@@ -2,282 +2,70 @@
 <html lang="es">
 <head>
 <link rel="manifest" href="/manifest.json">
-
 <meta name="mobile-web-app-capable" content="yes">
-
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Kaska.Climb">
 <link rel="apple-touch-icon" href="/logo-192.png">
-
 <meta name="theme-color" content="#121212">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kaska.Climb | Sesiones</title>
-    <style>
-        /* ===================================================
-           DISEÑO EXCLUSIVO PREMIUM COMPACTO
-           =================================================== */
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: #0f172a; 
-            padding: 30px; 
-            -webkit-font-smoothing: antialiased;
-            background-color: #ffffff;
-            position: relative;
-        }
-
-        .cuerpo-app {
-            position: relative;
-            min-height: 99vh;
-        }
-
-        .marca-agua-fondo {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw; 
-            height: 99vh;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: cover; 
-            transform: scale(0.88); 
-            opacity: 0.35; 
-            z-index: 0; 
-            pointer-events: none; 
-        }
-
-        .contenedor-entreno {
-            position: relative;
-            z-index: 1;
-        }
-
-        .cabecera-principal-empresa {
-            display: flex;
-            justify-content: space-between;
-            align-items: center; 
-            padding-top: 0px; 
-            margin-top: 0px;  
-            margin-bottom: 20px; 
-            gap: 40px;
-            padding-bottom: 12px; 
-            border-bottom: 2px solid #0f172a; 
-        }
-
-        #contenedor-partes .cabecera-principal-empresa {
-            margin-top: 20px; 
-        }
-
-        .contenedor-titulo-principal {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            margin-top: 12px; 
-        }
-
-        .input-titulo-gran-formato {
-            width: 100%;
-            font-size: 28px; 
-            font-weight: 800;
-            border: none;
-            background: transparent;
-            color: #0f172a;
-            letter-spacing: -0.04em;
-            outline: none;
-            line-height: 1.1;
-        }
-
-        .zona-botones {
-            margin-bottom: 25px; 
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        /* Formato unificado de botones */
-        .btn-principal {
-            color: #ffffff;
-            background-color: #0f172a;
-            padding: 6px 12px; 
-            border: none;
-            border-radius: 5px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 11px; 
-            transition: all 0.15s ease-in-out;
-        }
-
-        .btn-principal:hover {
-            background-color: #334155;
-        }
-
-        .bloque-parte {
-            background: rgba(248, 250, 252, 0.85); 
-            backdrop-filter: blur(4px); 
-            -webkit-backdrop-filter: blur(4px);
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 12px 16px 4px 16px; 
-            margin-bottom: 12px; 
-            border-left: 5px solid #0f172a; 
-            position: relative;
-            overflow: hidden; 
-        }
-
-        .cabecera-parte {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 8px; 
-            align-items: center; 
-            background-color: rgba(237, 242, 247, 0.85); 
-            padding: 6px 12px; 
-            border-radius: 6px;
-            border: 1px solid #cbd5e0;
-        }
-
-        .celda-cabecera-editable {
-            outline: none;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            word-break: break-word;
-            font-size: 13px;
-        }
-
-        .input-titulo {
-            font-size: 14px; 
-            font-weight: 800;
-            flex: 2;
-            color: #0f172a;
-            letter-spacing: 0.02em;
-        }
-
-        .input-descripcion {
-            flex: 4;
-            color: #475569;
-            font-size: 12px; 
-            font-style: italic;
-            border-left: 1px solid #cbd5e0;
-            padding-left: 12px;
-            background: transparent;
-        }
-
-        .celda-cabecera-editable:focus, .celda-editable:focus, .input-titulo-gran-formato:focus {
-            box-shadow: 0 1px 0 0 #0f172a; 
-        }
-
-        .zona-ordenar {
-            display: flex;
-            gap: 2px;
-        }
-
-        .btn-orden {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            font-size: 12px;
-            padding: 2px 4px;
-            color: #64748b;
-            transition: color 0.1s ease;
-        }
-
-        .btn-orden:hover { color: #0f172a; }
-
-        .tabla-ejercicios {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 0px; 
-            table-layout: fixed; 
-            background: transparent;
-        }
-
-        .tabla-ejercicios th {
-            color: #0f172a;
-            padding: 4px 4px; 
-            text-align: left;
-            font-size: 10px; 
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            font-weight: 800;
-            border-bottom: 2px solid #0f172a; 
-        }
-
-        .tabla-ejercicios th:nth-child(1), .tabla-ejercicios td:nth-child(1) { width: 32%; } 
-        .tabla-ejercicios th:nth-child(2), .tabla-ejercicios td:nth-child(2) { width: 30%; } 
-        .tabla-ejercicios th:nth-child(3), .tabla-ejercicios td:nth-child(3) { width: 30%; } 
-        .tabla-ejercicios th:nth-child(4), .tabla-ejercicios td:nth-child(4) { width: 8%; text-align: right; } 
-
-        .tabla-ejercicios td {
-            padding: 5px 4px 5px 0; 
-            vertical-align: top; 
-        }
-
-        .celda-editable {
-            outline: none;
-            font-size: 12px; 
-            white-space: pre-wrap;       
-            word-wrap: break-word;       
-            word-break: break-word;
-            min-height: 18px;
-        }
-
-        .celda-editable:empty:before, .celda-cabecera-editable:empty:before {
-            content: attr(placeholder);
-            color: #94a3b8;
-            font-weight: normal;
-        }
-
-        .tabla-ejercicios tr td:first-child {
-            font-weight: 600;
-            color: #0f172a;
-        }
-
-        .btn-accion {
-            padding: 4px 8px; 
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 10px; 
-        }
-
-        .btn-añadir-ejercicio {
-            background-color: rgba(255, 255, 255, 0.7);
-            color: #0f172a;
-            border: 1px solid #cbd5e0;
-        }
-
-        .btn-añadir-ejercicio:hover { background-color: #0f172a; color: #ffffff; }
-        .btn-eliminar { background-color: transparent; color: #94a3b8; text-align: right; }
-        .btn-eliminar:hover { color: #ef4444; }
-        .btn-eliminar-parte { background-color: rgba(255, 255, 255, 0.7); color: #64748b; border: 1px solid #e2e8f0; }
-        .btn-eliminar-parte:hover { background-color: #fee2e2; color: #dc2626; border-color: #fee2e2; }
-
-        @page { size: A4 portrait; margin: 15mm; }
-
-        @media print {
-            .cuerpo-app { padding: 0 !important; padding-top: 2mm !important; }
-            body { background: #ffffff !important; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .marca-agua-fondo { display: block !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; transform: scale(0.88) !important; opacity: 0.20 !important; z-index: 0 !important; }
-            .cabecera-principal-empresa { padding-top: 0 !important; margin-top: 0 !important; padding-bottom: 8px !important; margin-bottom: 20px !important; border-bottom: 2px solid #000000 !important; display: flex !important; align-items: center !important; page-break-after: avoid !important; break-after: avoid !important; }
-            .zona-botones, .btn-añadir-ejercicio, .btn-eliminar-parte, .zona-ordenar, th:last-child, td:last-child { display: none !important; }
-            .celda-editable, .celda-cabecera-editable, .input-titulo-gran-formato { border: none !important; color: #000000 !important; font-size: 11px !important; }
-            .input-titulo-gran-formato { font-size: 24px; }
-            .bloque-parte { background: rgba(248, 250, 252, 0.85) !important; border: none !important; border-left: 5px solid #000000 !important; border-radius: 8px !important; padding: 8px 0px 2px 14px !important; page-break-inside: avoid !important; break-inside: avoid !important; }
-            .tabla-ejercicios tr { page-break-inside: avoid !important; break-inside: avoid !important; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Sesiones</title>
+<style>
+    /* Estilos Originales */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #0f172a; padding: 30px; -webkit-font-smoothing: antialiased; background-color: #ffffff; position: relative; }
+    .cuerpo-app { position: relative; min-height: 99vh; }
+    .marca-agua-fondo { position: fixed; top: 0; left: 0; width: 100vw; height: 99vh; background-position: center; background-repeat: no-repeat; background-size: cover; transform: scale(0.88); opacity: 0.35; z-index: 0; pointer-events: none; }
+    .contenedor-entreno { position: relative; z-index: 1; }
+    .cabecera-principal-empresa { display: flex; justify-content: space-between; align-items: center; padding-top: 0px; margin-top: 0px; margin-bottom: 20px; gap: 40px; padding-bottom: 12px; border-bottom: 2px solid #0f172a; }
+    .contenedor-titulo-principal { flex: 1; display: flex; align-items: center; margin-top: 12px; }
+    .input-titulo-gran-formato { width: 100%; font-size: 28px; font-weight: 800; border: none; background: transparent; color: #0f172a; letter-spacing: -0.04em; outline: none; line-height: 1.1; }
+    .zona-botones { margin-bottom: 25px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-principal { color: #ffffff; background-color: #0f172a; padding: 6px 12px; border: none; border-radius: 5px; font-weight: 600; cursor: pointer; font-size: 11px; transition: all 0.15s ease-in-out; }
+    .btn-principal:hover { background-color: #334155; }
+    .bloque-parte { background: rgba(248, 250, 252, 0.85); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px 4px 16px; margin-bottom: 12px; border-left: 5px solid #0f172a; position: relative; overflow: hidden; }
+    .cabecera-parte { display: flex; gap: 15px; margin-bottom: 8px; align-items: center; background-color: rgba(237, 242, 247, 0.85); padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e0; }
+    .celda-cabecera-editable { outline: none; white-space: pre-wrap; word-wrap: break-word; word-break: break-word; font-size: 13px; }
+    .input-titulo { font-size: 14px; font-weight: 800; flex: 2; color: #0f172a; letter-spacing: 0.02em; }
+    .input-descripcion { flex: 4; color: #475569; font-size: 12px; font-style: italic; border-left: 1px solid #cbd5e0; padding-left: 12px; background: transparent; }
+    .celda-cabecera-editable:focus, .celda-editable:focus, .input-titulo-gran-formato:focus { box-shadow: 0 1px 0 0 #0f172a; }
+    .zona-ordenar { display: flex; gap: 2px; }
+    .btn-orden { background: transparent; border: none; cursor: pointer; font-size: 12px; padding: 2px 4px; color: #64748b; transition: color 0.1s ease; }
+    .btn-orden:hover { color: #0f172a; }
+    .tabla-ejercicios { width: 100%; border-collapse: collapse; margin-bottom: 0px; table-layout: fixed; background: transparent; }
+    .tabla-ejercicios th { color: #0f172a; padding: 4px 4px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800; border-bottom: 2px solid #0f172a; }
+    .tabla-ejercicios th:nth-child(1), .tabla-ejercicios td:nth-child(1) { width: 32%; } 
+    .tabla-ejercicios th:nth-child(2), .tabla-ejercicios td:nth-child(2) { width: 30%; } 
+    .tabla-ejercicios th:nth-child(3), .tabla-ejercicios td:nth-child(3) { width: 30%; } 
+    .tabla-ejercicios th:nth-child(4), .tabla-ejercicios td:nth-child(4) { width: 8%; text-align: right; } 
+    .tabla-ejercicios td { padding: 5px 4px 5px 0; vertical-align: top; }
+    .celda-editable { outline: none; font-size: 12px; white-space: pre-wrap; word-wrap: break-word; word-break: break-word; min-height: 18px; }
+    .celda-editable:empty:before, .celda-cabecera-editable:empty:before { content: attr(placeholder); color: #94a3b8; font-weight: normal; }
+    .tabla-ejercicios tr td:first-child { font-weight: 600; color: #0f172a; }
+    .btn-accion { padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 10px; }
+    .btn-añadir-ejercicio { background-color: rgba(255, 255, 255, 0.7); color: #0f172a; border: 1px solid #cbd5e0; }
+    .btn-añadir-ejercicio:hover { background-color: #0f172a; color: #ffffff; }
+    .btn-eliminar { background-color: transparent; color: #94a3b8; text-align: right; }
+    .btn-eliminar:hover { color: #ef4444; }
+    .btn-eliminar-parte { background-color: rgba(255, 255, 255, 0.7); color: #64748b; border: 1px solid #e2e8f0; }
+    .btn-eliminar-parte:hover { background-color: #fee2e2; color: #dc2626; border-color: #fee2e2; }
+    @page { size: A4 portrait; margin: 15mm; }
+    @media print {
+        .cuerpo-app { padding: 0 !important; padding-top: 2mm !important; }
+        body { background: #ffffff !important; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .marca-agua-fondo { display: block !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; transform: scale(0.88) !important; opacity: 0.20 !important; z-index: 0 !important; }
+        .cabecera-principal-empresa { padding-top: 0 !important; margin-top: 0 !important; padding-bottom: 8px !important; margin-bottom: 20px !important; border-bottom: 2px solid #000000 !important; display: flex !important; align-items: center !important; page-break-after: avoid !important; break-after: avoid !important; }
+        .zona-botones, .btn-añadir-ejercicio, .btn-eliminar-parte, .zona-ordenar, th:last-child, td:last-child { display: none !important; }
+        .celda-editable, .celda-cabecera-editable, .input-titulo-gran-formato { border: none !important; color: #000000 !important; font-size: 11px !important; }
+        .input-titulo-gran-formato { font-size: 24px; }
+        .bloque-parte { background: rgba(248, 250, 252, 0.85) !important; border: none !important; border-left: 5px solid #000000 !important; border-radius: 8px !important; padding: 8px 0px 2px 14px !important; page-break-inside: avoid !important; break-inside: avoid !important; }
+        .tabla-ejercicios tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+    }
+</style>
 </head>
 <body>
-
     <div id="vistaPrincipalApp" class="cuerpo-app">
-        
         <div id="img-logo-fondo" class="marca-agua-fondo"></div>
-
         <div class="contenedor-entreno">
             <div class="cabecera-principal-empresa">
                 <div class="contenedor-titulo-principal">
@@ -289,20 +77,15 @@
                 <button id="btn-nueva-parte" class="btn-principal">Añadir Nueva Parte</button>
                 <button id="btn-exportar" class="btn-principal">Guardar como PDF</button>
                 <button id="btn-descargar-json" class="btn-principal">Guardar Tabla Modificable</button>
-                
                 <input type="file" id="input-cargar-json" accept=".json" style="display: none;">
                 <button id="btn-cargar-visual" class="btn-principal" onclick="document.getElementById('input-cargar-json').click()">Abrir Tabla Existente</button>
-
                 <input type="file" id="input-unir-json" accept=".json" style="display: none;">
                 <button id="btn-unir-visual" class="btn-principal" onclick="document.getElementById('input-unir-json').click()">Unir con Otra Tabla</button>
-
                 <input type="file" id="input-cambiar-logo" accept="image/*" style="display: none;">
                 <button id="btn-config-logo" class="btn-principal" onclick="document.getElementById('input-cambiar-logo').click()">Cambiar Logo de Fondo</button>
-		<a href="index.html" class="btn-principal no-print" style="text-decoration: none; margin-left: auto; font-weight: 900;"><b>&larr;</b> INICIO</a>
-</div>
-
+                <a href="index.html" class="btn-principal no-print" style="text-decoration: none; margin-left: auto; font-weight: 900;"><b>&larr;</b> INICIO</a>
+            </div>
             <div id="contenedor-partes"></div>
-		
         </div>
     </div>
 
@@ -320,35 +103,34 @@
         const btnExportar = document.getElementById('btn-exportar');
 
         let contadorPartes = 0;
-        
+
+        // --- LÓGICA DE PDF MEJORADA ---
+        btnExportar.addEventListener('click', () => {
+            const tituloOriginal = document.title;
+            const nombreArchivo = (inputTituloPrincipal.value.trim() || 'tabla-entrenamiento');
+            // Cambiamos el título para que el navegador lo use como nombre de archivo
+            document.title = nombreArchivo;
+            window.print();
+            // Restauramos el título después de un momento
+            setTimeout(() => { document.title = tituloOriginal; }, 1000);
+        });
+
+        // --- LÓGICA DE ESTRUCTURA ---
         function obtenerDatosEstructura() {
             const datosEntreno = { tituloPrincipal: inputTituloPrincipal.value, partes: [] };
             const elementos = contenedorPartes.querySelectorAll('.bloque-parte, .cabecera-principal-empresa');
-            
             elementos.forEach(el => {
                 if (el.classList.contains('cabecera-principal-empresa')) {
-                    datosEntreno.partes.push({
-                        tipo: 'cabecera_separadora',
-                        tituloPrincipal: el.querySelector('.input-titulo-gran-formato').value
-                    });
+                    datosEntreno.partes.push({ tipo: 'cabecera_separadora', tituloPrincipal: el.querySelector('.input-titulo-gran-formato').value });
                 } else {
                     const ejercicios = [];
                     el.querySelectorAll('.cuerpo-tabla-ejercicios tr').forEach(fila => {
                         const celdas = fila.querySelectorAll('.celda-editable');
                         if(celdas.length >= 3) {
-                            ejercicios.push({
-                                nombre: celdas[0].innerText,
-                                series: celdas[1].innerText,
-                                notas: celdas[2].innerText
-                            });
+                            ejercicios.push({ nombre: celdas[0].innerText, series: celdas[1].innerText, notas: celdas[2].innerText });
                         }
                     });
-                    datosEntreno.partes.push({
-                        tipo: 'bloque_ejercicios',
-                        titulo: el.querySelector('.input-titulo').innerText,
-                        descripcion: el.querySelector('.input-descripcion').innerText,
-                        ejercicios: ejercicios
-                    });
+                    datosEntreno.partes.push({ tipo: 'bloque_ejercicios', titulo: el.querySelector('.input-titulo').innerText, descripcion: el.querySelector('.input-descripcion').innerText, ejercicios: ejercicios });
                 }
             });
             return datosEntreno;
@@ -365,7 +147,6 @@
             contadorPartes++;
             const bloqueParte = document.createElement('div');
             bloqueParte.className = 'bloque-parte';
-            
             bloqueParte.innerHTML = `
                 <div class="cabecera-parte">
                     <div class="zona-ordenar">
@@ -389,10 +170,8 @@
                 </table>
                 <button class="btn-accion btn-añadir-ejercicio">＋ Añadir Ejercicio</button>
             `;
-            
             contenedorPartes.appendChild(bloqueParte);
             const cuerpoTabla = bloqueParte.querySelector('.cuerpo-tabla-ejercicios');
-            
             function añadirFilaEjercicio(ej = {nombre:'', series:'', notas:''}) {
                 const fila = document.createElement('tr');
                 fila.innerHTML = `
@@ -404,74 +183,38 @@
                 cuerpoTabla.appendChild(fila);
                 fila.querySelector('.btn-eliminar-ejercicio').addEventListener('click', () => fila.remove());
             }
-
-            bloqueParte.querySelector('.btn-subir-parte').addEventListener('click', () => {
-                const ant = bloqueParte.previousElementSibling;
-                if (ant) contenedorPartes.insertBefore(bloqueParte, ant);
-            });
-
-            bloqueParte.querySelector('.btn-bajar-parte').addEventListener('click', () => {
-                const sig = bloqueParte.nextElementSibling;
-                if (sig) contenedorPartes.insertBefore(sig, bloqueParte);
-            });
-
+            bloqueParte.querySelector('.btn-subir-parte').addEventListener('click', () => { const ant = bloqueParte.previousElementSibling; if (ant) contenedorPartes.insertBefore(bloqueParte, ant); });
+            bloqueParte.querySelector('.btn-bajar-parte').addEventListener('click', () => { const sig = bloqueParte.nextElementSibling; if (sig) contenedorPartes.insertBefore(sig, bloqueParte); });
             bloqueParte.querySelector('.btn-añadir-ejercicio').addEventListener('click', () => añadirFilaEjercicio());
             bloqueParte.querySelector('.btn-eliminar-parte').addEventListener('click', () => bloqueParte.remove());
-
-            if(ejerciciosLista.length > 0) {
-                ejerciciosLista.forEach(ej => añadirFilaEjercicio(ej));
-            } else {
-                añadirFilaEjercicio();
-            }
+            if(ejerciciosLista.length > 0) { ejerciciosLista.forEach(ej => añadirFilaEjercicio(ej)); } else { añadirFilaEjercicio(); }
         }
 
         function renderizarTodaLaTabla(appDatos) {
             contenedorPartes.innerHTML = '';
             contadorPartes = 0;
             inputTituloPrincipal.value = appDatos.tituloPrincipal || '';
-            
             if(appDatos.partes && appDatos.partes.length > 0) {
                 appDatos.partes.forEach(p => {
-                    if (p.tipo === 'cabecera_separadora') {
-                        crearCabeceraUI(p.tituloPrincipal);
-                    } else {
-                        crearParteUI(p.titulo, p.descripcion, p.ejercicios);
-                    }
+                    if (p.tipo === 'cabecera_separadora') { crearCabeceraUI(p.tituloPrincipal); } else { crearParteUI(p.titulo, p.descripcion, p.ejercicios); }
                 });
-            } else {
-                crearParteUI();
-            }
+            } else { crearParteUI(); }
         }
 
         btnNuevaParte.addEventListener('click', () => crearParteUI());
-
-        // MODIFICACIÓN PARA ASIGNAR EL TÍTULO DINÁMICO AL IMPRIMIR/GUARDAR PDF
-        btnExportar.addEventListener('click', () => {
-            const tituloOriginal = document.title;
-            const nuevoTitulo = (inputTituloPrincipal.value.trim() || 'tabla-entrenamiento').replace(/[^a-z0-9áéíóúñ_-]/gi, '_');
-            document.title = nuevoTitulo;
-            window.print();
-            setTimeout(() => {
-                document.title = tituloOriginal;
-            }, 1000);
-        });
 
         btnDescargarJson.addEventListener('click', async () => {
             const datos = obtenerDatosEstructura();
             const textoJson = JSON.stringify(datos, null, 2);
             const nombreSugerido = (inputTituloPrincipal.value.trim() || 'tabla-entrenamiento').toLowerCase().replace(/[^a-z0-9]/gi, '_') + '.json';
-
             const blob = new Blob([textoJson], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            
             const enlace = document.createElement('a');
             enlace.href = url;
             enlace.download = nombreSugerido;
-            
             document.body.appendChild(enlace);
             enlace.click();
             document.body.removeChild(enlace);
-            
             setTimeout(() => URL.revokeObjectURL(url), 100);
         });
 
@@ -480,10 +223,7 @@
             if (!archivos || archivos.length === 0) return;
             const lector = new FileReader();
             lector.onload = function(evt) {
-                try {
-                    renderizarTodaLaTabla(JSON.parse(evt.target.result));
-                    inputCargarJson.value = '';
-                } catch (error) { alert('El archivo seleccionado no es válido.'); }
+                try { renderizarTodaLaTabla(JSON.parse(evt.target.result)); inputCargarJson.value = ''; } catch (error) { alert('El archivo seleccionado no es válido.'); }
             };
             lector.readAsText(archivos[0]);
         });
@@ -496,15 +236,9 @@
                 try {
                     const datosNuevos = JSON.parse(evt.target.result);
                     if(datosNuevos.partes && datosNuevos.partes.length > 0) {
-                        if (datosNuevos.tituloPrincipal && datosNuevos.tituloPrincipal !== inputTituloPrincipal.value) {
-                            crearCabeceraUI(datosNuevos.tituloPrincipal);
-                        }
+                        if (datosNuevos.tituloPrincipal && datosNuevos.tituloPrincipal !== inputTituloPrincipal.value) { crearCabeceraUI(datosNuevos.tituloPrincipal); }
                         datosNuevos.partes.forEach(p => {
-                            if (p.tipo === 'cabecera_separadora') {
-                                crearCabeceraUI(p.tituloPrincipal);
-                            } else {
-                                crearParteUI(p.titulo, p.descripcion, p.ejercicios);
-                            }
+                            if (p.tipo === 'cabecera_separadora') { crearCabeceraUI(p.tituloPrincipal); } else { crearParteUI(p.titulo, p.descripcion, p.ejercicios); }
                         });
                     }
                     inputUnirJson.value = '';
@@ -516,19 +250,14 @@
         inputCambiarLogo.addEventListener('change', function() {
             if (this.files && this.files[0]) {
                 const lectorImg = new FileReader();
-                lectorImg.onload = function(e) {
-                    localStorage.setItem('empresa_logo_real', e.target.result);
-                    document.getElementById('img-logo-fondo').style.backgroundImage = "url('" + e.target.result + "')";
-                };
+                lectorImg.onload = function(e) { localStorage.setItem('empresa_logo_real', e.target.result); document.getElementById('img-logo-fondo').style.backgroundImage = "url('" + e.target.result + "')"; };
                 lectorImg.readAsDataURL(this.files[0]);
             }
         });
 
         window.addEventListener('DOMContentLoaded', () => {
             const logoGuardado = localStorage.getItem('empresa_logo_real');
-            if(logoGuardado) {
-                document.getElementById('img-logo-fondo').style.backgroundImage = "url('" + logoGuardado + "')";
-            }
+            if(logoGuardado) { document.getElementById('img-logo-fondo').style.backgroundImage = "url('" + logoGuardado + "')"; }
             crearParteUI();
         });
     </script>
