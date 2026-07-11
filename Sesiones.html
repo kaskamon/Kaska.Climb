@@ -13,8 +13,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaska.Climb | Sesiones</title>
-    <script src="libs/html2canvas.min.js"></script>
-    <script src="libs/jspdf.umd.min.js"></script>
     <style>
         /* ===================================================
            DISEÑO EXCLUSIVO PREMIUM COMPACTO
@@ -129,8 +127,6 @@
             border-left: 5px solid #0f172a; 
             position: relative;
             overflow: hidden; 
-            page-break-inside: avoid;
-            break-inside: avoid;
         }
 
         .cabecera-parte {
@@ -142,23 +138,6 @@
             padding: 6px 12px; 
             border-radius: 6px;
             border: 1px solid #cbd5e0;
-            page-break-inside: avoid;
-            break-inside: avoid;
-        }
-
-        .tabla-ejercicios tr {
-            page-break-inside: avoid;
-            break-inside: avoid;
-        }
-
-        /* Mientras se genera el PDF: quitamos overflow:hidden y backdrop-filter,
-           porque html2canvas no soporta bien el desenfoque y puede recortar
-           contenido si calcula la altura del recuadro con 1px de diferencia. */
-        body.exportando-pdf .bloque-parte {
-            overflow: visible !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            background: #f8fafc !important;
         }
 
         .celda-cabecera-editable {
@@ -227,10 +206,11 @@
             border-bottom: 2px solid #0f172a; 
         }
 
-        .tabla-ejercicios th:nth-child(1), .tabla-ejercicios td:nth-child(1) { width: 32%; } 
-        .tabla-ejercicios th:nth-child(2), .tabla-ejercicios td:nth-child(2) { width: 30%; } 
+        /* MODIFICADO LIGERAMENTE PARA QUE QUEPAN LAS FLECHAS */
+        .tabla-ejercicios th:nth-child(1), .tabla-ejercicios td:nth-child(1) { width: 30%; } 
+        .tabla-ejercicios th:nth-child(2), .tabla-ejercicios td:nth-child(2) { width: 25%; } 
         .tabla-ejercicios th:nth-child(3), .tabla-ejercicios td:nth-child(3) { width: 30%; } 
-        .tabla-ejercicios th:nth-child(4), .tabla-ejercicios td:nth-child(4) { width: 8%; text-align: right; } 
+        .tabla-ejercicios th:nth-child(4), .tabla-ejercicios td:nth-child(4) { width: 15%; text-align: right; } 
 
         .tabla-ejercicios td {
             padding: 5px 4px 5px 0; 
@@ -285,7 +265,7 @@
             body { background: #ffffff !important; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .marca-agua-fondo { display: block !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; transform: scale(0.88) !important; opacity: 0.20 !important; z-index: 0 !important; }
             .cabecera-principal-empresa { padding-top: 0 !important; margin-top: 0 !important; padding-bottom: 8px !important; margin-bottom: 20px !important; border-bottom: 2px solid #000000 !important; display: flex !important; align-items: center !important; page-break-after: avoid !important; break-after: avoid !important; }
-            .zona-botones, .btn-añadir-ejercicio, .btn-eliminar-parte, .zona-ordenar, th:last-child, td:last-child { display: none !important; }
+            .zona-botones, .btn-añadir-ejercicio, .btn-eliminar-parte, .zona-ordenar, th:last-child, td:last-child, .no-print { display: none !important; }
             .celda-editable, .celda-cabecera-editable, .input-titulo-gran-formato { border: none !important; color: #000000 !important; font-size: 11px !important; }
             .input-titulo-gran-formato { font-size: 24px; }
             .bloque-parte { background: rgba(248, 250, 252, 0.85) !important; border: none !important; border-left: 5px solid #000000 !important; border-radius: 8px !important; padding: 8px 0px 2px 14px !important; page-break-inside: avoid !important; break-inside: avoid !important; }
@@ -308,7 +288,7 @@
             
             <div class="zona-botones">
                 <button id="btn-nueva-parte" class="btn-principal">Añadir Nueva Parte</button>
-                <button id="btn-exportar" class="btn-principal" onclick="exportarPDFComoArchivo()">Guardar como PDF</button>
+                <button id="btn-exportar" class="btn-principal" onclick="window.print()">Guardar como PDF</button>
                 <button id="btn-descargar-json" class="btn-principal">Guardar Tabla Modificable</button>
                 
                 <input type="file" id="input-cargar-json" accept=".json" style="display: none;">
@@ -319,8 +299,8 @@
 
                 <input type="file" id="input-cambiar-logo" accept="image/*" style="display: none;">
                 <button id="btn-config-logo" class="btn-principal" onclick="document.getElementById('input-cambiar-logo').click()">Cambiar Logo de Fondo</button>
-		<a href="index.html" class="btn-principal no-print" style="text-decoration: none; margin-left: auto; font-weight: 900;"><b>&larr;</b> INICIO</a>
-</div>
+		        <a href="index.html" class="btn-principal no-print" style="text-decoration: none; margin-left: auto; font-weight: 900;"><b>&larr;</b> INICIO</a>
+            </div>
 
             <div id="contenedor-partes"></div>
 		
@@ -341,6 +321,19 @@
 
         let contadorPartes = 0;
         
+        // Función centralizada para Auto-Guardado en LocalStorage
+        function autoGuardar() {
+            const datosEntreno = obtenerDatosEstructura();
+            localStorage.setItem('kaska_sesion_auto', JSON.stringify(datosEntreno));
+        }
+
+        // Detecta cualquier cambio de escritura en los inputs y celdas editables para autoguardar
+        document.addEventListener('input', (e) => {
+            if (e.target.matches('.celda-editable, .celda-cabecera-editable, .input-titulo-gran-formato, .input-titulo, .input-descripcion')) {
+                autoGuardar();
+            }
+        });
+
         function obtenerDatosEstructura() {
             const datosEntreno = { tituloPrincipal: inputTituloPrincipal.value, partes: [] };
             const elementos = contenedorPartes.querySelectorAll('.bloque-parte, .cabecera-principal-empresa');
@@ -374,13 +367,35 @@
             return datosEntreno;
         }
 
+        // CREADOR DE CABECERAS (MODIFICADO PARA PERMITIR MOVER/BORRAR)
         function crearCabeceraUI(tituloTexto) {
             const div = document.createElement('div');
             div.className = 'cabecera-principal-empresa';
-            div.innerHTML = `<div class="contenedor-titulo-principal"><input type="text" class="input-titulo-gran-formato" value="${tituloTexto}"></div>`;
+            div.innerHTML = `
+                <div class="contenedor-titulo-principal">
+                    <input type="text" class="input-titulo-gran-formato" value="${tituloTexto}">
+                </div>
+                <div class="zona-ordenar no-print" style="gap: 5px; align-items:center;">
+                    <button class="btn-orden btn-subir-cabecera" title="Subir">▲</button>
+                    <button class="btn-orden btn-bajar-cabecera" title="Bajar">▼</button>
+                    <button class="btn-accion btn-eliminar btn-eliminar-cabecera" style="margin-left:5px;">✖</button>
+                </div>
+            `;
             contenedorPartes.appendChild(div);
+
+            div.querySelector('.btn-eliminar-cabecera').addEventListener('click', () => { div.remove(); autoGuardar(); });
+            div.querySelector('.btn-subir-cabecera').addEventListener('click', () => {
+                const ant = div.previousElementSibling;
+                if (ant) { contenedorPartes.insertBefore(div, ant); autoGuardar(); }
+            });
+            div.querySelector('.btn-bajar-cabecera').addEventListener('click', () => {
+                const sig = div.nextElementSibling;
+                if (sig) { contenedorPartes.insertBefore(sig, div); autoGuardar(); }
+            });
+            autoGuardar();
         }
 
+        // CREADOR DE PARTES (MODIFICADO EL ORDENAMIENTO Y EL BORRADO)
         function crearParteUI(tituloVal = '', descripcionVal = '', ejerciciosLista = []) {
             contadorPartes++;
             const bloqueParte = document.createElement('div');
@@ -399,10 +414,10 @@
                 <table class="tabla-ejercicios">
                     <thead>
                         <tr>
-                            <th style="width: 32%;">Ejercicio</th>
-                            <th style="width: 30%;">Series / Tiempo</th>
-                            <th style="width: 30%;">Notas</th>
-                            <th style="width: 8%;">Acción</th>
+                            <th>Ejercicio</th>
+                            <th>Series / Tiempo</th>
+                            <th>Notas</th>
+                            <th>Acción</th>
                         </tr>
                     </thead>
                     <tbody class="cuerpo-tabla-ejercicios"></tbody>
@@ -413,36 +428,52 @@
             contenedorPartes.appendChild(bloqueParte);
             const cuerpoTabla = bloqueParte.querySelector('.cuerpo-tabla-ejercicios');
             
+            // CREADOR DE EJERCICIOS (MODIFICADO CON FLECHAS)
             function añadirFilaEjercicio(ej = {nombre:'', series:'', notas:''}) {
                 const fila = document.createElement('tr');
                 fila.innerHTML = `
                     <td class="celda-editable" contenteditable="true" placeholder="Nombre del ejercicio">${ej.nombre}</td>
                     <td class="celda-editable" contenteditable="true" placeholder="Ej: 3x10">${ej.series}</td>
                     <td class="celda-editable" contenteditable="true" placeholder="Notas...">${ej.notas}</td>
-                    <td><button class="btn-accion btn-eliminar btn-eliminar-ejercicio">✖</button></td>
+                    <td style="white-space: nowrap;">
+                        <button class="btn-orden btn-subir-ej" title="Subir ejercicio">▲</button>
+                        <button class="btn-orden btn-bajar-ej" title="Bajar ejercicio">▼</button>
+                        <button class="btn-accion btn-eliminar btn-eliminar-ejercicio">✖</button>
+                    </td>
                 `;
                 cuerpoTabla.appendChild(fila);
-                fila.querySelector('.btn-eliminar-ejercicio').addEventListener('click', () => fila.remove());
+                
+                fila.querySelector('.btn-eliminar-ejercicio').addEventListener('click', () => { fila.remove(); autoGuardar(); });
+                fila.querySelector('.btn-subir-ej').addEventListener('click', () => {
+                    const ant = fila.previousElementSibling;
+                    if (ant) { fila.parentNode.insertBefore(fila, ant); autoGuardar(); }
+                });
+                fila.querySelector('.btn-bajar-ej').addEventListener('click', () => {
+                    const sig = fila.nextElementSibling;
+                    if (sig) { fila.parentNode.insertBefore(sig, fila); autoGuardar(); }
+                });
+                autoGuardar();
             }
 
             bloqueParte.querySelector('.btn-subir-parte').addEventListener('click', () => {
                 const ant = bloqueParte.previousElementSibling;
-                if (ant) contenedorPartes.insertBefore(bloqueParte, ant);
+                if (ant) { contenedorPartes.insertBefore(bloqueParte, ant); autoGuardar(); }
             });
 
             bloqueParte.querySelector('.btn-bajar-parte').addEventListener('click', () => {
                 const sig = bloqueParte.nextElementSibling;
-                if (sig) contenedorPartes.insertBefore(sig, bloqueParte);
+                if (sig) { contenedorPartes.insertBefore(sig, bloqueParte); autoGuardar(); }
             });
 
             bloqueParte.querySelector('.btn-añadir-ejercicio').addEventListener('click', () => añadirFilaEjercicio());
-            bloqueParte.querySelector('.btn-eliminar-parte').addEventListener('click', () => bloqueParte.remove());
+            bloqueParte.querySelector('.btn-eliminar-parte').addEventListener('click', () => { bloqueParte.remove(); autoGuardar(); });
 
             if(ejerciciosLista.length > 0) {
                 ejerciciosLista.forEach(ej => añadirFilaEjercicio(ej));
             } else {
                 añadirFilaEjercicio();
             }
+            autoGuardar();
         }
 
         function renderizarTodaLaTabla(appDatos) {
@@ -463,104 +494,10 @@
             }
         }
 
-        async function guardarPDF(pdf, nombreSugerido) {
-            // Si el navegador soporta elegir nombre y carpeta al guardar, lo usamos
-            if (window.showSaveFilePicker) {
-                try {
-                    const blob = pdf.output('blob');
-                    const handle = await window.showSaveFilePicker({
-                        suggestedName: nombreSugerido,
-                        types: [{
-                            description: 'Documento PDF',
-                            accept: { 'application/pdf': ['.pdf'] }
-                        }]
-                    });
-                    const writable = await handle.createWritable();
-                    await writable.write(blob);
-                    await writable.close();
-                    return;
-                } catch (err) {
-                    if (err && err.name === 'AbortError') return; // el usuario canceló el diálogo
-                    console.warn('No se pudo usar el selector nativo, se usa la descarga estándar.', err);
-                    // seguimos hacia el método clásico si falla por otro motivo
-                }
-            }
-            // Método clásico (descarga directa a Descargas)
-            pdf.save(nombreSugerido);
-        }
-
-        async function exportarPDFComoArchivo() {
-            const boton = document.getElementById('btn-exportar');
-            const contenedor = document.querySelector('.contenedor-entreno');
-            if (!contenedor) return;
-
-            if (!window.html2canvas) {
-                alert('No se ha cargado html2canvas.min.js. Revisa que esté en la carpeta libs.');
-                return;
-            }
-            if (!window.jspdf || !window.jspdf.jsPDF) {
-                alert('No se ha cargado jsPDF. Revisa que esté en la carpeta libs.');
-                return;
-            }
-
-            // Elementos que no deben salir en el PDF (igual que hacía @media print)
-            const elementosAOcultar = [
-                document.querySelector('.zona-botones'),
-                ...document.querySelectorAll('.btn-eliminar-parte'),
-                ...document.querySelectorAll('.zona-ordenar'),
-                ...document.querySelectorAll('.btn-añadir-ejercicio'),
-                ...document.querySelectorAll('.tabla-ejercicios th:last-child'),
-                ...document.querySelectorAll('.tabla-ejercicios td:last-child')
-            ].filter(Boolean);
-
-            const displaysOriginales = elementosAOcultar.map(el => el.style.display);
-            elementosAOcultar.forEach(el => { el.style.display = 'none'; });
-
-            // Quita overflow:hidden y backdrop-filter de las tarjetas durante la captura
-            document.body.classList.add('exportando-pdf');
-
-            if (boton) { boton.disabled = true; boton.innerText = 'Generando PDF...'; }
-
-            try {
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
-
-                // pdf.html() es el motor de paginación oficial de jsPDF: reparte el
-                // contenido en páginas A4 automáticamente, respetando page-break-inside.
-                await new Promise((resolve) => {
-                    pdf.html(contenedor, {
-                        margin: [15, 15, 15, 15],
-                        autoPaging: 'text',
-                        width: 180,          // ancho de contenido en mm (A4 210mm - 15mm x 2)
-                        windowWidth: 900,     // ancho "virtual" de renderizado, fijo para cualquier dispositivo
-                        html2canvas: {
-                            scale: 2,
-                            backgroundColor: '#ffffff',
-                            useCORS: true,
-                            allowTaint: true
-                        },
-                        callback: () => resolve()
-                    });
-                });
-
-                const nombreSugerido = (inputTituloPrincipal.value.trim() || 'sesion-entrenamiento')
-                    .toLowerCase().replace(/[^a-z0-9]/gi, '_') + '.pdf';
-
-                await guardarPDF(pdf, nombreSugerido);
-
-            } catch (error) {
-                console.error(error);
-                alert('Ha ocurrido un error generando el PDF.');
-            } finally {
-                elementosAOcultar.forEach((el, idx) => { el.style.display = displaysOriginales[idx]; });
-                document.body.classList.remove('exportando-pdf');
-                if (boton) { boton.disabled = false; boton.innerText = 'Guardar como PDF'; }
-            }
-        }
-
         btnNuevaParte.addEventListener('click', () => crearParteUI());
 
-       btnDescargarJson.addEventListener('click', async () => {
+        // LÓGICA ORIGINAL INTACTA
+        btnDescargarJson.addEventListener('click', async () => {
             const datos = obtenerDatosEstructura();
             const textoJson = JSON.stringify(datos, null, 2);
             const nombreSugerido = (inputTituloPrincipal.value.trim() || 'tabla-entrenamiento').toLowerCase().replace(/[^a-z0-9]/gi, '_') + '.json';
@@ -572,12 +509,9 @@
             enlace.href = url;
             enlace.download = nombreSugerido;
             
-            // Esto fuerza al navegador a abrir el diálogo de "Guardar como" del sistema
             document.body.appendChild(enlace);
             enlace.click();
             document.body.removeChild(enlace);
-            
-            // Limpieza
             setTimeout(() => URL.revokeObjectURL(url), 100);
         });
 
@@ -589,6 +523,7 @@
                 try {
                     renderizarTodaLaTabla(JSON.parse(evt.target.result));
                     inputCargarJson.value = '';
+                    autoGuardar(); // Guardar lo cargado
                 } catch (error) { alert('El archivo seleccionado no es válido.'); }
             };
             lector.readAsText(archivos[0]);
@@ -614,6 +549,7 @@
                         });
                     }
                     inputUnirJson.value = '';
+                    autoGuardar(); // Guardar al unir
                 } catch (error) { alert('No se pudo unir la tabla.'); }
             };
             lector.readAsText(archivos[0]);
@@ -635,7 +571,18 @@
             if(logoGuardado) {
                 document.getElementById('img-logo-fondo').style.backgroundImage = "url('" + logoGuardado + "')";
             }
-            crearParteUI();
+            
+            // Lógica de carga del autoguardado al entrar a la página
+            const autoGuardado = localStorage.getItem('kaska_sesion_auto');
+            if (autoGuardado) {
+                try {
+                    renderizarTodaLaTabla(JSON.parse(autoGuardado));
+                } catch (e) {
+                    crearParteUI();
+                }
+            } else {
+                crearParteUI();
+            }
         });
     </script>
 </body>
