@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Selección de Perfil Fisiológico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e;
+    --stone-800:#262d28;
+    --stone-700:#333b34;
+    --chalk:#f2ede1;
+    --chalk-dim:#c9c3b4;
+    --moss:#7c9070;
+    --moss-light:#a7bd98;
+    --moss-deep:#4d5c46;
+  }
+
+  *{box-sizing:border-box;}
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(120% 90% at 15% 0%, #262d28 0%, var(--stone-900) 55%, #121614 100%);
+    color:var(--chalk);
+    font-family:'Work Sans', sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .fondo-logo {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background-image: url('logo.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100%; 
+    opacity: 0.2;
+    z-index: -10;
+  }
+
+  .container {
+    max-width: 680px;
+    width: 100%;
+    z-index: 10;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  header {
+    margin-bottom: 40px;
+  }
+
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:10px;
+    font-size:12px; letter-spacing:4px; font-weight:700;
+    color:var(--moss-light); text-transform:uppercase; margin-bottom:12px;
+  }
+  .eyebrow::before, .eyebrow::after{ content:""; width:20px; height:2px; background:var(--moss-light); }
+
+  h1{
+    font-family:'Anton', sans-serif;
+    font-weight:400;
+    text-transform:uppercase;
+    font-size:clamp(32px,6vw,56px);
+    letter-spacing:0.5px;
+    margin:0;
+    line-height:1;
+  }
+  h1 span{ color:var(--moss); }
+
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+    width: 100%;
+    margin-bottom: 32px;
+  }
+
+  .option-card {
+    background: rgba(38,45,40,0.55);
+    border: 1px solid rgba(242,237,225,0.12);
+    border-radius: 20px;
+    padding: 32px 24px;
+    backdrop-filter: blur(8px);
+    text-decoration: none;
+    color: var(--chalk);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .option-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at center, rgba(167,189,152,0.15), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .option-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--moss);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+  }
+
+  .option-card:hover::before {
+    opacity: 1;
+  }
+
+  .mini-chart {
+    width: 110px;
+    height: 110px;
+    transition: transform 0.3s ease;
+  }
+
+  .option-card:hover .mini-chart {
+    transform: scale(1.06);
+  }
+
+  .card-title {
+    font-family: 'Anton', sans-serif;
+    font-size: 28px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 0;
+    color: var(--chalk);
+    transition: color 0.3s ease;
+  }
+
+  .option-card:hover .card-title {
+    color: var(--moss-light);
+  }
+
+  /* Botón Inicio centrado abajo */
+  .btn-nav-bottom {
+    background: var(--stone-800);
+    color: var(--chalk);
+    border: 1px solid rgba(242,237,225,0.16);
+    padding: 12px 28px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+  }
+  .btn-nav-bottom:hover {
+    background: var(--moss);
+    color: var(--stone-900);
+    border-color: var(--moss);
+    transform: translateY(-2px);
+  }
+</style>
+</head>
+<body>
+
+<div class="fondo-logo"></div>
+
+<div class="container">
+  <header>
+    <div class="eyebrow">Kaska.Climb</div>
+    <h1>Perfil <span>Fisiológico</span></h1>
+  </header>
+
+  <div class="options-grid">
+    <a href="Perfil fisiológico deportiva.html" class="option-card">
+      <svg class="mini-chart" viewBox="0 0 120 120">
+        <polygon points="60,10 103.3,35 103.3,85 60,110 16.7,85 16.7,35" fill="none" stroke="rgba(242,237,225,0.15)" stroke-width="1.5"/>
+        <polygon points="60,30 86,45 86,75 60,90 34,75 34,45" fill="none" stroke="rgba(242,237,225,0.1)" stroke-width="1"/>
+        <line x1="60" y1="60" x2="60" y2="10" stroke="rgba(242,237,225,0.12)" stroke-width="1"/>
+        <line x1="60" y1="60" x2="103.3" y2="35" stroke="rgba(242,237,225,0.12)" stroke-width="1"/>
+        <line x1="60" y1="60" x2="103.3" y2="85" stroke="rgba(242,237,225,0.12)" stroke-width="1"/>
+        <line x1="60" y1="60" x2="60" y2="110" stroke="rgba(242,237,225,0.12)" stroke-width="1"/>
+        <line x1="60" y1="60" x2="16.7" y2="85" stroke="rgba(242,237,225,0.12)" stroke-width="1"/>
+        <line x1="60" y1="60" x2="16.7" y2="35" stroke="rgba(242,237,225,0.12)" stroke-width="1"/>
+        <polygon points="60,22 92.5,41.2 81.6,72.5 60,95 27.5,78.7 30.7,43.1" fill="rgba(124,144,112,0.35)" stroke="#7c9070" stroke-width="2.5" stroke-linejoin="round"/>
+        <circle cx="60" cy="22" r="3" fill="#1c211e" stroke="#7c9070" stroke-width="2"/>
+        <circle cx="92.5" cy="41.2" r="3" fill="#1c211e" stroke="#7c9070" stroke-width="2"/>
+        <circle cx="81.6" cy="72.5" r="3" fill="#1c211e" stroke="#7c9070" stroke-width="2"/>
+        <circle cx="60" cy="95" r="3" fill="#1c211e" stroke="#7c9070" stroke-width="2"/>
+        <circle cx="27.5" cy="78.7" r="3" fill="#1c211e" stroke="#7c9070" stroke-width="2"/>
+        <circle cx="30.7" cy="43.1" r="3" fill="#1c211e" stroke="#7c9070" stroke-width="2"/>
+      </svg>
+      <h2 class="card-title">Deportiva</h2>
+    </a>
+
+    <a href="Perfil fisiológico boulder.html" class="option-card">
+      <svg class="mini-chart" viewBox="0 0 120 120">
+        <polygon points="60,10 110,60 60,110 10,60" fill="none" stroke="rgba(242,237,225,0.15)" stroke-width="1.5"/>
+        <polygon points="60,35 85,60 60,85 35,60" fill="none" stroke="rgba(242,237,225,0.1)" stroke-width="1"/>
+        <line x1="60" y1="10" x2="60" y2="110" stroke="rgba(242,237,225,0.12)" stroke-width="1"/>
+        <line x1="10" y1="60" x2="110" y2="60" stroke="rgba(242,237,225,0.12)" stroke-width="1"/>
+        <polygon points="60,25 93.9,60 60,100 20,60" fill="rgba(124,144,112,0.35)" stroke="#7c9070" stroke-width="2.5" stroke-linejoin="round"/>
+        <circle cx="60" cy="25" r="3" fill="#1c211e" stroke="#7c9070" stroke-width="2"/>
+        <circle cx="93.9" cy="60" r="3" fill="#1c211e" stroke="#7c9070" stroke-width="2"/>
+        <circle cx="60" cy="100" r="3" fill="#1c211e" stroke="#7c9070" stroke-width="2"/>
+        <circle cx="20" cy="60" r="3" fill="#1c211e" stroke="#7c9070" stroke-width="2"/>
+      </svg>
+      <h2 class="card-title">Boulder</h2>
+    </a>
+  </div>
+
+  <a href="index.html" class="btn-nav-bottom">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+    Inicio
+  </a>
+</div>
+
+</body>
+</html>

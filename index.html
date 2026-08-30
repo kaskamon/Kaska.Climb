@@ -2,115 +2,167 @@
 <html lang="es">
 <head>
 <link rel="manifest" href="/manifest.json">
-
 <meta name="mobile-web-app-capable" content="yes">
-
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Kaska.Climb">
 <link rel="apple-touch-icon" href="/logo-192.png">
+<meta name="theme-color" content="#1c211e">
 
-<meta name="theme-color" content="#121212">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kaska.Climb | Inicio</title>
-    <style>
-        :root {
-            --bg-principal: #121212;
-            /* Panel casi sólido (0.95) */
-            --bg-panel: rgba(30, 30, 30, 0.95);
-            --border-general: rgba(255, 255, 255, 0.1);
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Inicio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --stone-900: #1c211e;
+    --stone-800: #262d28;
+    --stone-700: #333b34;
+    --chalk: #f2ede1;
+    --chalk-dim: #c9c3b4;
+    --moss: #7c9070;
+    --moss-light: #a7bd98;
+    --moss-deep: #4d5c46;
+  }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-principal);
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-        }
+  * { box-sizing: border-box; }
 
-        /* Logo ajustado al 100% (5% más grande que el anterior 95%) */
-        .fondo-logo {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background-image: url('logo.png');
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: 100%; 
-            opacity: 0.2;
-            z-index: -10;
-        }
+  body {
+    margin: 0;
+    height: 100vh;
+    background:
+      radial-gradient(120% 90% at 15% 0%, #262d28 0%, var(--stone-900) 55%, #121614 100%);
+    color: var(--chalk);
+    font-family: 'Work Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
 
-        .contenedor-menu { 
-            position: relative;
-            z-index: 10;
-            text-align: center;
-            background: var(--bg-panel);
-            padding: 40px;
-            border-radius: 20px;
-            border: 1px solid var(--border-general);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            width: 85%;
-            max-width: 350px;
-        }
+  .fondo-logo {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background-image: url('logo.png');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100%; 
+    opacity: 0.2;
+    z-index: -10;
+  }
 
-        h1 { margin: 0 0 40px 0; padding-bottom: 20px; border-bottom: 1px solid var(--border-general); color: #fff; }
+  .contenedor-menu { 
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    background: rgba(38, 45, 40, 0.55);
+    padding: 40px;
+    border-radius: 20px;
+    border: 1px solid rgba(242, 237, 225, 0.12);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45);
+    width: 85%;
+    max-width: 380px;
+  }
 
-        .marca-principal { 
-            display: block;
-            font-size: 2.2rem; 
-            font-weight: 800;
-            margin-bottom: 15px; 
-        }
+  header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(242, 237, 225, 0.12);
+  }
 
-        .subtitulo {
-            display: block;
-            font-size: 1.4rem; 
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #ccc;
-        }
+  .eyebrow-marca {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px; 
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-weight: 700;
+    color: var(--moss-light);
+    margin-bottom: 8px;
+  }
+  .eyebrow-marca::before, .eyebrow-marca::after {
+    content: "";
+    width: 14px;
+    height: 2px;
+    background: var(--moss-light);
+  }
 
-        .botones-menu { display: flex; flex-direction: column; gap: 15px; }
-        
-        .btn-menu {
-            padding: 18px;
-            font-size: 16px;
-            font-weight: 600;
-            background: rgba(255, 255, 255, 0.05); 
-            color: #fff;
-            border: 1px solid var(--border-general);
-            border-radius: 12px;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-        
-        /* HOVER: Más resaltado con fondo claro y sombra */
-        .btn-menu:hover { 
-            background: rgba(255, 255, 255, 0.2); 
-            border-color: rgba(255, 255, 255, 0.5);
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
-            transform: scale(1.03);
-        }
-    </style>
+  .titulo-principal { 
+    display: block;
+    font-family: 'Anton', sans-serif;
+    font-size: 2.8rem; 
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    line-height: 1;
+    color: var(--chalk);
+  }
+
+  .botones-menu { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 14px; 
+  }
+  
+  .btn-menu {
+    padding: 16px;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: var(--stone-800);
+    color: var(--chalk);
+    border: 1px solid rgba(242, 237, 225, 0.16);
+    border-radius: 12px;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-menu::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at center, rgba(167, 189, 152, 0.15), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .btn-menu:hover { 
+    background: var(--moss);
+    color: var(--stone-900);
+    border-color: var(--moss);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .btn-menu:hover::before {
+    opacity: 1;
+  }
+</style>
 </head>
 <body>
 
     <div class="fondo-logo"></div>
 
     <div class="contenedor-menu">
-        <h1>
-            <span class="marca-principal">Kaska.Climb</span>
-            <span class="subtitulo">PLANIFICADOR</span>
-        </h1>
+        <header>
+            <span class="eyebrow-marca">Kaska.Climb</span>
+            <span class="titulo-principal">Planificador</span>
+        </header>
+
         <div class="botones-menu">
             <a href="Sesiones.html" class="btn-menu">Sesiones</a>
             <a href="Semanas.html" class="btn-menu">Semanas</a>
             <a href="Macrociclos.html" class="btn-menu">Macrociclos</a>
+            <a href="Perfiles fisiológicos.html" class="btn-menu">Perfiles Fisiológicos</a>
         </div>
     </div>
 
