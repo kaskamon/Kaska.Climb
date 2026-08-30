@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Kaska.Climb">
 <link rel="apple-touch-icon" href="logo-192.png">
-<meta name="theme-color" content="#121212">
+<meta name="theme-color" content="#1c211e">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kaska.Climb | Semanas</title>
@@ -14,27 +14,35 @@
 <script src="libs/Sortable.min.js"></script>
 <script src="libs/html2canvas.min.js"></script>
 <script src="libs/jspdf.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
 :root {
-  /* Paleta renovada con más vitalidad y brillo */
-  --fmax: #ff7657;          /* Coral vibrante */
-  --reox: #8be072;          /* Verde lima vivo */
-  --roca: #ffcd58;          /* Amarillo ámbar brillante */
-  --antagonistas: #5ce1e6;  /* Turquesa eléctrico */
-  --descanso: #c887ff;      /* Lila brillante */
-  --aero: #52b788;          /* Verde esmeralda suave */
-  --gym: #ff9f1c;           /* Naranja cálido dinámico */
-  --pausa: #3a443e;         /* Gris piedra oscuro refinado */
+  --fmax: #c17c74;
+  --reox: #7c9070;
+  --roca: #d4b26f;
+  --antagonistas: #70908c;
+  --descanso: #ff6b6b;
+  --aero: #93859e;
+  --gym: #d4b26f;
+  --pausa: #c9c3b4;
   
-  --bg-principal: #121614;
-  --bg-panel: rgba(28, 36, 31, 0.82);
-  --input-bg: #1a221d;
-  --btn-bg: #27332c;
-  --border-general: rgba(255, 255, 255, 0.15);
-  --chalk: #f9f8f6;
-  --chalk-dim: #d1cbc0;
-  --moss: #6fcf97;
+  --stone-900: #1c211e;
+  --stone-800: #262d28;
+  --stone-700: #333b34;
+  --chalk: #f2ede1;
+  --chalk-dim: #c9c3b4;
+  --moss: #7c9070;
+  --moss-light: #a7bd98;
+  --moss-deep: #4d5c46;
+
+  --bg-principal: #1c211e;
+  --bg-panel: rgba(38, 45, 40, 0.55);
+  --input-bg: #262d28;
+  --btn-bg: #333b34;
+  --border-general: rgba(242, 237, 225, 0.12);
 }
 
 * {
@@ -43,9 +51,9 @@
 
 body {
   font-family: 'Work Sans', sans-serif;
-  background: radial-gradient(130% 100% at 20% 0%, #202b24 0%, var(--bg-principal) 60%, #0a0e0c 100%);
+  background: radial-gradient(120% 90% at 15% 0%, #262d28 0%, var(--stone-900) 55%, #121614 100%);
   color: var(--chalk);
-  padding: 40px 20px;
+  padding: 20px;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -63,59 +71,59 @@ body {
   background-repeat: no-repeat;
   background-position: center;
   background-size: 100%;
-  opacity: 0.25;
+  opacity: 0.2;
   z-index: -10;
 }
 
 .layout-editor {
   display: flex;
-  gap: 25px;
+  gap: 20px;
   align-items: flex-start;
   justify-content: center;
 }
 
 .contenedor-principal {
-  width: 440px;
+  position: relative;
+  width: 400px;
   flex-shrink: 0;
   background: var(--bg-panel);
-  padding: 24px;
-  border-radius: 18px;
+  padding: 30px;
+  border-radius: 20px;
   border: 1px solid var(--border-general);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
 }
 
 .header {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  background: rgba(18, 24, 20, 0.7);
-  padding: 14px;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 16px;
   border-radius: 12px;
-  margin-bottom: 14px;
-  border: 1px solid var(--border-general);
+  margin-bottom: 16px;
+  border: 1px solid rgba(242, 237, 225, 0.08);
 }
 
 .head-item {
-  font-size: 0.8em;
-  font-weight: bold;
-  color: var(--chalk-dim);
+  font-size: 0.75em;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--moss-light);
 }
 
 .head-val {
   background: var(--input-bg);
-  border: 1px solid var(--border-general);
-  border-radius: 6px;
-  font-weight: bold;
+  border: 1px solid rgba(242, 237, 225, 0.16);
+  border-radius: 8px;
+  font-weight: 600;
   color: var(--chalk);
-  padding: 5px 9px;
+  padding: 6px 10px;
   display: inline-block;
-  font-size: 0.9em;
+  font-size: 1em;
   cursor: pointer;
-  transition: border-color 0.2s;
-}
-.head-val:hover {
-  border-color: var(--moss);
+  font-family: 'Work Sans', sans-serif;
 }
 
 .date-input-hidden {
@@ -126,74 +134,103 @@ body {
 
 .semana-grid {
   display: grid;
-  gap: 10px;
-  background: rgba(18, 24, 20, 0.7);
-  padding: 14px;
-  border-radius: 14px;
-  border: 1px solid var(--border-general);
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(242, 237, 225, 0.08);
 }
 
 .dia-columna {
   background: var(--input-bg);
-  border-radius: 10px;
-  padding: 8px 10px;
-  border: 1px solid var(--border-general);
+  border-radius: 8px;
+  padding: 8px;
+  border: 1px solid rgba(242, 237, 225, 0.16);
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 50px;
+  gap: 8px;
+  min-height: 45px;
 }
 
 .dia-nombre {
-  width: 42px;
-  min-width: 42px;
+  width: 40px;
+  min-width: 40px;
   font-size: 0.7em;
-  color: var(--chalk);
+  color: var(--stone-900);
   text-transform: uppercase;
-  font-weight: 800;
+  font-weight: 700;
   text-align: center;
-  background: var(--btn-bg);
+  background: var(--moss-light);
   padding: 6px 4px;
   border-radius: 6px;
   pointer-events: none;
   user-select: none;
-  border: 1px solid var(--border-general);
 }
 
 .sesion {
-  background: #475569;
+  background: var(--stone-700);
   padding: 8px 12px; 
   border-radius: 8px; 
   cursor: move;
-  border: 1px solid rgba(255,255,255,0.2);
+  border: 1px solid rgba(242, 237, 225, 0.16);
   flex-grow: 1;
   display: flex;
   align-items: center;
-  min-height: 44px; 
+  min-height: 45px; 
   text-transform: uppercase;
-  color: #121614;
-  font-weight: 800;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-.sesion:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+  color: var(--stone-900);
+  font-weight: 700;
+  font-size: 0.85em;
+  transition: filter 0.2s ease;
 }
 
-/* Colores vibrantes y alegres con sutil resplandor */
-.sesion.fmax { background-color: var(--fmax) !important; color: #121614; }
-.sesion.reox { background-color: var(--reox) !important; color: #121614; }
-.sesion.roca { background-color: var(--roca) !important; color: #121614; }
-.sesion.antagonistas { background-color: var(--antagonistas) !important; color: #121614; }
-.sesion.descanso { background-color: var(--descanso) !important; color: #121614; }
-.sesion.aero { background-color: var(--aero) !important; color: #121614; }
-.sesion.gym { background-color: var(--gym) !important; color: #121614; }
-.sesion.pausa { background-color: var(--pausa) !important; color: var(--chalk); border-color: rgba(255,255,255,0.1); }
+.sesion:hover {
+  filter: brightness(1.1);
+}
+
+.sesion.fmax {
+  background-color: var(--fmax) !important;
+  color: var(--stone-900) !important;
+}
+
+.sesion.reox {
+  background-color: var(--reox) !important;
+  color: var(--stone-900) !important;
+}
+
+.sesion.roca {
+  background-color: var(--roca) !important;
+  color: var(--stone-900) !important;
+}
+
+.sesion.antagonistas {
+  background-color: var(--antagonistas) !important;
+  color: var(--stone-900) !important;
+}
+
+.sesion.descanso {
+  background-color: var(--descanso) !important;
+  color: var(--stone-900) !important;
+}
+
+.sesion.aero {
+  background-color: var(--aero) !important;
+  color: var(--stone-900) !important;
+}
+
+.sesion.gym {
+  background-color: var(--gym) !important;
+  color: var(--stone-900) !important;
+}
+
+.sesion.pausa {
+  background-color: var(--pausa) !important;
+  color: var(--stone-900) !important;
+}
 
 .sesion-contenido {
   display: grid;
-  grid-template-columns: 20px 1fr 50px;
+  grid-template-columns: 20px 1fr 40px;
   align-items: center;
   width: 100%;
   gap: 5px;
@@ -202,27 +239,34 @@ body {
 .sesion-text {
   grid-column: 2;
   text-align: center;
-  font-size: 0.78em;
+  font-size: 0.8em;
   outline: none;
-  letter-spacing: 0.3px;
+  color: var(--stone-900);
+  font-weight: 700;
 }
 
 .btn-del-sesion {
   grid-column: 1;
-  color: inherit;
-  opacity: 0.75;
+  color: var(--stone-900);
   cursor: pointer;
-  font-size: 0.85em;
-  font-weight: bold;
+  font-size: 0.8em;
+  font-weight: 800;
+  background: rgba(0,0,0,0.15);
+  border-radius: 4px;
+  text-align: center;
+  padding: 1px 0;
 }
-.btn-del-sesion:hover { opacity: 1; }
+
+.btn-del-sesion:hover {
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+}
 
 .btn-link {
   grid-column: 3;
-  color: inherit;
-  opacity: 0.9;
+  color: var(--stone-900);
   cursor: pointer;
-  font-size: 0.68em;
+  font-size: 0.7em;
   text-decoration: underline;
   justify-self: end;
   font-weight: 700;
@@ -230,81 +274,87 @@ body {
 
 .link-btn {
   grid-column: 3;
-  color: #121614 !important;
-  font-size: 0.68em;
+  color: var(--stone-900);
+  font-size: 0.7em;
   text-decoration: none;
   justify-self: end;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.35);
-  padding: 3px 8px;
-  border-radius: 5px;
-  border: 1px solid rgba(0, 0, 0, 0.15);
-  transition: background 0.2s;
+  background: rgba(0,0,0,0.15);
+  padding: 2px 6px;
+  border-radius: 4px;
 }
+
 .link-btn:hover {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(0,0,0,0.3);
+  color: #fff;
 }
 
 .btn-action {
-  background: var(--btn-bg);
-  border: 1px solid var(--border-general);
+  background: var(--stone-800);
+  border: 1px solid rgba(242, 237, 225, 0.16);
   color: var(--chalk);
-  padding: 11px 0;
-  border-radius: 9px;
-  font-size: 0.75em;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-family: 'Work Sans', sans-serif;
+  font-weight: 700;
   cursor: pointer;
   width: 100%;
   display: block;
   box-sizing: border-box;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
 }
+
 .btn-action:hover {
   background: var(--moss);
-  color: var(--bg-principal);
+  color: var(--stone-900);
   border-color: var(--moss);
-  box-shadow: 0 4px 15px rgba(111, 207, 151, 0.3);
 }
 
 #banco {
-  width: 320px;
-  padding: 18px;
-  border: 1px solid var(--border-general);
+  width: 300px;
+  padding: 20px;
+  border: 1px solid rgba(242, 237, 225, 0.12);
   background: var(--bg-panel);
-  border-radius: 18px;
+  border-radius: 20px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   box-sizing: border-box;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.35);
 }
 
 .grid-botones-abajo {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  width: 320px;
+  width: 300px;
   margin-top: 15px;
   box-sizing: border-box;
 }
 
 .panel-derecho {
-  width: 320px;
+  width: 300px;
   display: flex;
   flex-direction: column;
 }
 
 .btn-inicio {
-  width: 100%;
-  font-weight: 800;
+  width: 300px;
+  font-weight: 700;
   text-transform: uppercase;
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   margin: 20px auto 0 auto;
+  padding: 10px 20px;
+  border-radius: 10px;
+  letter-spacing: 1px;
 }
 
 @media screen and (max-width: 820px) {
@@ -321,6 +371,19 @@ body {
     justify-content: flex-start;
     width: max-content;
   }
+
+  .contenedor-principal {
+    width: 400px;
+  }
+
+  .panel-derecho {
+    width: 300px;
+  }
+
+  #banco,
+  .grid-botones-abajo {
+    width: 300px;
+  }
 }
 
 @media print {
@@ -334,8 +397,8 @@ body {
     margin: 0 !important;
     padding: 0 !important;
     width: 67mm !important;
-    background: #000 !important;
-    color: #fff !important;
+    background: var(--stone-900) !important;
+    color: var(--chalk) !important;
     overflow: visible !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -356,7 +419,7 @@ body {
     width: 67mm !important;
     margin: 0 !important;
     padding: 0 !important;
-    background: #000 !important;
+    background: var(--stone-900) !important;
   }
 
   .contenedor-principal {
@@ -368,7 +431,7 @@ body {
     padding: 2mm !important;
     border: none !important;
     border-radius: 0 !important;
-    background: #000 !important;
+    background: var(--stone-900) !important;
   }
 }
 </style>
@@ -435,7 +498,7 @@ body {
 
   <div class="panel-derecho">
     <div id="banco" class="no-print">
-      <h4 style="margin-top:0; color:var(--chalk-dim); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.8px;">Banco de sesiones</h4>
+      <h4 style="margin-top:0; color:var(--moss-light); font-family:'Work Sans', sans-serif; font-size:12px; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Banco de sesiones</h4>
 
       <div class="sesion descanso">
         <div class="sesion-contenido">
@@ -456,7 +519,7 @@ body {
       <div class="sesion antagonistas">
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">DESOX/ANAE (ROCO)</span>
+          <span class="sesion-text" contenteditable="true">DESOX (ROCO)</span>
           <span class="btn-link" onclick="addLink(this)">Link</span>
         </div>
       </div>
@@ -499,7 +562,10 @@ body {
       <button class="btn-action" onclick="exportarPDFReal(event)">Exportar PDF</button>
     </div>
 
-    <button class="btn-action btn-inicio no-print" onclick="window.location.href='index.html'">&larr; INICIO</button>
+    <button class="btn-action btn-inicio no-print" onclick="window.location.href='index.html'">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Inicio
+    </button>
   </div>
 </div>
 
@@ -667,7 +733,7 @@ async function exportarPDFReal(evento) {
     const rect = panel.getBoundingClientRect();
 
     const canvas = await html2canvas(panel, {
-      backgroundColor: '#121614',
+      backgroundColor: '#1c211e',
       scale: 2,
       useCORS: true,
       allowTaint: true,
@@ -706,7 +772,7 @@ async function exportarPDFReal(evento) {
 
       const x = (enlaceRect.left - panelRect.left) * pxToMm;
       const y = (enlaceRect.top - panelRect.top) * pxToMm;
-      const w = enlaceRect.width * pxToMM;
+      const w = enlaceRect.width * pxToMm;
       const h = enlaceRect.height * pxToMm;
 
       pdf.link(x, y, w, h, {
