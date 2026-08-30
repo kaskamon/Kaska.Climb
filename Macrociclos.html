@@ -32,7 +32,7 @@
             display:flex;
             align-items:center;
             justify-content:center;
-            padding:30px;
+            padding: 50px; /* Margen exterior ampliado para que el fondo #494d4b sobresalga más */
         }
         
         .fondo-logo {
@@ -49,20 +49,20 @@
         .container {
             position: relative;
             width: 100%;
-            max-width: 1100px; /* Ampliado para mayor holgura */
+            max-width: 1000px; /* Medidas anteriores restauradas */
             background: rgba(38,45,40,0.55);
-            padding: 45px; /* Márgenes internos ampliados */
-            border-radius: 24px;
+            padding: 30px; /* Padding interior original */
+            border-radius: 20px;
             border: 1px solid rgba(242,237,225,0.12);
             backdrop-filter: blur(8px);
-            box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.35);
         }
 
         #header-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 24px;
         }
 
         .eyebrow{
@@ -74,7 +74,7 @@
 
         #titulo {
             font-family:'Anton', sans-serif;
-            font-size:clamp(26px, 4vw, 38px);
+            font-size:clamp(24px, 4vw, 36px);
             font-weight: 400;
             text-transform: uppercase;
             margin: 0;
@@ -85,7 +85,7 @@
 
         .fechas {
             display: flex;
-            gap: 18px;
+            gap: 15px;
             font-size: 13px;
             color: var(--chalk-dim);
             font-weight: 500;
@@ -95,7 +95,7 @@
             background: var(--stone-800);
             color: var(--chalk);
             border: 1px solid rgba(242,237,225,0.16);
-            padding: 8px 12px;
+            padding: 6px 10px;
             border-radius: 8px;
             font-family: 'Work Sans', sans-serif;
             font-size: 13px;
@@ -103,8 +103,8 @@
 
         .controls {
             display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
+            gap: 8px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
         }
 
@@ -112,7 +112,7 @@
             background: var(--stone-800);
             color: var(--chalk);
             border: 1px solid rgba(242,237,225,0.16);
-            padding: 10px 16px;
+            padding: 8px 14px;
             font-size: 12px;
             font-family: 'Work Sans', sans-serif;
             font-weight: 700;
@@ -136,7 +136,7 @@
         #pantalla-wrapper {
             position: relative;
             width: 100%;
-            padding: 6px;
+            padding: 4px;
             background: rgba(0,0,0,0.2);
             border-radius: 12px;
             border: 1px solid rgba(242,237,225,0.08);
@@ -146,8 +146,8 @@
         #pantalla {
             display: flex;
             width: 100%;
-            height: 70px; /* Ligeramente más alto para mejor proporción */
-            gap: 3px;
+            height: 65px;
+            gap: 2px;
         }
 
         .bloque {
@@ -200,12 +200,12 @@
             width: 100%; 
             font-size: 9px; 
             color: var(--chalk-dim); 
-            margin-top: 8px; 
+            margin-top: 6px; 
             font-weight: 500;
         }
 
         .total-container {
-            margin-top: 25px; 
+            margin-top: 20px; 
             font-weight: 700; 
             font-size: 15px;
             letter-spacing: 1px;
@@ -277,7 +277,7 @@
     </div>
     <div class="total-container">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
     
-    <div style="text-align: center; margin-top: 30px;" id="nav-bottom-container">
+    <div style="text-align: center; margin-top: 24px;" id="nav-bottom-container">
         <a href="index.html" class="btn-nav-bottom">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
             Inicio
@@ -424,15 +424,18 @@
                 allowTaint: true
             });
 
+            // Creamos un lienzo ligeramente mayor para generar un margen (padding) simétrico del fondo #494d4b en el PNG resultante
+            const paddingExtra = 40; 
             const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = contentCanvas.width;
-            finalCanvas.height = contentCanvas.height;
+            finalCanvas.width = contentCanvas.width + (paddingExtra * 2);
+            finalCanvas.height = contentCanvas.height + (paddingExtra * 2);
             const ctx = finalCanvas.getContext('2d');
 
             ctx.fillStyle = '#494d4b';
             ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
-            ctx.drawImage(contentCanvas, 0, 0);
+            // Dibujamos la caja centrada dejando espacio para el margen de fondo
+            ctx.drawImage(contentCanvas, paddingExtra, paddingExtra);
 
             const link = document.createElement('a');
             link.download = 'Macrociclo.png';
