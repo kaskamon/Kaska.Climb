@@ -485,7 +485,7 @@ body {
       <div class="sesion antagonistas">
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">DESOX (ROCO)</span>
+          <span class="sesion-text" contenteditable="true">DESOX/ANAE (ROCO)</span>
           <span class="btn-link" onclick="addLink(this)">Link</span>
         </div>
       </div>
@@ -734,7 +734,7 @@ async function exportarPDFReal(evento) {
       const enlaceRect = enlace.getBoundingClientRect();
 
       const x = (enlaceRect.left - panelRect.left) * pxToMm;
-      const y = (enlaceRect.top - panelRect.top) * pxToMm;
+      const y = (enlaceRect.top - panelRect.top) * pxToMM;
       const w = enlaceRect.width * pxToMm;
       const h = enlaceRect.height * pxToMm;
 
