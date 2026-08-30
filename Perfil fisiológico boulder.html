@@ -372,55 +372,7 @@
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
-      try {
-        const logoImg = new Image();
-        logoImg.crossOrigin = "Anonymous";
-        logoImg.src = 'logo.png';
-
-        await new Promise((resolve) => {
-          logoImg.onload = () => {
-            const scale = Math.min(finalCanvas.width / logoImg.width, finalCanvas.height / logoImg.height);
-            const w = logoImg.width * scale;
-            const h = logoImg.height * scale;
-            const x = (finalCanvas.width - w) / 2;
-            const y = (finalCanvas.height - h) / 2;
-
-            // Procesamos los píxeles para eliminar el fondo blanco/opaco
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = logoImg.width;
-            tempCanvas.height = logoImg.height;
-            const tCtx = tempCanvas.getContext('2d');
-            tCtx.drawImage(logoImg, 0, 0);
-
-            const imgData = tCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-            const data = imgData.data;
-
-            for (let i = 0; i < data.length; i += 4) {
-              const r = data[i];
-              const g = data[i + 1];
-              const b = data[i + 2];
-              
-              // Si el píxel es muy claro (blanco o fondo sólido), lo volvemos transparente
-              const brightness = (r + g + b) / 3;
-              if (brightness > 230 && Math.abs(r - g) < 10 && Math.abs(g - b) < 10) {
-                data[i + 3] = 0; // Transparencia total
-              } else {
-                data[i + 3] = Math.min(data[i + 3], 180); // Opacidad controlada para el logo
-              }
-            }
-            tCtx.putImageData(imgData, 0, 0);
-
-            ctx.globalAlpha = 0.35;
-            ctx.drawImage(tempCanvas, x, y, w, h);
-            ctx.globalAlpha = 1.0;
-            resolve();
-          };
-          logoImg.onerror = () => resolve();
-          setTimeout(resolve, 600);
-        });
-      } catch (errLogo) {
-        console.warn("Logo omitido en exportación:", errLogo);
-      }
+      // Se ha eliminado por completo la lógica que cargaba y dibujaba el logo de fondo.
 
       ctx.drawImage(contentCanvas, 0, 0);
 
