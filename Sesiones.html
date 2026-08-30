@@ -13,10 +13,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaska.Climb | Sesiones</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         /* ===================================================
-           DISEÑO EXCLUSIVO PREMIUM COMPACTO
+           DISEÑO EXCLUSIVO PREMIUM COMPACTO — KASKA.CLIMB
            =================================================== */
+        :root{
+            --stone-900:#1c211e;
+            --stone-700:#333b34;
+            --chalk-dim:#6b7268;
+            --line:#ddd9cb;
+            --paper-dim:#f7f5ef;
+            --moss:#7c9070;
+            --moss-light:#a7bd98;
+            --moss-deep:#4d5c46;
+        }
+
         * {
             box-sizing: border-box;
             margin: 0;
@@ -24,13 +38,20 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            color: #0f172a; 
+            font-family: 'Work Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--stone-900); 
             padding: 30px; 
             -webkit-font-smoothing: antialiased;
             background-color: #ffffff;
             position: relative;
         }
+
+        .eyebrow{
+            display:inline-flex; align-items:center; gap:10px;
+            font-size:11px; letter-spacing:3px; font-weight:700;
+            color:var(--moss-deep); text-transform:uppercase; margin-bottom:8px;
+        }
+        .eyebrow::before, .eyebrow::after{ content:""; width:18px; height:2px; background:var(--moss-deep); }
 
         .cuerpo-app {
             position: relative;
@@ -66,7 +87,7 @@
             margin-bottom: 20px; 
             gap: 40px;
             padding-bottom: 12px; 
-            border-bottom: 2px solid #0f172a; 
+            border-bottom: 2px solid var(--moss-deep); 
         }
 
         #contenedor-partes .cabecera-principal-empresa {
@@ -76,20 +97,23 @@
         .contenedor-titulo-principal {
             flex: 1;
             display: flex;
-            align-items: center;
+            flex-direction: column;
+            justify-content: center;
             margin-top: 12px; 
         }
 
         .input-titulo-gran-formato {
             width: 100%;
-            font-size: 28px; 
-            font-weight: 800;
+            font-family: 'Anton', sans-serif;
+            font-size: 30px; 
+            font-weight: 400;
+            text-transform: uppercase;
             border: none;
             background: transparent;
-            color: #0f172a;
-            letter-spacing: -0.04em;
+            color: var(--stone-900);
+            letter-spacing: 0.3px;
             outline: none;
-            line-height: 1.1;
+            line-height: 1.15;
         }
 
         .zona-botones {
@@ -102,29 +126,58 @@
         /* Formato unificado de botones */
         .btn-principal {
             color: #ffffff;
-            background-color: #0f172a;
-            padding: 6px 12px; 
-            border: none;
-            border-radius: 5px;
-            font-weight: 600;
+            background-color: var(--stone-900);
+            padding: 8px 14px; 
+            border: 1px solid var(--stone-900);
+            border-radius: 8px;
+            font-weight: 700;
+            font-family: 'Work Sans', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
             cursor: pointer;
             font-size: 11px; 
             transition: all 0.15s ease-in-out;
         }
 
         .btn-principal:hover {
-            background-color: #334155;
+            background-color: var(--moss);
+            border-color: var(--moss);
+        }
+
+        .btn-inicio-sesiones {
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            color: var(--stone-900);
+            border: 1px solid var(--moss-deep);
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-family: 'Work Sans', sans-serif;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-decoration: none;
+            transition: all 0.15s ease-in-out;
+        }
+
+        .btn-inicio-sesiones:hover {
+            background: var(--moss);
+            color: #ffffff;
+            border-color: var(--moss);
         }
 
         .bloque-parte {
-            background: rgba(248, 250, 252, 0.85); 
+            background: rgba(247, 245, 239, 0.85); 
             backdrop-filter: blur(4px); 
             -webkit-backdrop-filter: blur(4px);
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
             padding: 12px 16px 4px 16px; 
             margin-bottom: 12px; 
-            border-left: 5px solid #0f172a; 
+            border-left: 5px solid var(--moss-deep); 
             position: relative;
             overflow: hidden; 
         }
@@ -134,10 +187,10 @@
             gap: 15px;
             margin-bottom: 8px; 
             align-items: center; 
-            background-color: rgba(237, 242, 247, 0.85); 
+            background-color: rgba(124, 144, 112, 0.1); 
             padding: 6px 12px; 
-            border-radius: 6px;
-            border: 1px solid #cbd5e0;
+            border-radius: 8px;
+            border: 1px solid var(--line);
         }
 
         .celda-cabecera-editable {
@@ -152,22 +205,22 @@
             font-size: 14px; 
             font-weight: 800;
             flex: 2;
-            color: #0f172a;
+            color: var(--stone-900);
             letter-spacing: 0.02em;
         }
 
         .input-descripcion {
             flex: 4;
-            color: #475569;
+            color: var(--chalk-dim);
             font-size: 12px; 
             font-style: italic;
-            border-left: 1px solid #cbd5e0;
+            border-left: 1px solid var(--line);
             padding-left: 12px;
             background: transparent;
         }
 
         .celda-cabecera-editable:focus, .celda-editable:focus, .input-titulo-gran-formato:focus {
-            box-shadow: 0 1px 0 0 #0f172a; 
+            box-shadow: 0 1px 0 0 var(--moss); 
         }
 
         .zona-ordenar {
@@ -181,11 +234,11 @@
             cursor: pointer;
             font-size: 12px;
             padding: 2px 4px;
-            color: #64748b;
+            color: var(--chalk-dim);
             transition: color 0.1s ease;
         }
 
-        .btn-orden:hover { color: #0f172a; }
+        .btn-orden:hover { color: var(--moss-deep); }
 
         .tabla-ejercicios {
             width: 100%;
@@ -196,14 +249,14 @@
         }
 
         .tabla-ejercicios th {
-            color: #0f172a;
+            color: var(--stone-900);
             padding: 4px 4px; 
             text-align: left;
             font-size: 10px; 
             text-transform: uppercase;
             letter-spacing: 0.08em;
             font-weight: 800;
-            border-bottom: 2px solid #0f172a; 
+            border-bottom: 2px solid var(--moss-deep); 
         }
 
         /* MODIFICADO LIGERAMENTE PARA QUE QUEPAN LAS FLECHAS */
@@ -228,35 +281,36 @@
 
         .celda-editable:empty:before, .celda-cabecera-editable:empty:before {
             content: attr(placeholder);
-            color: #94a3b8;
+            color: #a8a294;
             font-weight: normal;
         }
 
         .tabla-ejercicios tr td:first-child {
             font-weight: 600;
-            color: #0f172a;
+            color: var(--stone-900);
         }
 
         .btn-accion {
             padding: 4px 8px; 
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: 600;
+            font-family: 'Work Sans', sans-serif;
             font-size: 10px; 
         }
 
         .btn-añadir-ejercicio {
             background-color: rgba(255, 255, 255, 0.7);
-            color: #0f172a;
-            border: 1px solid #cbd5e0;
+            color: var(--stone-900);
+            border: 1px solid var(--line);
         }
 
-        .btn-añadir-ejercicio:hover { background-color: #0f172a; color: #ffffff; }
-        .btn-eliminar { background-color: transparent; color: #94a3b8; text-align: right; }
-        .btn-eliminar:hover { color: #ef4444; }
-        .btn-eliminar-parte { background-color: rgba(255, 255, 255, 0.7); color: #64748b; border: 1px solid #e2e8f0; }
-        .btn-eliminar-parte:hover { background-color: #fee2e2; color: #dc2626; border-color: #fee2e2; }
+        .btn-añadir-ejercicio:hover { background-color: var(--moss); color: #ffffff; border-color: var(--moss); }
+        .btn-eliminar { background-color: transparent; color: #a8a294; text-align: right; }
+        .btn-eliminar:hover { color: #b3564a; }
+        .btn-eliminar-parte { background-color: rgba(255, 255, 255, 0.7); color: var(--chalk-dim); border: 1px solid var(--line); }
+        .btn-eliminar-parte:hover { background-color: #f6e3e0; color: #b3564a; border-color: #f0d0cb; }
 
         @page { size: A4 portrait; margin: 15mm; }
 
@@ -264,12 +318,15 @@
             .cuerpo-app { padding: 0 !important; padding-top: 2mm !important; }
             body { background: #ffffff !important; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             .marca-agua-fondo { display: block !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; transform: scale(0.88) !important; opacity: 0.20 !important; z-index: 0 !important; }
-            .cabecera-principal-empresa { padding-top: 0 !important; margin-top: 0 !important; padding-bottom: 8px !important; margin-bottom: 20px !important; border-bottom: 2px solid #000000 !important; display: flex !important; align-items: center !important; page-break-after: avoid !important; break-after: avoid !important; }
+            .cabecera-principal-empresa { padding-top: 0 !important; margin-top: 0 !important; padding-bottom: 8px !important; margin-bottom: 20px !important; border-bottom: 2px solid #1c211e !important; display: flex !important; align-items: center !important; page-break-after: avoid !important; break-after: avoid !important; }
             .zona-botones, .btn-añadir-ejercicio, .btn-eliminar-parte, .zona-ordenar, th:last-child, td:last-child, .no-print { display: none !important; }
-            .celda-editable, .celda-cabecera-editable, .input-titulo-gran-formato { border: none !important; color: #000000 !important; font-size: 11px !important; }
+            .celda-editable, .celda-cabecera-editable, .input-titulo-gran-formato { border: none !important; color: #1c211e !important; font-size: 11px !important; }
             .input-titulo-gran-formato { font-size: 24px; }
-            .bloque-parte { background: rgba(248, 250, 252, 0.85) !important; border: none !important; border-left: 5px solid #000000 !important; border-radius: 8px !important; padding: 8px 0px 2px 14px !important; page-break-inside: avoid !important; break-inside: avoid !important; }
+            .eyebrow { color: #4d5c46 !important; }
+            .eyebrow::before, .eyebrow::after { background: #4d5c46 !important; }
+            .bloque-parte { background: rgba(247, 245, 239, 0.85) !important; border: none !important; border-left: 5px solid #4d5c46 !important; border-radius: 8px !important; padding: 8px 0px 2px 14px !important; page-break-inside: avoid !important; break-inside: avoid !important; }
             .tabla-ejercicios tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+            .tabla-ejercicios th { border-bottom: 2px solid #4d5c46 !important; }
         }
     </style>
 </head>
@@ -282,13 +339,14 @@
         <div class="contenedor-entreno">
             <div class="cabecera-principal-empresa">
                 <div class="contenedor-titulo-principal">
+                    <div class="eyebrow">Kaska.Climb</div>
                     <input type="text" id="titulo-entreno-principal" class="input-titulo-gran-formato" placeholder="Pon aquí el título de tu tabla...">
                 </div>
             </div>
             
             <div class="zona-botones">
                 <button id="btn-nueva-parte" class="btn-principal">Añadir Nueva Parte</button>
-                <button id="btn-exportar" class="btn-principal" onclick="window.print()">Guardar como PDF</button>
+                <button id="btn-exportar" class="btn-principal" onclick="exportarComoPDF()">Guardar como PDF</button>
                 <button id="btn-descargar-json" class="btn-principal">Guardar Tabla Modificable</button>
                 
                 <input type="file" id="input-cargar-json" accept=".json" style="display: none;">
@@ -299,7 +357,10 @@
 
                 <input type="file" id="input-cambiar-logo" accept="image/*" style="display: none;">
                 <button id="btn-config-logo" class="btn-principal" onclick="document.getElementById('input-cambiar-logo').click()">Cambiar Logo de Fondo</button>
-		        <a href="index.html" class="btn-principal no-print" style="text-decoration: none; margin-left: auto; font-weight: 900;"><b>&larr;</b> INICIO</a>
+		        <a href="index.html" class="btn-inicio-sesiones no-print">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                    Inicio
+                </a>
             </div>
 
             <div id="contenedor-partes"></div>
@@ -308,6 +369,17 @@
     </div>
 
     <script>
+        // Comprobamos si la página se está viendo dentro de una vista previa (iframe),
+        // ya que en ese caso el navegador bloquea window.print() por seguridad y no pasa nada al pulsar el botón.
+        function exportarComoPDF() {
+            const dentroDeIframe = (window.self !== window.top);
+            if (dentroDeIframe) {
+                alert('Para guardar como PDF, abre este archivo directamente en tu navegador (fuera de la vista previa) y vuelve a pulsar "Guardar como PDF".');
+                return;
+            }
+            window.print();
+        }
+
         const btnNuevaParte = document.getElementById('btn-nueva-parte');
         const contenedorPartes = document.getElementById('contenedor-partes');
         const inputTituloPrincipal = document.getElementById('titulo-entreno-principal');
