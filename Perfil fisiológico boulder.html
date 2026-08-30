@@ -361,18 +361,9 @@
       finalCanvas.height = contentCanvas.height;
       const ctx = finalCanvas.getContext('2d');
 
-      const grad = ctx.createRadialGradient(
-        finalCanvas.width * 0.15, 0, 0,
-        finalCanvas.width * 0.15, 0, finalCanvas.width * 1.2
-      );
-      grad.addColorStop(0, '#262d28');
-      grad.addColorStop(0.55, '#1c211e');
-      grad.addColorStop(1, '#121614');
-
-      ctx.fillStyle = grad;
+      // Color gris sólido del fondo del logo aplicado de manera uniforme
+      ctx.fillStyle = '#222824';
       ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
-
-      // Se ha eliminado por completo la lógica que cargaba y dibujaba el logo de fondo.
 
       ctx.drawImage(contentCanvas, 0, 0);
 
