@@ -6,45 +6,266 @@
     <title>Kaska.Climb | Macrociclos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root { --bg-principal: #121212; --bg-panel: rgba(30, 30, 30, 0.95); --border-general: rgba(255, 255, 255, 0.1); }
-        * { box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background-color: var(--bg-principal); color: #e0e0e0; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        :root{
+            --stone-900:#1c211e;
+            --stone-800:#262d28;
+            --stone-700:#333b34;
+            --chalk:#f2ede1;
+            --chalk-dim:#c9c3b4;
+            --moss:#7c9070;
+            --moss-light:#a7bd98;
+            --moss-deep:#4d5c46;
+        }
+
+        *{box-sizing:border-box;}
         
-        .fondo-logo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-image: url('logo.png'); background-repeat: no-repeat; background-position: center; background-size: 100%; opacity: 0.2; z-index: -10; }
+        body{
+            font-family:'Work Sans', sans-serif;
+            background: radial-gradient(120% 90% at 15% 0%, #262d28 0%, var(--stone-900) 55%, #121614 100%);
+            color:var(--chalk);
+            margin:0;
+            min-height:100vh;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            padding:20px;
+        }
         
-        .container { position: relative; width: 100%; max-width: 1000px; background: var(--bg-panel); padding: 30px; border-radius: 20px; border: 1px solid var(--border-general); box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-        #header-info { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        #titulo { font-size: 18px; font-weight: 700; text-transform: uppercase; margin: 0; color: #fff; outline: none; }
-        .fechas { display: flex; gap: 15px; font-size: 14px; }
-        .fechas input { background: #2c2c2c; color: #fff; border: 1px solid #444; padding: 4px; border-radius: 4px; }
-        .controls { display: flex; gap: 6px; margin-bottom: 20px; }
-        button { background: #3a3a3a; color: #fff; border: 1px solid #4a4a4a; padding: 6px 12px; font-size: 11px; cursor: pointer; border-radius: 4px; text-transform: capitalize; }
-        select { background: #2c2c2c; color: #ffffff; border: 1px solid #4a4a4a; padding: 6px; font-size: 11px; border-radius: 4px; }
+        .fondo-logo {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background-image: url('logo.png');
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: 100%;
+            opacity: 0.2;
+            z-index: -10;
+        }
         
-        #pantalla-wrapper { position: relative; width: 100%; padding: 3px; }
-        #pantalla { display: flex; width: 100%; height: 60px; border: 1px solid rgba(255,255,255,0.01); overflow: hidden; }
-        .bloque { display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 14px; cursor: grab; color: #000; }
-        .btn-borrar { margin-top: 2px; background: rgba(0,0,0,0.15); border: none; font-size: 9px; cursor: pointer; border-radius: 3px; }
-        .fmax { background-color: #ff6b6b; } .desox { background-color: #4dabf7; }
-        .reox { background-color: #69db7c; } .aero { background-color: #b197fc; }
-        .tap { background-color: #ffd43b; }
-        .fechas-semanales { display: flex; justify-content: space-around; width: 100%; font-size: 8px; color: #666; margin-top: 2px; }
+        .container {
+            position: relative;
+            width: 100%;
+            max-width: 1000px;
+            background: rgba(38,45,40,0.55);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(242,237,225,0.12);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+        }
+
+        #header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .eyebrow{
+            display:flex; align-items:center; gap:10px;
+            font-size:11px; letter-spacing:3px; font-weight:700;
+            color:var(--moss-light); text-transform:uppercase; margin-bottom:6px;
+        }
+        .eyebrow::before{ content:""; width:20px; height:2px; background:var(--moss-light); }
+
+        #titulo {
+            font-family:'Anton', sans-serif;
+            font-size:clamp(24px, 4vw, 36px);
+            font-weight: 400;
+            text-transform: uppercase;
+            margin: 0;
+            color: var(--chalk);
+            letter-spacing: 0.5px;
+            outline: none;
+        }
+
+        .fechas {
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            color: var(--chalk-dim);
+            font-weight: 500;
+        }
+
+        .fechas input {
+            background: var(--stone-800);
+            color: var(--chalk);
+            border: 1px solid rgba(242,237,225,0.16);
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-family: 'Work Sans', sans-serif;
+            font-size: 13px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button, select {
+            background: var(--stone-800);
+            color: var(--chalk);
+            border: 1px solid rgba(242,237,225,0.16);
+            padding: 8px 14px;
+            font-size: 12px;
+            font-family: 'Work Sans', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+        }
+
+        button:hover, select:hover {
+            background: var(--moss);
+            color: var(--stone-900);
+            border-color: var(--moss);
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        #pantalla-wrapper {
+            position: relative;
+            width: 100%;
+            padding: 4px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            border: 1px solid rgba(242,237,225,0.08);
+            overflow: hidden;
+        }
+
+        #pantalla {
+            display: flex;
+            width: 100%;
+            height: 65px;
+            gap: 2px;
+        }
+
+        .bloque {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            cursor: grab;
+            color: var(--stone-900);
+            font-weight: 700;
+            position: relative;
+            transition: filter 0.2s ease;
+        }
+        .bloque:hover {
+            filter: brightness(1.1);
+        }
+
+        .semanas-label {
+            font-size: 11px;
+            opacity: 0.85;
+            font-weight: 600;
+        }
+
+        .btn-borrar {
+            margin-top: 2px;
+            background: rgba(0,0,0,0.2);
+            color: inherit;
+            border: none;
+            font-size: 9px;
+            cursor: pointer;
+            border-radius: 4px;
+            padding: 1px 4px;
+            font-weight: 800;
+        }
+        .btn-borrar:hover {
+            background: rgba(0,0,0,0.4);
+            color: #fff;
+        }
+
+        /* Paleta sobria basada en tonos musgo/tierra elegantes */
+        .fmax { background-color: #c17c74; color: #1c211e; } 
+        .desox { background-color: #70908c; color: #1c211e; }
+        .reox { background-color: #7c9070; color: #1c211e; } 
+        .aero { background-color: #93859e; color: #1c211e; }
+        .tap { background-color: #d4b26f; color: #1c211e; }
+
+        .fechas-semanales { 
+            display: flex; 
+            justify-content: space-around; 
+            width: 100%; 
+            font-size: 9px; 
+            color: var(--chalk-dim); 
+            margin-top: 6px; 
+            font-weight: 500;
+        }
+
+        .total-container {
+            margin-top: 20px; 
+            font-weight: 700; 
+            font-size: 15px;
+            letter-spacing: 1px;
+            color: var(--chalk-dim);
+        }
+        .total-container span {
+            color: var(--chalk);
+            font-family: 'Anton', sans-serif;
+            font-size: 18px;
+            letter-spacing: 1px;
+        }
+
+        .btn-nav-bottom {
+            background: var(--stone-800);
+            color: var(--chalk);
+            border: 1px solid rgba(242,237,225,0.16);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        .btn-nav-bottom:hover {
+            background: var(--moss);
+            color: var(--stone-900);
+            border-color: var(--moss);
+        }
     </style>
 </head>
 <body>
 <div class="fondo-logo"></div>
 <div class="container">
     <div id="header-info">
-        <h1 id="titulo" contenteditable="true" onblur="autoGuardar()">Macrociclo</h1>
+        <div>
+            <div class="eyebrow">Kaska.Climb</div>
+            <h1 id="titulo" contenteditable="true" onblur="autoGuardar()">Macrociclo</h1>
+        </div>
         <div class="fechas">
             <div>Inicio: <input type="date" id="fechaInicio" onchange="calcularTotal(); autoGuardar();"></div>
             <div>Fin: <input type="date" id="fechaFin" readonly></div>
         </div>
     </div>
     <div class="controls">
-        <select id="fase"><option value="fmax">FMAX</option><option value="desox">DESOX</option><option value="reox">REOX</option><option value="aero">AERO</option><option value="tap">TAP</option></select>
-        <select id="duracion"><script>for(let i=1; i<=8; i++) document.write(`<option value="${i}">${i}S</option>`);</script></select>
+        <select id="fase">
+            <option value="fmax">FMAX</option>
+            <option value="desox">DESOX</option>
+            <option value="reox">REOX</option>
+            <option value="aero">AERO</option>
+            <option value="tap">TAP</option>
+        </select>
+        <select id="duracion">
+            <script>for(let i=1; i<=8; i++) document.write(`<option value="${i}">${i}S</option>`);</script>
+        </select>
         <button onclick="agregarBloque()">Añadir</button>
         <button onclick="guardarArchivo()">Guardar</button>
         <button onclick="cargarArchivo()">Cargar</button>
@@ -55,10 +276,13 @@
         <div id="pantalla"></div>
         <div id="contenedor-fechas" style="display: flex; width: 100%;"></div>
     </div>
-    <div style="margin-top: 15px; font-weight: 700; font-size: 16px;">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
+    <div class="total-container">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
     
-    <div style="text-align: center; margin-top: 20px;">
-        <button onclick="window.location.href='index.html'" style="padding: 8px 16px; font-weight: 900;">&larr; INICIO</button>
+    <div style="text-align: center; margin-top: 24px;">
+        <a href="index.html" class="btn-nav-bottom">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            Inicio
+        </a>
     </div>
 </div>
 
@@ -189,7 +413,6 @@
     }
 
     async function guardarPDF(pdf, nombreSugerido) {
-        // Si el navegador soporta elegir nombre y carpeta al guardar, lo usamos
         if (window.showSaveFilePicker) {
             try {
                 const blob = pdf.output('blob');
@@ -205,12 +428,9 @@
                 await writable.close();
                 return;
             } catch (err) {
-                if (err && err.name === 'AbortError') return; // el usuario canceló el diálogo
-                console.warn('No se pudo usar el selector nativo, se usa la descarga estándar.', err);
-                // seguimos hacia el método clásico si falla por otro motivo
+                if (err && err.name === 'AbortError') return;
             }
         }
-        // Método clásico (descarga directa a Descargas)
         pdf.save(nombreSugerido);
     }
 
@@ -229,12 +449,12 @@
             semanas: parseInt(b.style.flex)
         }));
 
-        pdf.setFillColor(18, 18, 18);
+        pdf.setFillColor(28, 33, 30);
         pdf.rect(0, 0, pW, pH, 'F');
-        pdf.setFillColor(31, 31, 31);
-        pdf.setDrawColor(55, 55, 55);
+        pdf.setFillColor(38, 45, 40);
+        pdf.setDrawColor(242, 237, 225, 0.1);
         pdf.roundedRect(4, 4, pW - 8, pH - 8, 3, 3, 'FD');
-        pdf.setTextColor(255, 255, 255);
+        pdf.setTextColor(242, 237, 225);
         pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(9);
         pdf.text(titulo, 8, 10);
@@ -245,15 +465,23 @@
         const tS = bloques.reduce((acc, b) => acc + b.semanas, 0) || 1;
         let cX = 8;
         const bW = pW - 16;
-        const colores = { fmax:[255,107,107], desox:[77,171,247], reox:[105,219,124], aero:[177,151,252], tap:[255,212,59] };
+        
+        // Mapeo actualizado de colores sobrios para el PDF
+        const colores = { 
+            fmax:[193, 124, 116], 
+            desox:[112, 144, 140], 
+            reox:[124, 144, 112], 
+            aero:[147, 133, 158], 
+            tap:[212, 178, 111] 
+        };
 
         let fechaActual = inicioVal ? new Date(inicioVal) : null;
 
         bloques.forEach(b => {
             const w = (bW * b.semanas) / tS;
-            pdf.setFillColor(...(colores[b.fase] || [255,212,59]));
+            pdf.setFillColor(...(colores[b.fase] || [212, 178, 111]));
             pdf.rect(cX, 16, w, 12, 'F');
-            pdf.setTextColor(0,0,0);
+            pdf.setTextColor(28, 33, 30);
             pdf.setFontSize(6);
             pdf.text(b.fase.toUpperCase(), cX + w/2, 21, {align:'center'});
             pdf.text(b.semanas + 'S', cX + w/2, 25, {align:'center'});
@@ -262,7 +490,7 @@
                 const semanaW = w / b.semanas;
                 pdf.setFont('helvetica', 'normal');
                 pdf.setFontSize(5);
-                pdf.setTextColor(150, 150, 150);
+                pdf.setTextColor(201, 195, 180);
                 for (let i = 0; i < b.semanas; i++) {
                     const etiqueta = `${fechaActual.getDate().toString().padStart(2,'0')}/${(fechaActual.getMonth()+1).toString().padStart(2,'0')}`;
                     pdf.text(etiqueta, cX + semanaW * i + semanaW / 2, 32, {align:'center'});
@@ -274,7 +502,7 @@
             cX += w;
         });
 
-        pdf.setTextColor(255,255,255);
+        pdf.setTextColor(242, 237, 225);
         pdf.setFontSize(7);
         pdf.text(`TOTAL: ${total} SEMANAS`, 8, 44);
         await guardarPDF(pdf, 'Macrociclo.pdf');
