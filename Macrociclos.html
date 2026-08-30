@@ -32,7 +32,7 @@
             display:flex;
             align-items:center;
             justify-content:center;
-            padding: 50px; /* Margen exterior ampliado para que el fondo #494d4b sobresalga más */
+            padding:20px;
         }
         
         .fondo-logo {
@@ -49,9 +49,9 @@
         .container {
             position: relative;
             width: 100%;
-            max-width: 1000px; /* Medidas anteriores restauradas */
+            max-width: 1000px;
             background: rgba(38,45,40,0.55);
-            padding: 30px; /* Padding interior original */
+            padding: 30px;
             border-radius: 20px;
             border: 1px solid rgba(242,237,225,0.12);
             backdrop-filter: blur(8px);
@@ -188,11 +188,11 @@
             color: #fff;
         }
 
-        .fmax { background-color: #d28c7d; color: #1c211e; }  
-        .desox { background-color: #7b968e; color: #1c211e; } 
-        .reox { background-color: #9cb08e; color: #1c211e; }  
-        .aero { background-color: #a496b2; color: #1c211e; }  
-        .tap { background-color: #dfbe7d; color: #1c211e; }   
+        .fmax { background-color: #c17c74; color: #1c211e; } 
+        .desox { background-color: #70908c; color: #1c211e; }
+        .reox { background-color: #7c9070; color: #1c211e; } 
+        .aero { background-color: #93859e; color: #1c211e; }
+        .tap { background-color: #d4b26f; color: #1c211e; }
 
         .fechas-semanales { 
             display: flex; 
@@ -412,6 +412,7 @@
         const botonesBorrar = document.querySelectorAll('.btn-borrar');
         const element = document.getElementById('export-area');
 
+        // Ocultar elementos interactivos que no deben salir en la imagen
         controles.style.display = 'none';
         navBottom.style.display = 'none';
         botonesBorrar.forEach(btn => btn.style.display = 'none');
@@ -424,18 +425,16 @@
                 allowTaint: true
             });
 
-            // Creamos un lienzo ligeramente mayor para generar un margen (padding) simétrico del fondo #494d4b en el PNG resultante
-            const paddingExtra = 40; 
             const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = contentCanvas.width + (paddingExtra * 2);
-            finalCanvas.height = contentCanvas.height + (paddingExtra * 2);
+            finalCanvas.width = contentCanvas.width;
+            finalCanvas.height = contentCanvas.height;
             const ctx = finalCanvas.getContext('2d');
 
+            // Rellenar con el color de fondo solicitado (#494d4b)
             ctx.fillStyle = '#494d4b';
             ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
-            // Dibujamos la caja centrada dejando espacio para el margen de fondo
-            ctx.drawImage(contentCanvas, paddingExtra, paddingExtra);
+            ctx.drawImage(contentCanvas, 0, 0);
 
             const link = document.createElement('a');
             link.download = 'Macrociclo.png';
@@ -446,6 +445,7 @@
             console.error(e);
             alert("Error al generar la imagen: " + e.message);
         } finally {
+            // Volver a mostrar los elementos ocultos
             controles.style.display = 'flex';
             navBottom.style.display = 'block';
             botonesBorrar.forEach(btn => btn.style.display = 'inline-block');
