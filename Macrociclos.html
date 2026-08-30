@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaska.Climb | Macrociclos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -188,7 +188,6 @@
             color: #fff;
         }
 
-        /* Paleta sobria basada en tonos musgo/tierra elegantes */
         .fmax { background-color: #c17c74; color: #1c211e; } 
         .desox { background-color: #70908c; color: #1c211e; }
         .reox { background-color: #7c9070; color: #1c211e; } 
@@ -244,7 +243,7 @@
 </head>
 <body>
 <div class="fondo-logo"></div>
-<div class="container">
+<div class="container" id="export-area">
     <div id="header-info">
         <div>
             <div class="eyebrow">Kaska.Climb</div>
@@ -255,7 +254,7 @@
             <div>Fin: <input type="date" id="fechaFin" readonly></div>
         </div>
     </div>
-    <div class="controls">
+    <div class="controls" id="controles-ui">
         <select id="fase">
             <option value="fmax">FMAX</option>
             <option value="desox">DESOX</option>
@@ -270,7 +269,7 @@
         <button onclick="guardarArchivo()">Guardar</button>
         <button onclick="cargarArchivo()">Cargar</button>
         <button onclick="limpiarPlan()">Limpiar</button>
-        <button onclick="exportarPDF()">Exportar PDF</button>
+        <button onclick="exportarPNG()">Exportar PNG</button>
     </div>
     <div id="pantalla-wrapper">
         <div id="pantalla"></div>
@@ -278,7 +277,7 @@
     </div>
     <div class="total-container">TOTAL: <span id="totalSemanas">0</span> SEMANAS</div>
     
-    <div style="text-align: center; margin-top: 24px;">
+    <div style="text-align: center; margin-top: 24px;" id="nav-bottom-container">
         <a href="index.html" class="btn-nav-bottom">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
             Inicio
@@ -406,106 +405,51 @@
         input.click();
     }
 
-    function formatearFecha(iso) {
-        if (!iso) return '';
-        const [y, m, d] = iso.split('-');
-        return `${d}/${m}/${y}`;
-    }
-
-    async function guardarPDF(pdf, nombreSugerido) {
-        if (window.showSaveFilePicker) {
-            try {
-                const blob = pdf.output('blob');
-                const handle = await window.showSaveFilePicker({
-                    suggestedName: nombreSugerido,
-                    types: [{
-                        description: 'Documento PDF',
-                        accept: { 'application/pdf': ['.pdf'] }
-                    }]
-                });
-                const writable = await handle.createWritable();
-                await writable.write(blob);
-                await writable.close();
-                return;
-            } catch (err) {
-                if (err && err.name === 'AbortError') return;
-            }
-        }
-        pdf.save(nombreSugerido);
-    }
-
-    async function exportarPDF() {
+    async function exportarPNG() {
         calcularTotal();
-        const { jsPDF } = window.jspdf;
-        const pW = 189; const pH = 50;
-        const pdf = new jsPDF('landscape', 'mm', [pH, pW]);
-        const titulo = (document.getElementById('titulo').innerText || '').trim().toUpperCase();
-        const inicioVal = document.getElementById('fechaInicio').value;
-        const fechaInicio = formatearFecha(inicioVal);
-        const fechaFin = formatearFecha(document.getElementById('fechaFin').value);
-        const total = document.getElementById('totalSemanas').innerText.trim();
-        const bloques = Array.from(document.querySelectorAll('.bloque')).map(b => ({
-            fase: b.className.split(' ')[1],
-            semanas: parseInt(b.style.flex)
-        }));
+        const controles = document.getElementById('controles-ui');
+        const navBottom = document.getElementById('nav-bottom-container');
+        const botonesBorrar = document.querySelectorAll('.btn-borrar');
+        const element = document.getElementById('export-area');
 
-        pdf.setFillColor(28, 33, 30);
-        pdf.rect(0, 0, pW, pH, 'F');
-        pdf.setFillColor(38, 45, 40);
-        pdf.setDrawColor(242, 237, 225, 0.1);
-        pdf.roundedRect(4, 4, pW - 8, pH - 8, 3, 3, 'FD');
-        pdf.setTextColor(242, 237, 225);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(9);
-        pdf.text(titulo, 8, 10);
-        pdf.setFontSize(7.5);
-        const dS = `Inicio: ${fechaInicio}     Fin: ${fechaFin}`;
-        pdf.text(dS, pW - pdf.getTextWidth(dS) - 8, 10);
+        // Ocultar elementos interactivos que no deben salir en la imagen
+        controles.style.display = 'none';
+        navBottom.style.display = 'none';
+        botonesBorrar.forEach(btn => btn.style.display = 'none');
 
-        const tS = bloques.reduce((acc, b) => acc + b.semanas, 0) || 1;
-        let cX = 8;
-        const bW = pW - 16;
-        
-        // Mapeo actualizado de colores sobrios para el PDF
-        const colores = { 
-            fmax:[193, 124, 116], 
-            desox:[112, 144, 140], 
-            reox:[124, 144, 112], 
-            aero:[147, 133, 158], 
-            tap:[212, 178, 111] 
-        };
+        try {
+            const contentCanvas = await html2canvas(element, {
+                backgroundColor: null,
+                scale: 2,
+                useCORS: true,
+                allowTaint: true
+            });
 
-        let fechaActual = inicioVal ? new Date(inicioVal) : null;
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = contentCanvas.width;
+            finalCanvas.height = contentCanvas.height;
+            const ctx = finalCanvas.getContext('2d');
 
-        bloques.forEach(b => {
-            const w = (bW * b.semanas) / tS;
-            pdf.setFillColor(...(colores[b.fase] || [212, 178, 111]));
-            pdf.rect(cX, 16, w, 12, 'F');
-            pdf.setTextColor(28, 33, 30);
-            pdf.setFontSize(6);
-            pdf.text(b.fase.toUpperCase(), cX + w/2, 21, {align:'center'});
-            pdf.text(b.semanas + 'S', cX + w/2, 25, {align:'center'});
+            // Rellenar con el color de fondo solicitado (#494d4b)
+            ctx.fillStyle = '#494d4b';
+            ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
 
-            if (fechaActual) {
-                const semanaW = w / b.semanas;
-                pdf.setFont('helvetica', 'normal');
-                pdf.setFontSize(5);
-                pdf.setTextColor(201, 195, 180);
-                for (let i = 0; i < b.semanas; i++) {
-                    const etiqueta = `${fechaActual.getDate().toString().padStart(2,'0')}/${(fechaActual.getMonth()+1).toString().padStart(2,'0')}`;
-                    pdf.text(etiqueta, cX + semanaW * i + semanaW / 2, 32, {align:'center'});
-                    fechaActual.setDate(fechaActual.getDate() + 7);
-                }
-                pdf.setFont('helvetica', 'bold');
-            }
+            ctx.drawImage(contentCanvas, 0, 0);
 
-            cX += w;
-        });
+            const link = document.createElement('a');
+            link.download = 'Macrociclo.png';
+            link.href = finalCanvas.toDataURL('image/png');
+            link.click();
 
-        pdf.setTextColor(242, 237, 225);
-        pdf.setFontSize(7);
-        pdf.text(`TOTAL: ${total} SEMANAS`, 8, 44);
-        await guardarPDF(pdf, 'Macrociclo.pdf');
+        } catch (e) {
+            console.error(e);
+            alert("Error al generar la imagen: " + e.message);
+        } finally {
+            // Volver a mostrar los elementos ocultos
+            controles.style.display = 'flex';
+            navBottom.style.display = 'block';
+            botonesBorrar.forEach(btn => btn.style.display = 'inline-block');
+        }
     }
 
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
