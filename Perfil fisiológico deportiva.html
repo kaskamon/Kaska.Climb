@@ -209,12 +209,12 @@
 
 <script>
   const CAPACIDADES = [
-    { key: 'fmax',          label: 'Fmax',           corto: 'Fmax',          sub: 'Fuerza máxima de agarre',     color: '#7c9070', valor: 7.00 },
-    { key: 'rfd',           label: 'RFD 200ms',      corto: 'RFD 200ms',     sub: 'Fuerza de contacto',          color: '#7c9070', valor: 6.78 },
-    { key: 'desoxigenacion',label: 'Desoxigenación', corto: 'Desox.',        sub: 'Capacidad de desoxigenación', color: '#7c9070', valor: 8.00 },
-    { key: 'reoxigenacion', label: 'Reoxigenación',  corto: 'Reox.',         sub: 'Capacidad de reoxigenación',  color: '#7c9070', valor: 6.50 },
-    { key: 'aerobico',      label: 'Aeróbico',       corto: 'Aeróbico',      sub: 'Capacidad aeróbica',          color: '#7c9070', valor: 7.20 },
-    { key: 'traccion',      label: 'Tracción',       corto: 'Tracción',      sub: 'Fuerza de tracción',          color: '#7c9070', valor: 8.50 },
+    { key: 'fmax',          label: 'Fmax',           corto: 'Fmax',          sub: 'Fuerza máxima de agarre', color: '#7c9070', valor: 7.00 },
+    { key: 'rfd',           label: 'RFD 200ms',      corto: 'RFD 200ms',     sub: 'Fuerza de contacto',      color: '#7c9070', valor: 6.78 },
+    { key: 'desoxigenacion',label: 'Desoxigenación', corto: 'Desox.',        sub: 'Desoxigenación muscular', color: '#7c9070', valor: 8.00 },
+    { key: 'reoxigenacion', label: 'Reoxigenación',  corto: 'Reox.',         sub: 'Reoxigenación muscular',  color: '#7c9070', valor: 6.50 },
+    { key: 'aerobico',      label: 'Aeróbico',       corto: 'Aeróbico',      sub: 'Eficiencia aeróbica',     color: '#7c9070', valor: 7.20 },
+    { key: 'traccion',      label: 'Tracción',       corto: 'Tracción',      sub: 'Fuerza de tracción',      color: '#7c9070', valor: 8.50 },
   ];
 
   const MAX_ESCALA = 10;
@@ -363,40 +363,9 @@
       finalCanvas.height = contentCanvas.height;
       const ctx = finalCanvas.getContext('2d');
 
-      const grad = ctx.createRadialGradient(
-        finalCanvas.width * 0.15, 0, 0,
-        finalCanvas.width * 0.15, 0, finalCanvas.width * 1.2
-      );
-      grad.addColorStop(0, '#262d28');
-      grad.addColorStop(0.55, '#1c211e');
-      grad.addColorStop(1, '#121614');
-
-      ctx.fillStyle = grad;
+      // Fondo sólido con el color #494d4b
+      ctx.fillStyle = '#494d4b';
       ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
-
-      try {
-        const logoImg = new Image();
-        logoImg.crossOrigin = "Anonymous";
-        logoImg.src = 'logo.png';
-
-        await new Promise((resolve) => {
-          logoImg.onload = () => {
-            ctx.globalAlpha = 0.2;
-            const scale = Math.min(finalCanvas.width / logoImg.width, finalCanvas.height / logoImg.height);
-            const w = logoImg.width * scale;
-            const h = logoImg.height * scale;
-            const x = (finalCanvas.width - w) / 2;
-            const y = (finalCanvas.height - h) / 2;
-            ctx.drawImage(logoImg, x, y, w, h);
-            ctx.globalAlpha = 1.0;
-            resolve();
-          };
-          logoImg.onerror = () => resolve();
-          setTimeout(resolve, 600);
-        });
-      } catch (errLogo) {
-        console.warn("Logo omitido en exportación:", errLogo);
-      }
 
       ctx.drawImage(contentCanvas, 0, 0);
 
