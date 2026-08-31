@@ -158,65 +158,35 @@
   .badge.moss{ background:rgba(124,144,112,0.22); color:var(--moss-light); }
   .badge.amber{ background:rgba(201,154,91,0.2); color:var(--amber); }
 
-  .radar-wrap{
-    display:grid;
-    grid-template-columns:minmax(360px,1.45fr) minmax(220px,0.75fr);
-    align-items:center;
-    gap:26px;
-    padding:4px 4px 2px;
+  /* ---------- PERFIL FISIOLÓGICO (pantalla y exportación) ---------- */
+  .perfil-grid{ display:grid; grid-template-columns:0.9fr 1.1fr; gap:28px; margin-top:4px; align-items:stretch; }
+  .perfil-panel{
+    background:rgba(38,45,40,0.6); border:1px solid rgba(242,237,225,0.12);
+    border-radius:22px; padding:30px;
   }
-  .radar-chart{
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    min-width:0;
-    overflow:visible;
+  .perfil-panel-head{
+    display:flex; justify-content:space-between; font-size:14px; letter-spacing:2.5px;
+    font-weight:700; color:var(--chalk-faint); text-transform:uppercase; margin-bottom:16px;
   }
-  .radar-chart svg{
-    display:block;
-    width:min(100%,507px);
-    height:auto;
-    overflow:visible;
+  .perfil-row{ display:flex; align-items:flex-start; gap:14px; padding:16px 0; border-bottom:1px dashed rgba(242,237,225,0.12); }
+  .perfil-row:last-child{ border-bottom:none; }
+  .perfil-dot{ width:11px; height:11px; border-radius:50%; background:var(--moss); flex:0 0 auto; margin-top:6px; }
+  .perfil-row-main{ flex:1; min-width:0; }
+  .perfil-row-name{ font-size:17px; font-weight:800; color:var(--chalk); }
+  .perfil-row-sub{ font-size:12.5px; color:var(--chalk-faint); margin-top:2px; }
+  .perfil-row-bar{ height:6px; border-radius:999px; background:rgba(242,237,225,0.12); margin-top:10px; overflow:hidden; }
+  .perfil-row-bar-fill{ height:100%; border-radius:999px; background:var(--moss-light); }
+  .perfil-row-bar-fill.low{ background:#e05252; }
+  .perfil-row-value{
+    flex:0 0 auto; min-width:44px; text-align:center; background:var(--stone-800);
+    border:1px solid rgba(242,237,225,0.16); border-radius:10px; padding:7px 10px;
+    font-size:15px; font-weight:800; color:var(--chalk);
   }
-  .radar-legend{
-    display:flex;
-    flex-direction:column;
-    gap:4px;
-    min-width:0;
-    width:100%;
-  }
-  .radar-legend .row{
-    display:grid;
-    grid-template-columns:minmax(0,1fr) auto;
-    align-items:center;
-    gap:12px;
-    font-size:13px;
-    line-height:1.25;
-    padding:8px 0 10px;
-    border-bottom:1px dashed rgba(242,237,225,0.1);
-  }
-  .radar-legend .row span{ min-width:0; font-weight:800; color:var(--chalk); }
-  .radar-legend .row b{ color:var(--moss-light); flex:0 0 auto; font-weight:800; font-size:16px; }
-  .radar-legend .row b.low-score{ color:#e05252; }
-  .score-bar{
-    grid-column:1 / -1;
-    width:100%;
-    height:7px;
-    border-radius:999px;
-    background:rgba(242,237,225,0.12);
-    overflow:hidden;
-  }
-  .score-bar-fill{
-    height:100%;
-    width:0%;
-    border-radius:999px;
-    background:var(--moss-light);
-    transition:width .2s ease;
-  }
-  .score-bar-fill.low-score{ background:#e05252; }
+  .perfil-row-value.low{ color:#e05252; }
+  .perfil-radar-panel{ display:flex; align-items:center; justify-content:center; }
+  .perfil-radar-panel svg{ display:block; width:100%; max-width:640px; height:auto; overflow:visible; }
   @media (max-width:760px){
-    .radar-wrap{ grid-template-columns:1fr; gap:14px; }
-    .radar-chart svg{ width:min(100%,494px); }
+    .perfil-grid{ grid-template-columns:1fr; }
     .profile-header{
       grid-template-columns:1fr auto;
       grid-template-areas:
@@ -230,46 +200,6 @@
 
   footer{ text-align:center; color:var(--chalk-faint); font-size:12px; padding:30px 0 10px; }
   .link-btn{ background:none; border:none; color:var(--moss-light); text-decoration:underline; cursor:pointer; font-size:12px; padding:0; }
-
-  /* ---------- PLANTILLA DE EXPORTACIÓN PNG DEL PERFIL ---------- */
-  .pf-export{ width:2080px; background:#494d4b; padding:64px; font-family:'Work Sans', sans-serif; color:var(--chalk); }
-  .pf-export .pf-eyebrow{
-    display:inline-flex; align-items:center; gap:16px;
-    font-size:22px; letter-spacing:7px; font-weight:800;
-    color:var(--moss-light); text-transform:uppercase; margin-bottom:22px;
-  }
-  .pf-export .pf-eyebrow::before{ content:""; width:46px; height:3px; background:var(--moss-light); }
-  .pf-export .pf-title{
-    font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase;
-    font-size:66px; letter-spacing:1px; line-height:1; margin:0 0 44px;
-  }
-  .pf-export .pf-title .pf-mode{ color:var(--moss); }
-  .pf-export .pf-grid{ display:grid; grid-template-columns:1fr 1fr; gap:44px; align-items:stretch; }
-  .pf-export .pf-panel{
-    background:rgba(38,45,40,0.6); border:1px solid rgba(242,237,225,0.12);
-    border-radius:28px; padding:48px;
-  }
-  .pf-export .pf-list-head{
-    display:flex; justify-content:space-between; font-size:17px; letter-spacing:3px;
-    font-weight:700; color:var(--chalk-faint); text-transform:uppercase; margin-bottom:22px;
-  }
-  .pf-export .pf-row{ display:flex; align-items:flex-start; gap:22px; padding:22px 0; border-bottom:1px dashed rgba(242,237,225,0.12); }
-  .pf-export .pf-row:last-child{ border-bottom:none; }
-  .pf-export .pf-dot{ width:14px; height:14px; border-radius:50%; background:var(--moss); flex:0 0 auto; margin-top:6px; }
-  .pf-export .pf-row-main{ flex:1; min-width:0; }
-  .pf-export .pf-row-name{ font-size:27px; font-weight:800; color:var(--chalk); }
-  .pf-export .pf-row-sub{ font-size:18px; color:var(--chalk-faint); margin-top:2px; }
-  .pf-export .pf-row-bar{ height:8px; border-radius:999px; background:rgba(242,237,225,0.12); margin-top:14px; overflow:hidden; }
-  .pf-export .pf-row-bar-fill{ height:100%; border-radius:999px; background:var(--moss-light); }
-  .pf-export .pf-row-bar-fill.low{ background:#e05252; }
-  .pf-export .pf-row-value{
-    flex:0 0 auto; min-width:110px; text-align:center; background:var(--stone-800);
-    border:1px solid rgba(242,237,225,0.16); border-radius:16px; padding:16px 24px;
-    font-size:30px; font-weight:800; color:var(--chalk);
-  }
-  .pf-export .pf-row-value.low{ color:#e05252; }
-  .pf-export .pf-radar-panel{ display:flex; align-items:center; justify-content:center; }
-  .pf-export .pf-radar-panel svg{ width:100%; height:auto; }
 </style>
 </head>
 <body>
@@ -336,6 +266,7 @@
         <div class="out"><span class="k">MED_40 estimado</span><span class="v" id="f-med40est">–</span></div>
         <div class="out"><span class="k">MAW_5 estimado <span class="unit">(kg lastre)</span></span><span class="v" id="f-maw5est">–</span></div>
       </div>
+      <p class="note">MED_40 testado y Lastre MAW_5 testado se toman de «Datos del cliente». MAW_5 estimado usa la Fmáx absoluta media una vez completes los tests bilaterales de abajo.</p>
     </div>
 
     <div class="grid2">
@@ -441,6 +372,7 @@
 
     <div class="card">
       <h3>Tiempo al fallo por intensidad</h3>
+      <p class="note" style="margin-top:0;">El lastre de cada intensidad se calcula solo a partir del peso y del lastre máx. MAW_5 de «Datos del cliente». Anota el tiempo al fallo real de cada serie.</p>
       <table class="grid-table" id="ot-table">
         <tr><th>Intensidad</th><th>Lastre (kg)</th><th>Duración al fallo (segs)</th></tr>
       </table>
@@ -450,6 +382,7 @@
       <div class="card">
         <h3>Por pares — incrementos</h3>
         <table class="grid-table" id="ot-pares"></table>
+        <p class="note">El OT se sitúa en el primer incremento ≥ 50%, empezando por la intensidad más alta.</p>
         <div class="out hi"><span class="k">Sugerencia (por pares)</span><span class="v" id="ot-sug-pares">–</span></div>
       </div>
       <div class="card">
@@ -527,7 +460,6 @@
 </div>
 
 <input type="file" id="fileImport" accept="application/json" style="display:none;">
-<div id="export-stage" style="position:fixed; top:-100000px; left:-100000px; z-index:-1;"></div>
 
 <script>
 /* ============================================================
@@ -700,9 +632,14 @@ function buildPerfil(kind){
         <h3 class="profile-title"><span class="profile-main">PERFIL FISIOLÓGICO</span> - <span class="profile-mode">${isDep ? "DEPORTIVA" : "BOULDER"}</span></h3>
         <button class="icon-btn" onclick="exportarPerfilPNG('${kind}')">Exportar</button>
       </div>
-      <div class="radar-wrap">
-        <div class="radar-chart"><svg viewBox="-45 -45 390 390" width="507" height="507" id="${kind}-radar"></svg></div>
-        <div class="radar-legend" id="${kind}-legend"></div>
+      <div class="perfil-grid">
+        <div class="perfil-panel">
+          <div class="perfil-panel-head"><span>Capacidad</span><span>Puntos</span></div>
+          <div id="${kind}-legend"></div>
+        </div>
+        <div class="perfil-panel perfil-radar-panel">
+          <svg viewBox="-70 -70 440 440" width="460" height="460" id="${kind}-radar"></svg>
+        </div>
       </div>
     </div>
   `;
@@ -754,7 +691,6 @@ function renderRadar(svgId, labels, scores){
   svg.innerHTML = svgStr;
 }
 
-const perfilData = {};
 const SUBTITULOS = {
   'Fmax agarre': 'Fuerza máxima de agarre',
   'RFD 200ms': 'Fuerza de contacto',
@@ -765,50 +701,34 @@ const SUBTITULOS = {
   'Anae.': 'Capacidad anaeróbica'
 };
 
-async function exportarPerfilPNG(kind){
-  const data = perfilData[kind];
-  const stage = $('export-stage');
-  if(!data || !stage) return;
-  const isDep = kind === 'deportiva';
-
-  const radarSvg = $(kind+'-radar');
-  const svgClone = radarSvg ? radarSvg.cloneNode(true) : null;
-  if(svgClone) svgClone.removeAttribute('id');
-
-  const rowsHtml = data.labels.map((l, idx) => {
-    const score = data.scores[idx];
+function renderPerfilRows(kind, labels, scores){
+  const legend = $(kind+'-legend');
+  if(!legend) return;
+  legend.innerHTML = labels.map((l, idx) => {
+    const score = scores[idx];
     const hasScore = score!==null && score!==undefined && isFinite(score);
     const isLow = hasScore && Number(score) < 5;
     const width = hasScore ? Math.max(0, Math.min(100, Number(score)*10)) : 0;
     const sub = SUBTITULOS[l] || '';
-    return `<div class="pf-row">
-        <span class="pf-dot"></span>
-        <div class="pf-row-main">
-          <div class="pf-row-name">${l}</div>
-          ${sub ? `<div class="pf-row-sub">${sub}</div>` : ''}
-          <div class="pf-row-bar"><div class="pf-row-bar-fill${isLow?' low':''}" style="width:${width}%"></div></div>
+    return `<div class="perfil-row">
+        <span class="perfil-dot"></span>
+        <div class="perfil-row-main">
+          <div class="perfil-row-name">${l}</div>
+          ${sub ? `<div class="perfil-row-sub">${sub}</div>` : ''}
+          <div class="perfil-row-bar"><div class="perfil-row-bar-fill${isLow?' low':''}" style="width:${width}%"></div></div>
         </div>
-        <div class="pf-row-value${isLow?' low':''}">${hasScore ? fmt(score,1) : '–'}</div>
+        <div class="perfil-row-value${isLow?' low':''}">${hasScore ? fmt(score,1) : '–'}</div>
       </div>`;
   }).join('');
+}
 
-  stage.innerHTML = `
-    <div class="pf-export" id="pf-export-inner">
-      <div class="pf-eyebrow">Kaska.Climb</div>
-      <h2 class="pf-title">PERFIL FISIOLÓGICO <span class="pf-mode">${isDep ? 'DEPORTIVA' : 'BOULDER'}</span></h2>
-      <div class="pf-grid">
-        <div class="pf-panel">
-          <div class="pf-list-head"><span>Capacidad</span><span>Puntos</span></div>
-          ${rowsHtml}
-        </div>
-        <div class="pf-panel pf-radar-panel"></div>
-      </div>
-    </div>`;
-  const radarPanel = stage.querySelector('.pf-radar-panel');
-  if(svgClone) radarPanel.appendChild(svgClone);
-
+async function exportarPerfilPNG(kind){
+  const card = $(kind+'-perfil-card');
+  if(!card) return;
+  const btn = card.querySelector('.icon-btn');
+  if(btn) btn.style.visibility = 'hidden';
   try{
-    const canvas = await html2canvas($('pf-export-inner'), { backgroundColor: '#494d4b', scale: 2, useCORS: true, allowTaint: true });
+    const canvas = await html2canvas(card, { backgroundColor: '#494d4b', scale: 2, useCORS: true, allowTaint: true });
     const nombre = ($('g-nombre') && $('g-nombre').value ? $('g-nombre').value : 'perfil').replace(/[^a-z0-9]+/gi,'_');
     const link = document.createElement('a');
     link.download = `kaska_perfil_${kind}_${nombre}.png`;
@@ -818,9 +738,10 @@ async function exportarPerfilPNG(kind){
     console.error(e);
     alert('Error al generar la imagen: ' + e.message);
   }finally{
-    stage.innerHTML = '';
+    if(btn) btn.style.visibility = '';
   }
 }
+
 
 /* ============================================================
    GRADOS NATIVOS (Francés / Font) -> IRCRA
@@ -1056,16 +977,7 @@ function recalcAll(){
       scores = [fmNota, fcNota, faNota, ftNota];
     }
     renderRadar(kind+'-radar', labels, scores);
-    perfilData[kind] = { labels, scores };
-    const legend = $(kind+'-legend');
-    if(legend){ legend.innerHTML = labels.map((l,idx)=>{
-      const score = scores[idx];
-      const hasScore = score!==null && score!==undefined && isFinite(score);
-      const low = hasScore && Number(score)<5;
-      const lowClass = low ? ' low-score' : '';
-      const width = hasScore ? Math.max(0, Math.min(100, Number(score)*10)) : 0;
-      return `<div class="row"><span>${l}</span><b class="${lowClass.trim()}">${hasScore ? fmt(score,1) : '–'}</b><div class="score-bar"><div class="score-bar-fill${lowClass}" style="width:${width}%"></div></div></div>`;
-    }).join(''); }
+    renderPerfilRows(kind, labels, scores);
   });
 }
 
