@@ -1242,7 +1242,7 @@ function recalcAll(){
   out('r-ftianae', ftianae, 1);
   const reox = (ftireox!==null && ftianae) ? ftireox/ftianae : null;
   out('r-reox', reox, 2, ' %');
-  updateScale('scale-fti', SCALE_FTI, [ftianae, ftireox]);
+  updateScale('scale-fti', SCALE_FTI, ftianae);
   updateScale('scale-reox', SCALE_REOX, reox);
 
   const rCFdom = num('r-cfdom'), rWdom = num('r-wdom'), rCFnodom = num('r-cfnodom'), rWnodom = num('r-wnodom');
