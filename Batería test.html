@@ -336,7 +336,6 @@
         <div class="out"><span class="k">MED_40 estimado</span><span class="v" id="f-med40est">–</span></div>
         <div class="out"><span class="k">MAW_5 estimado <span class="unit">(kg lastre)</span></span><span class="v" id="f-maw5est">–</span></div>
       </div>
-      <p class="note">MED_40 testado y Lastre MAW_5 testado se toman de «Datos del cliente». MAW_5 estimado usa la Fmáx absoluta media una vez completes los tests bilaterales de abajo.</p>
     </div>
 
     <div class="grid2">
@@ -442,7 +441,6 @@
 
     <div class="card">
       <h3>Tiempo al fallo por intensidad</h3>
-      <p class="note" style="margin-top:0;">El lastre de cada intensidad se calcula solo a partir del peso y del lastre máx. MAW_5 de «Datos del cliente». Anota el tiempo al fallo real de cada serie.</p>
       <table class="grid-table" id="ot-table">
         <tr><th>Intensidad</th><th>Lastre (kg)</th><th>Duración al fallo (segs)</th></tr>
       </table>
@@ -452,7 +450,6 @@
       <div class="card">
         <h3>Por pares — incrementos</h3>
         <table class="grid-table" id="ot-pares"></table>
-        <p class="note">El OT se sitúa en el primer incremento ≥ 50%, empezando por la intensidad más alta.</p>
         <div class="out hi"><span class="k">Sugerencia (por pares)</span><span class="v" id="ot-sug-pares">–</span></div>
       </div>
       <div class="card">
@@ -482,7 +479,6 @@
         <div class="field"><label>OT final <span class="unit">(% de Fmáx — editable)</span></label><input type="number" step="1" id="ot-final"></div>
         <div class="out hi"><span class="k">Tu umbral de oclusión está al</span><span class="v" id="ot-final-out">–</span></div>
       </div>
-      <p class="note">Se sugiere automáticamente a partir del método de «fuerza relativa al peso»; ajústalo si el resto de métodos apuntan a otro valor. Este valor alimenta el campo OT de los Perfiles Fisiológicos.</p>
     </div>
   </section>
 
@@ -630,7 +626,6 @@ function buildPerfil(kind){
         <div class="out hi"><span class="k">OT <span class="unit">(% Fmáx)</span></span><span class="v linked" id="${kind}-ot">–</span></div>
         <div class="out hi"><span class="k">CF <span class="unit">(% Fmáx)</span></span><span class="v linked" id="${kind}-cf">–</span></div>
       </div>
-      <p class="note">Los campos con ⇄ se enlazan automáticamente desde Fuerza, Resistencia y Cálculo OT — no hace falta volver a escribirlos.</p>
     </div>
 
     <div class="grid2">
@@ -752,7 +747,13 @@ function renderRadar(svgId, labels, scores){
     let dy = 0;
     if(y < cy-60) dy = -2;
     else if(y > cy+60) dy = 5;
-    svgStr += `<text x="${x.toFixed(1)}" y="${(y+dy).toFixed(1)}" text-anchor="${anchor}" dominant-baseline="middle" fill="#f2ede1" font-size="12" font-weight="800" font-family="Work Sans, sans-serif">${labels[i]}</text>`;
+    const label = labels[i];
+    if(label === 'RFD 200ms'){
+      const lineHeight = 14;
+      svgStr += `<text x="${x.toFixed(1)}" y="${(y+dy).toFixed(1)}" text-anchor="${anchor}" fill="#f2ede1" font-size="12" font-weight="800" font-family="Work Sans, sans-serif"><tspan x="${x.toFixed(1)}" dy="${-lineHeight/2}">RFD</tspan><tspan x="${x.toFixed(1)}" dy="${lineHeight}">200ms</tspan></text>`;
+    } else {
+      svgStr += `<text x="${x.toFixed(1)}" y="${(y+dy).toFixed(1)}" text-anchor="${anchor}" dominant-baseline="middle" fill="#f2ede1" font-size="12" font-weight="800" font-family="Work Sans, sans-serif">${label}</text>`;
+    }
   }
   svg.innerHTML = svgStr;
 }
@@ -1055,8 +1056,8 @@ function recalcAll(){
       scores = [fmNota, fcNota, faNota, reoxNota, aerNota, ftNota];
     } else {
       // Boulder mantiene únicamente sus cuatro capacidades disponibles.
-      labels = ['Fmax agarre','Anae.','RFD 200ms','Tracción'];
-      scores = [fmNota, faNota, fcNota, ftNota];
+      labels = ['Fmax agarre','RFD 200ms','Anae.','Tracción'];
+      scores = [fmNota, fcNota, faNota, ftNota];
     }
     renderRadar(kind+'-radar', labels, scores);
     perfilData[kind] = { labels, scores };
