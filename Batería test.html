@@ -728,6 +728,7 @@ async function exportarPerfilPNG(kind){
   const btn = card.querySelector('.icon-btn');
   if(btn) btn.style.visibility = 'hidden';
   try{
+    if(document.fonts && document.fonts.ready){ await document.fonts.ready; }
     const canvas = await html2canvas(card, { backgroundColor: '#494d4b', scale: 2, useCORS: true, allowTaint: true });
     const nombre = ($('g-nombre') && $('g-nombre').value ? $('g-nombre').value : 'perfil').replace(/[^a-z0-9]+/gi,'_');
     const link = document.createElement('a');
