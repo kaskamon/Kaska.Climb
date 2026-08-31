@@ -310,7 +310,8 @@
       <div class="field"><label>Fecha</label><input type="date" id="g-fecha"></div>
       <div class="field"><label>Peso <span class="unit">(kg)</span></label><input type="number" step="0.1" id="g-peso"></div>
       <div class="field"><label>MED_40 testado <span class="unit">(mm)</span></label><input type="number" step="0.1" id="g-med40"></div>
-      <div class="field"><label>Lastre máx. MAW_5 <span class="unit">(kg)</span></label><input type="number" step="0.1" id="g-lastre"></div>
+      <div class="field"><label>Regleta entren. <span class="unit">(mm)</span></label><input type="number" step="0.1" id="g-reglaEnt"></div>
+      <div class="field"><label>MAW_5 <span class="unit">(kg)</span></label><input type="number" step="0.1" id="g-lastre"></div>
       <div class="field"><label>Modalidad</label>
         <select id="g-modalidad"><option value="deportiva">Deportiva</option><option value="boulder">Boulder</option></select>
       </div>
@@ -622,7 +623,6 @@ function buildPerfil(kind){
         <div class="out linked"><span class="k">MED_40 <span class="unit">(mm)</span></span><span class="v linked" id="${kind}-med40">–</span></div>
       </div>
       <div class="grid3">
-        <div class="field"><label>Regleta de entrenamiento <span class="unit">(mm) — editable</span></label><input type="number" step="0.1" id="${kind}-reglaEnt"></div>
         <div class="out hi"><span class="k">OT <span class="unit">(% Fmáx)</span></span><span class="v linked" id="${kind}-ot">–</span></div>
         <div class="out hi"><span class="k">CF <span class="unit">(% Fmáx)</span></span><span class="v linked" id="${kind}-cf">–</span></div>
       </div>
@@ -654,7 +654,7 @@ function buildPerfil(kind){
         <h3>Fuerza de Tracción (%RM que supone tu peso corporal)</h3>
         <table class="grid-table">
           <tr><td>Mínimo</td><td>100</td><td>%</td></tr>
-          <tr><td>Objetivo</td><td>45</td><td>%</td></tr>
+          <tr><td>Objetivo</td><td>55</td><td>%</td></tr>
           <tr><td>Actual</td><td class="v linked" id="${kind}-ft-act">–</td><td>%</td></tr>
         </table>
         <div class="out hi" style="margin-top:10px;"><span class="k">Nota <span class="unit">(0–10)</span></span><span class="v" id="${kind}-ft-nota">–</span></div>
@@ -1038,7 +1038,7 @@ function recalcAll(){
     const dsiMinV = isDep?65:80, dsiObjV = isDep?75:90;
     const fcNota = nota(dsiMinV, dsiObjV, dDSImedia); out(kind+'-fc-nota', fcNota, 1);
 
-    const ftNota = nota(100, 45, rmpct);
+    const ftNota = nota(100, 55, rmpct);
     out(kind+'-ft-act', rmpct, 1, rmpct!==null ? ' %' : '');
     out(kind+'-ft-nota', ftNota, 1);
 
