@@ -77,7 +77,7 @@
     background:var(--stone-800); border:1px solid rgba(242,237,225,0.16); color:var(--chalk);
     padding:9px 14px; border-radius:10px; font-size:12px; font-weight:700; letter-spacing:0.5px;
     text-transform:uppercase; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
-    transition:all .2s ease;
+    text-decoration:none; transition:all .2s ease;
   }
   .icon-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
   .icon-btn.danger:hover{ background:var(--danger); border-color:var(--danger); }
@@ -109,7 +109,7 @@
     border-radius:18px; padding:22px; margin-bottom:20px;
   }
   .card h3{ font-size:15px; color:var(--moss-light); letter-spacing:1px; margin-bottom:16px; }
-  .card .note{ color:var(--chalk-faint); font-size:12.5px; line-height:1.5; margin-top:10px; }
+  .card .note, .client-panel .note{ color:var(--chalk-faint); font-size:12.5px; line-height:1.5; margin-top:10px; }
 
   .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
   .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
@@ -233,6 +233,10 @@
       <button class="icon-btn" id="btnExport">Exportar</button>
       <button class="icon-btn" id="btnImport">Importar</button>
       <button class="icon-btn danger" id="btnReset">Nuevo test</button>
+      <a class="icon-btn" href="index.html">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Inicio
+      </a>
     </div>
   </div>
 </div>
@@ -251,8 +255,14 @@
       <div class="field"><label>Modalidad</label>
         <select id="g-modalidad"><option value="deportiva">Deportiva</option><option value="boulder">Boulder</option></select>
       </div>
-      <div class="field"><label>Grado RP actual <span class="unit">(IRCRA, 3:3:3)</span></label><input type="number" step="1" id="g-gradoRP"></div>
-      <div class="field"><label>Grado objetivo <span class="unit">(IRCRA)</span></label><input type="number" step="1" id="g-gradoObj"></div>
+      <div class="field"><label id="lbl-gradoRP-nativo">Grado RP actual (Francés)</label>
+        <select id="g-gradoRP-nativo"><option value="">–</option></select>
+      </div>
+      <div class="field"><label>Grado RP actual <span class="unit">(IRCRA)</span></label><input type="number" step="1" id="g-gradoRP" readonly></div>
+      <div class="field"><label id="lbl-gradoObj-nativo">Grado objetivo (Francés)</label>
+        <select id="g-gradoObj-nativo"><option value="">–</option></select>
+      </div>
+      <div class="field"><label>Grado objetivo <span class="unit">(IRCRA)</span></label><input type="number" step="1" id="g-gradoObj" readonly></div>
     </div>
   </div>
 
@@ -267,7 +277,6 @@
         <div class="out"><span class="k">MED_40 estimado</span><span class="v" id="f-med40est">–</span></div>
         <div class="out"><span class="k">MAW_5 estimado <span class="unit">(kg lastre)</span></span><span class="v" id="f-maw5est">–</span></div>
       </div>
-      <p class="note">MED_40 testado y Lastre MAW_5 testado se toman de «Datos del cliente». MAW_5 estimado usa la Fmáx absoluta media una vez completes los tests bilaterales de abajo.</p>
     </div>
 
     <div class="grid2">
@@ -373,7 +382,6 @@
 
     <div class="card">
       <h3>Tiempo al fallo por intensidad</h3>
-      <p class="note" style="margin-top:0;">El lastre de cada intensidad se calcula solo a partir del peso y del lastre máx. MAW_5 de «Datos del cliente». Anota el tiempo al fallo real de cada serie.</p>
       <table class="grid-table" id="ot-table">
         <tr><th>Intensidad</th><th>Lastre (kg)</th><th>Duración al fallo (segs)</th></tr>
       </table>
@@ -426,7 +434,6 @@
       <table class="grid-table" id="cc-table">
         <tr><th>Intensidad</th><th>Tiempo hasta el fallo (segs)</th></tr>
       </table>
-      <p class="note">Con ≥2 puntos se ajusta una regresión Tiempo = a·ln(Intensidad) + b para predecir el tiempo a cualquier intensidad.</p>
       <div class="grid3">
         <div class="out"><span class="k">a (pendiente)</span><span class="v" id="cc-a">–</span></div>
         <div class="out"><span class="k">b (intersección)</span><span class="v" id="cc-b">–</span></div>
@@ -680,9 +687,55 @@ function renderRadar(svgId, labels, scores){
 }
 
 /* ============================================================
+   GRADOS NATIVOS (Francés / Font) -> IRCRA
+   Escala IRCRA (Draper et al., IRCRA Position Statement, 2016).
+   Francés anclado en 7a = IRCRA 17 (ejemplo oficial del position statement:
+   "23 Ewbank / 7a sport-French / 5.11d YDS / IRCRA 17").
+   Font anclado en 7A = IRCRA 20 (V6, ejemplo oficial del mismo documento).
+   Deportiva = escala francesa; Boulder = escala Font.
+   ============================================================ */
+const FRENCH_GRADES = [
+  ['4',4],['4a',5],['4b',6],['4c',7],['5a',8],['5b',9],['5c',10],
+  ['6a',11],['6a+',12],['6b',13],['6b+',14],['6c',15],['6c+',16],
+  ['7a',17],['7a+',18],['7b',19],['7b+',20],['7c',21],['7c+',22],
+  ['8a',23],['8a+',24],['8b',25],['8b+',26],['8c',27],['8c+',28],
+  ['9a',29],['9a+',30],['9b',31],['9b+',32],['9c',33]
+];
+const FONT_GRADES = [
+  ['3',9],['3+',10],['4',12],['4+',13],['5',14],['5+',15],
+  ['6A',16],['6A+',16],['6B',17],['6B+',18],['6C',19],['6C+',19],
+  ['7A',20],['7A+',21],['7B',22],['7B+',23],['7C',24],['7C+',25],
+  ['8A',26],['8A+',27],['8B',28],['8B+',29],['8C',31],['8C+',32],['9A',34]
+];
+
+function poblarGradosNativos(){
+  const modalidad = $('g-modalidad') ? $('g-modalidad').value : 'deportiva';
+  const esBoulder = modalidad === 'boulder';
+  const tabla = esBoulder ? FONT_GRADES : FRENCH_GRADES;
+  const etiqueta = esBoulder ? 'Font' : 'Francés';
+  ['g-gradoRP-nativo','g-gradoObj-nativo'].forEach(id=>{
+    const sel = $(id); if(!sel) return;
+    if(sel.dataset.modo === modalidad) return; // ya construido para esta modalidad
+    const opciones = '<option value="">–</option>' + tabla.map(([g,i])=>`<option value="${i}">${g}</option>`).join('');
+    sel.innerHTML = opciones;
+    sel.dataset.modo = modalidad;
+  });
+  if($('lbl-gradoRP-nativo')) $('lbl-gradoRP-nativo').textContent = 'Grado RP actual ('+etiqueta+')';
+  if($('lbl-gradoObj-nativo')) $('lbl-gradoObj-nativo').textContent = 'Grado objetivo ('+etiqueta+')';
+}
+
+function actualizarGradoIRCRA(){
+  const rpSel = $('g-gradoRP-nativo'), objSel = $('g-gradoObj-nativo');
+  if(rpSel && rpSel.value !== '') $('g-gradoRP').value = rpSel.value;
+  if(objSel && objSel.value !== '') $('g-gradoObj').value = objSel.value;
+}
+
+/* ============================================================
    MAIN RECALC
    ============================================================ */
 function recalcAll(){
+  poblarGradosNativos();
+  actualizarGradoIRCRA();
   /* ---------- Global ---------- */
   const peso = num('g-peso');
   const med40 = num('g-med40');
@@ -906,11 +959,12 @@ function saveState(){
 }
 function loadState(){
   const raw = localStorage.getItem('kaska_bateria_test');
-  if(!raw) return;
+  if(!raw) return null;
   try{
     const data = JSON.parse(raw);
     Object.keys(data).forEach(id=>{ const el = $(id); if(el) el.value = data[id]; });
-  }catch(e){ console.warn('No se pudo cargar el estado guardado', e); }
+    return data;
+  }catch(e){ console.warn('No se pudo cargar el estado guardado', e); return null; }
 }
 
 $('btnExport').addEventListener('click', ()=>{
@@ -930,6 +984,10 @@ $('fileImport').addEventListener('change', e=>{
     try{
       const data = JSON.parse(ev.target.result);
       Object.keys(data).forEach(id=>{ const el=$(id); if(el) el.value = data[id]; });
+      poblarGradosNativos();
+      ['g-gradoRP-nativo','g-gradoObj-nativo'].forEach(id=>{
+        if(data[id] !== undefined && $(id)) $(id).value = data[id];
+      });
       recalcAll(); saveState();
     }catch(err){ alert('El archivo no es un JSON de batería válido.'); }
   };
@@ -945,7 +1003,13 @@ $('btnReset').addEventListener('click', ()=>{
 });
 
 /* init */
-loadState();
+const _datosGuardados = loadState();
+poblarGradosNativos();
+if(_datosGuardados){
+  ['g-gradoRP-nativo','g-gradoObj-nativo'].forEach(id=>{
+    if(_datosGuardados[id] !== undefined && $(id)) $(id).value = _datosGuardados[id];
+  });
+}
 recalcAll();
 </script>
 </body>
