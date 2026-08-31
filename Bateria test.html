@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Batería de Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e;
+    --stone-800:#262d28;
+    --stone-700:#333b34;
+    --stone-650:#3c453d;
+    --chalk:#f2ede1;
+    --chalk-dim:#c9c3b4;
+    --chalk-faint:#8d9187;
+    --moss:#7c9070;
+    --moss-light:#a7bd98;
+    --moss-deep:#4d5c46;
+    --amber:#c99a5b;
+    --danger:#c9705b;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(120% 90% at 15% 0%, #262d28 0%, var(--stone-900) 55%, #121614 100%);
+    color:var(--chalk);
+    font-family:'Work Sans', sans-serif;
+  }
+  h1,h2,h3,.display{
+    font-family:'Anton', sans-serif;
+    font-weight:400;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+    margin:0;
+  }
+  ::selection{ background:var(--moss-deep); color:var(--chalk); }
+
+  /* ---------- TOP HEADER ---------- */
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:rgba(28,33,30,0.92);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(242,237,225,0.1);
+  }
+  .topbar-inner{
+    max-width:1180px; margin:0 auto; padding:16px 24px;
+    display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
+  }
+  .brand{ display:flex; flex-direction:column; gap:2px; }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:10px;
+    font-size:11px; letter-spacing:4px; font-weight:700;
+    color:var(--moss-light); text-transform:uppercase;
+  }
+  .eyebrow::before{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .brand h1{ font-size:22px; }
+  .brand h1 span{ color:var(--moss); }
+
+  nav.tabs{ display:flex; gap:6px; flex-wrap:wrap; }
+  nav.tabs button{
+    background:transparent; border:1px solid rgba(242,237,225,0.14);
+    color:var(--chalk-dim); font-family:'Work Sans',sans-serif; font-weight:600;
+    font-size:13px; letter-spacing:0.3px; padding:9px 16px; border-radius:10px;
+    cursor:pointer; transition:all .2s ease; white-space:nowrap;
+  }
+  nav.tabs button:hover{ border-color:var(--moss); color:var(--chalk); }
+  nav.tabs button.active{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+
+  .toolbar{ display:flex; gap:8px; }
+  .icon-btn{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.16); color:var(--chalk);
+    padding:9px 14px; border-radius:10px; font-size:12px; font-weight:700; letter-spacing:0.5px;
+    text-transform:uppercase; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    transition:all .2s ease;
+  }
+  .icon-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+  .icon-btn.danger:hover{ background:var(--danger); border-color:var(--danger); }
+
+  /* ---------- LAYOUT ---------- */
+  .wrap{ max-width:1180px; margin:0 auto; padding:28px 24px 80px; }
+
+  .client-panel{
+    background:rgba(38,45,40,0.55); border:1px solid rgba(242,237,225,0.12);
+    border-radius:20px; padding:24px; margin-bottom:28px; backdrop-filter:blur(8px);
+  }
+  .client-panel h2{ font-size:18px; color:var(--moss-light); margin-bottom:16px; }
+  .client-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:16px; }
+
+  .panel{ display:none; }
+  .panel.active{ display:block; animation:fade .35s ease; }
+  @keyframes fade{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+  .section-head{ margin:36px 0 16px; display:flex; align-items:baseline; gap:12px; }
+  .section-head:first-child{ margin-top:0; }
+  .section-head h2{ font-size:26px; }
+  .section-head .sub{ color:var(--chalk-faint); font-size:13px; }
+  .profile-mode{ color:var(--moss); }
+  .profile-title{ font-size:24px !important; font-weight:800; text-align:center; letter-spacing:.4px; }
+  .profile-title .profile-main{ color:var(--chalk); }
+
+  .card{
+    background:rgba(38,45,40,0.5); border:1px solid rgba(242,237,225,0.1);
+    border-radius:18px; padding:22px; margin-bottom:20px;
+  }
+  .card h3{ font-size:15px; color:var(--moss-light); letter-spacing:1px; margin-bottom:16px; }
+  .card .note{ color:var(--chalk-faint); font-size:12.5px; line-height:1.5; margin-top:10px; }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  @media (max-width:760px){ .grid2{grid-template-columns:1fr;} .grid3{grid-template-columns:1fr 1fr;} }
+
+  .field{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+  .field label{ font-size:12px; color:var(--chalk-dim); font-weight:600; }
+  .field .unit{ color:var(--chalk-faint); font-weight:400; }
+  input[type=text], input[type=number], input[type=date], select{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.16);
+    color:var(--chalk); border-radius:10px; padding:10px 12px; font-size:14px;
+    font-family:'Work Sans',sans-serif; width:100%;
+  }
+  input:focus, select:focus{ outline:2px solid var(--moss); outline-offset:1px; border-color:var(--moss); }
+  input[readonly]{ background:var(--stone-700); color:var(--chalk-dim); }
+
+  .out{
+    display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+    padding:10px 12px; background:var(--stone-800); border-radius:10px; margin-bottom:10px;
+    border:1px solid rgba(242,237,225,0.08);
+  }
+  .out .k{ font-size:12.5px; color:var(--chalk-dim); }
+  .out .v{ font-size:16px; font-weight:700; color:var(--moss-light); font-variant-numeric:tabular-nums; }
+  .out .v.linked::after{ content:"⇄"; font-size:11px; color:var(--chalk-faint); margin-left:6px; }
+  .out.hi{ border-color:var(--moss); background:rgba(124,144,112,0.14); }
+  .out.hi .v{ color:var(--chalk); }
+
+  table.grid-table{ width:100%; border-collapse:collapse; font-size:13px; }
+  table.grid-table th{ text-align:left; color:var(--chalk-faint); font-weight:600; padding:6px 8px; font-size:11.5px; text-transform:uppercase; letter-spacing:0.5px; }
+  table.grid-table td{ padding:6px 8px; border-top:1px solid rgba(242,237,225,0.08); }
+  table.grid-table input{ padding:6px 8px; font-size:13px; }
+  table.grid-table tr.best td{ background:rgba(124,144,112,0.16); }
+
+  .badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; }
+  .badge.moss{ background:rgba(124,144,112,0.22); color:var(--moss-light); }
+  .badge.amber{ background:rgba(201,154,91,0.2); color:var(--amber); }
+
+  .radar-wrap{
+    display:grid;
+    grid-template-columns:minmax(360px,1.45fr) minmax(220px,0.75fr);
+    align-items:center;
+    gap:26px;
+    padding:4px 4px 2px;
+  }
+  .radar-chart{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    min-width:0;
+    overflow:visible;
+  }
+  .radar-chart svg{
+    display:block;
+    width:min(100%,390px);
+    height:auto;
+    overflow:visible;
+  }
+  .radar-legend{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    min-width:0;
+    width:100%;
+  }
+  .radar-legend .row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    align-items:center;
+    gap:12px;
+    font-size:13px;
+    line-height:1.25;
+    padding:8px 0 10px;
+    border-bottom:1px dashed rgba(242,237,225,0.1);
+  }
+  .radar-legend .row span{ min-width:0; font-weight:800; color:var(--chalk); }
+  .radar-legend .row b{ color:var(--moss-light); flex:0 0 auto; font-weight:800; font-size:16px; }
+  .radar-legend .row b.low-score{ color:#e05252; }
+  .score-bar{
+    grid-column:1 / -1;
+    width:100%;
+    height:7px;
+    border-radius:999px;
+    background:rgba(242,237,225,0.12);
+    overflow:hidden;
+  }
+  .score-bar-fill{
+    height:100%;
+    width:0%;
+    border-radius:999px;
+    background:var(--moss-light);
+    transition:width .2s ease;
+  }
+  .score-bar-fill.low-score{ background:#e05252; }
+  @media (max-width:760px){
+    .radar-wrap{ grid-template-columns:1fr; gap:14px; }
+    .radar-chart svg{ width:min(100%,380px); }
+    .profile-title{ font-size:21px !important; }
+  }
+
+  footer{ text-align:center; color:var(--chalk-faint); font-size:12px; padding:30px 0 10px; }
+  .link-btn{ background:none; border:none; color:var(--moss-light); text-decoration:underline; cursor:pointer; font-size:12px; padding:0; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="eyebrow">Kaska.Climb</div>
+      <h1>Batería de <span>Test</span></h1>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-tab="fuerza" class="active">Fuerza</button>
+      <button data-tab="resistencia">Resistencia</button>
+      <button data-tab="ot">Cálculo OT</button>
+      <button data-tab="curva">Curva &amp; Carga</button>
+      <button data-tab="deportiva">Perfil Deportiva</button>
+      <button data-tab="boulder">Perfil Boulder</button>
+    </nav>
+    <div class="toolbar">
+      <button class="icon-btn" id="btnExport">Exportar</button>
+      <button class="icon-btn" id="btnImport">Importar</button>
+      <button class="icon-btn danger" id="btnReset">Nuevo test</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ DATOS DEL CLIENTE (compartidos) ============ -->
+  <div class="client-panel">
+    <h2>Datos del cliente</h2>
+    <div class="client-grid">
+      <div class="field"><label>Nombre y apellidos</label><input type="text" id="g-nombre" placeholder="Nombre del escalador/a"></div>
+      <div class="field"><label>Fecha</label><input type="date" id="g-fecha"></div>
+      <div class="field"><label>Peso <span class="unit">(kg)</span></label><input type="number" step="0.1" id="g-peso"></div>
+      <div class="field"><label>MED_40 testado <span class="unit">(mm)</span></label><input type="number" step="0.1" id="g-med40"></div>
+      <div class="field"><label>Lastre máx. MAW_5 <span class="unit">(kg)</span></label><input type="number" step="0.1" id="g-lastre"></div>
+      <div class="field"><label>Modalidad</label>
+        <select id="g-modalidad"><option value="deportiva">Deportiva</option><option value="boulder">Boulder</option></select>
+      </div>
+      <div class="field"><label>Grado RP actual <span class="unit">(IRCRA, 3:3:3)</span></label><input type="number" step="1" id="g-gradoRP"></div>
+      <div class="field"><label>Grado objetivo <span class="unit">(IRCRA)</span></label><input type="number" step="1" id="g-gradoObj"></div>
+    </div>
+  </div>
+
+  <!-- ============ TESTS FUERZA ============ -->
+  <section class="panel active" id="panel-fuerza">
+    <div class="section-head"><h2>Fuerza de dedos &amp; RFD</h2></div>
+
+    <div class="card">
+      <h3>Regleta &amp; MAW_5</h3>
+      <div class="grid3">
+        <div class="field"><label>MHT_14 <span class="unit">(segs)</span></label><input type="number" step="0.01" id="f-mht14"></div>
+        <div class="out"><span class="k">MED_40 estimado</span><span class="v" id="f-med40est">–</span></div>
+        <div class="out"><span class="k">MAW_5 estimado <span class="unit">(kg lastre)</span></span><span class="v" id="f-maw5est">–</span></div>
+      </div>
+      <p class="note">MED_40 testado y Lastre MAW_5 testado se toman de «Datos del cliente». MAW_5 estimado usa la Fmáx absoluta media una vez completes los tests bilaterales de abajo.</p>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Test bilaterales — Lado Dominante</h3>
+        <table class="grid-table">
+          <tr><th></th><th>Fmáx (N)</th><th>RFD200ms (N/s)</th><th>Threshold b (N)</th><th>DSI200ms (%)</th></tr>
+          <tr><td>Test I</td><td><input type="number" id="f-d-fmax1"></td><td><input type="number" id="f-d-rfd1"></td><td><input type="number" id="f-d-thr1"></td><td class="v" id="f-d-dsi1">–</td></tr>
+          <tr><td>Test II</td><td><input type="number" id="f-d-fmax2"></td><td><input type="number" id="f-d-rfd2"></td><td><input type="number" id="f-d-thr2"></td><td class="v" id="f-d-dsi2">–</td></tr>
+          <tr><td>Test III</td><td><input type="number" id="f-d-fmax3"></td><td><input type="number" id="f-d-rfd3"></td><td><input type="number" id="f-d-thr3"></td><td class="v" id="f-d-dsi3">–</td></tr>
+        </table>
+        <div class="out" style="margin-top:12px;"><span class="k">Fmáx absoluta media</span><span class="v" id="f-d-fmaxmed">–</span></div>
+        <div class="out"><span class="k">Fmáx relativa <span class="unit">(N/kg/mm)</span></span><span class="v" id="f-d-fmaxrel">–</span></div>
+        <div class="out hi"><span class="k">Fmáx grado IRCRA</span><span class="v" id="f-d-ircra">–</span></div>
+        <div class="out"><span class="k">DSI 200ms media</span><span class="v" id="f-d-dsimedia">–</span></div>
+      </div>
+
+      <div class="card">
+        <h3>Test unilaterales — Lado No Dominante</h3>
+        <table class="grid-table">
+          <tr><th></th><th>Fmáx (N)</th><th>RFD200ms (N/s)</th><th>Threshold b (N)</th><th>DSI200ms (%)</th></tr>
+          <tr><td>Test I</td><td><input type="number" id="f-n-fmax1"></td><td><input type="number" id="f-n-rfd1"></td><td><input type="number" id="f-n-thr1"></td><td class="v" id="f-n-dsi1">–</td></tr>
+          <tr><td>Test II</td><td><input type="number" id="f-n-fmax2"></td><td><input type="number" id="f-n-rfd2"></td><td><input type="number" id="f-n-thr2"></td><td class="v" id="f-n-dsi2">–</td></tr>
+          <tr><td>Test III</td><td><input type="number" id="f-n-fmax3"></td><td><input type="number" id="f-n-rfd3"></td><td><input type="number" id="f-n-thr3"></td><td class="v" id="f-n-dsi3">–</td></tr>
+        </table>
+        <div class="out" style="margin-top:12px;"><span class="k">Fmáx absoluta media</span><span class="v" id="f-n-fmaxmed">–</span></div>
+        <div class="out"><span class="k">Fmáx relativa <span class="unit">(N/kg/mm)</span></span><span class="v" id="f-n-fmaxrel">–</span></div>
+        <div class="out"><span class="k">DSI 200ms media</span><span class="v" id="f-n-dsimedia">–</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Fuerza de tracción</h3>
+      <div class="grid2">
+        <div>
+          <p class="note" style="margin-top:0;">Ecuación de Brzycki</p>
+          <div class="field"><label>Kg levantados</label><input type="number" step="0.1" id="f-kg"></div>
+          <div class="field"><label>Reps realizadas</label><input type="number" step="1" id="f-reps"></div>
+          <div class="out hi"><span class="k">1RM estimada <span class="unit">(kg añadidos)</span></span><span class="v" id="f-1rm">–</span></div>
+          <div class="out"><span class="k">%RM que supone tu peso corporal</span><span class="v" id="f-rmpct">–</span></div>
+        </div>
+        <div>
+          <p class="note" style="margin-top:0;">Si tienes encoder lineal — 2 series de 3 reps, apunta la más rápida</p>
+          <div class="field"><label>VMP peso corporal <span class="unit">(m/s)</span></label><input type="number" step="0.01" id="f-vmp"></div>
+          <div class="out"><span class="k">%RM que supone tu peso corporal (encoder)</span><span class="v" id="f-vmppct">–</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ TESTS RESISTENCIA ============ -->
+  <section class="panel" id="panel-resistencia">
+    <div class="section-head"><h2>Resistencia</h2></div>
+
+    <div class="card">
+      <h3>Referencia</h3>
+      <div class="grid3">
+        <div class="field"><label>Fmáx (N) <span class="unit">— vacío = usa Fmáx dominante de Fuerza</span></label><input type="number" step="0.1" id="r-fmax"></div>
+        <div class="out"><span class="k">Fmáx usada</span><span class="v linked" id="r-fmax-used">–</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>FTIs — Test bilaterales</h3>
+      <div class="grid3">
+        <div class="out"><span class="k">Lastre para FTIs <span class="unit">(kg)</span></span><span class="v" id="r-lastreFTI">–</span></div>
+        <div class="field"><label>Tiempo al fallo 7":3" <span class="unit">(segs)</span></label><input type="number" step="0.1" id="r-t73"></div>
+        <div class="field"><label>Tiempo al fallo 8":1" <span class="unit">(segs)</span></label><input type="number" step="0.1" id="r-t81"></div>
+      </div>
+      <div class="grid3">
+        <div class="out hi"><span class="k">FTIanae <span class="unit">(N/kg/mm)</span></span><span class="v" id="r-ftianae">–</span></div>
+        <div class="out"><span class="k">FTIreox <span class="unit">(N/kg/mm)</span></span><span class="v" id="r-ftireox">–</span></div>
+        <div class="out"><span class="k">Capacidad de Reox <span class="unit">(%)</span></span><span class="v" id="r-reox">–</span></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Critical Force — Lado Dominante</h3>
+        <div class="field"><label>Critical Force <span class="unit">(N)</span></label><input type="number" step="0.1" id="r-cfdom"></div>
+        <div class="field"><label>W' <span class="unit">(N·s)</span></label><input type="number" step="0.1" id="r-wdom"></div>
+        <div class="out"><span class="k">CF / Body Weight <span class="unit">(%)</span></span><span class="v" id="r-cfbw">–</span></div>
+        <div class="out hi"><span class="k">CF / Fmáx <span class="unit">(%)</span></span><span class="v" id="r-cfmaxD">–</span></div>
+        <div class="out"><span class="k">IRCRA (CF/BW)</span><span class="v" id="r-ircraCF">–</span></div>
+        <div class="out"><span class="k">W' / Body Weight <span class="unit">(kg·s)</span></span><span class="v" id="r-wbw">–</span></div>
+        <div class="out"><span class="k">IRCRA (W'/BW)</span><span class="v" id="r-ircraW">–</span></div>
+        <div class="out"><span class="k">FEE <span class="unit">(N/kg·s)</span></span><span class="v" id="r-feeD">–</span></div>
+        <div class="out"><span class="k">IRCRA (FEE)</span><span class="v" id="r-ircraFEE">–</span></div>
+      </div>
+      <div class="card">
+        <h3>Critical Force — Lado No Dominante</h3>
+        <div class="field"><label>Critical Force <span class="unit">(N)</span></label><input type="number" step="0.1" id="r-cfnodom"></div>
+        <div class="field"><label>W' <span class="unit">(N·s)</span></label><input type="number" step="0.1" id="r-wnodom"></div>
+        <div class="out hi"><span class="k">CF / Fmáx <span class="unit">(%)</span></span><span class="v" id="r-cfmaxN">–</span></div>
+        <div class="out"><span class="k">FEE <span class="unit">(N/kg·s)</span></span><span class="v" id="r-feeN">–</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CALCULO OT ============ -->
+  <section class="panel" id="panel-ot">
+    <div class="section-head"><h2>Cálculo del Umbral de Oclusión (OT)</h2></div>
+
+    <div class="card">
+      <h3>Tiempo al fallo por intensidad</h3>
+      <p class="note" style="margin-top:0;">El lastre de cada intensidad se calcula solo a partir del peso y del lastre máx. MAW_5 de «Datos del cliente». Anota el tiempo al fallo real de cada serie.</p>
+      <table class="grid-table" id="ot-table">
+        <tr><th>Intensidad</th><th>Lastre (kg)</th><th>Duración al fallo (segs)</th></tr>
+      </table>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Por pares — incrementos</h3>
+        <table class="grid-table" id="ot-pares"></table>
+        <p class="note">El OT se sitúa en el primer incremento ≥ 50%, empezando por la intensidad más alta.</p>
+        <div class="out hi"><span class="k">Sugerencia (por pares)</span><span class="v" id="ot-sug-pares">–</span></div>
+      </div>
+      <div class="card">
+        <h3>Por fuerza relativa al peso</h3>
+        <div class="out"><span class="k">FRpc <span class="unit">(sobrepeso relativo, %)</span></span><span class="v" id="ot-frpc">–</span></div>
+        <table class="grid-table">
+          <tr><th>FRpc</th><th>&lt; 30%</th><th>30–50%</th><th>&gt; 50%</th></tr>
+          <tr><td>OT sugerido</td><td>75%</td><td>65%</td><td>55%</td></tr>
+        </table>
+        <div class="out hi"><span class="k">Sugerencia (fuerza relativa)</span><span class="v" id="ot-sug-frpc">–</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Regresión R²</h3>
+      <div class="grid3">
+        <div class="out" id="ot-r2-75box"><span class="k">Suma R² · 75%</span><span class="v" id="ot-r2-75">–</span></div>
+        <div class="out" id="ot-r2-65box"><span class="k">Suma R² · 65%</span><span class="v" id="ot-r2-65">–</span></div>
+        <div class="out" id="ot-r2-55box"><span class="k">Suma R² · 55%</span><span class="v" id="ot-r2-55">–</span></div>
+      </div>
+      <div class="out hi"><span class="k">Sugerencia (R² por sumatorio)</span><span class="v" id="ot-sug-r2">–</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Umbral de oclusión final</h3>
+      <div class="grid3">
+        <div class="field"><label>OT final <span class="unit">(% de Fmáx — editable)</span></label><input type="number" step="1" id="ot-final"></div>
+        <div class="out hi"><span class="k">Tu umbral de oclusión está al</span><span class="v" id="ot-final-out">–</span></div>
+      </div>
+      <p class="note">Se sugiere automáticamente a partir del método de «fuerza relativa al peso»; ajústalo si el resto de métodos apuntan a otro valor. Este valor alimenta el campo OT de los Perfiles Fisiológicos.</p>
+    </div>
+  </section>
+
+  <!-- ============ CURVA & CARGA ============ -->
+  <section class="panel" id="panel-curva">
+    <div class="section-head"><h2>Curva &amp; Carga</h2></div>
+
+    <div class="card">
+      <h3>Curva individual — tiempo hasta el fallo por intensidad</h3>
+      <table class="grid-table" id="cc-table">
+        <tr><th>Intensidad</th><th>Tiempo hasta el fallo (segs)</th></tr>
+      </table>
+      <p class="note">Con ≥2 puntos se ajusta una regresión Tiempo = a·ln(Intensidad) + b para predecir el tiempo a cualquier intensidad.</p>
+      <div class="grid3">
+        <div class="out"><span class="k">a (pendiente)</span><span class="v" id="cc-a">–</span></div>
+        <div class="out"><span class="k">b (intersección)</span><span class="v" id="cc-b">–</span></div>
+        <div class="field"><label>Intensidad objetivo</label><input type="number" step="0.01" id="cc-intObj" value="0.8"></div>
+      </div>
+      <div class="grid3">
+        <div class="out hi"><span class="k">Tiempo estimado <span class="unit">(segs)</span></span><span class="v" id="cc-tEst">–</span></div>
+        <div class="field"><label>Fracción de fallo</label><input type="number" step="0.01" id="cc-frac" value="0.25"></div>
+        <div class="out"><span class="k">T' al fallo parcial <span class="unit">(segs)</span></span><span class="v" id="cc-tParcial">–</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Carga en regleta de trabajo</h3>
+      <div class="grid3">
+        <div class="field"><label>Regleta de trabajo <span class="unit">(mm)</span></label><input type="number" step="0.1" id="cc-regla"></div>
+        <div class="out"><span class="k">Diferencia tamaño <span class="unit">(mm)</span></span><span class="v" id="cc-difftam">–</span></div>
+        <div class="out"><span class="k">Diferencia fuerza aplicada <span class="unit">(%)</span></span><span class="v" id="cc-difffuerza">–</span></div>
+      </div>
+      <div class="out hi"><span class="k">Fmáx en regleta de trabajo <span class="unit">(kg)</span></span><span class="v" id="cc-fmaxregla">–</span></div>
+      <table class="grid-table" id="cc-carga-table" style="margin-top:12px;">
+        <tr><th>Intensidad de trabajo</th><th>Lastre / descuento (kg)</th></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ PERFIL DEPORTIVA ============ -->
+  <section class="panel" id="panel-deportiva"></section>
+
+  <!-- ============ PERFIL BOULDER ============ -->
+  <section class="panel" id="panel-boulder"></section>
+
+</div>
+
+<input type="file" id="fileImport" accept="application/json" style="display:none;">
+
+<script>
+/* ============================================================
+   HELPERS
+   ============================================================ */
+const $ = id => document.getElementById(id);
+const num = id => { const el = $(id); if(!el) return null; const v = parseFloat(el.value); return isNaN(v) ? null : v; };
+const setv = id => v => { const el = $(id); if(!el) return; el.value = v; };
+const fmt = (x, d=2) => (x===null || x===undefined || isNaN(x) || !isFinite(x)) ? '–' : Number(x).toFixed(d);
+const out = (id, x, d=2, suffix='') => { const el = $(id); if(!el) return; el.textContent = (x===null||x===undefined||isNaN(x)||!isFinite(x)) ? '–' : fmt(x,d)+suffix; };
+const div = (a,b) => (a===null||b===null||b===0||!isFinite(b)) ? null : a/b;
+const avg = (...xs) => { const v = xs.filter(x=>x!==null && !isNaN(x)); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
+
+function pearsonSq(xs, ys){
+  const pts = []; for(let i=0;i<xs.length;i++){ if(xs[i]!=null && ys[i]!=null) pts.push([xs[i],ys[i]]); }
+  const n = pts.length; if(n<2) return null;
+  let sx=0,sy=0,sxy=0,sxx=0,syy=0;
+  pts.forEach(([x,y])=>{ sx+=x; sy+=y; sxy+=x*y; sxx+=x*x; syy+=y*y; });
+  const numr = n*sxy - sx*sy;
+  const den = Math.sqrt((n*sxx-sx*sx)*(n*syy-sy*sy));
+  if(den===0) return null;
+  const r = numr/den; return r*r;
+}
+function linreg(xs, ys){
+  const pts=[]; for(let i=0;i<xs.length;i++){ if(xs[i]!=null && ys[i]!=null) pts.push([xs[i],ys[i]]); }
+  const n=pts.length; if(n<2) return null;
+  let sx=0,sy=0,sxy=0,sxx=0;
+  pts.forEach(([x,y])=>{ sx+=x; sy+=y; sxy+=x*y; sxx+=x*x; });
+  const den = n*sxx - sx*sx; if(den===0) return null;
+  const a = (n*sxy - sx*sy)/den; const b = (sy - a*sx)/n;
+  return {a,b};
+}
+function nota(min, obj, actual){
+  if(actual===null || min===null || obj===null || min===obj) return null;
+  let t = (actual - min) / (obj - min);
+  t = Math.max(0, Math.min(1, t));
+  return t*10;
+}
+
+/* ============================================================
+   BUILD DYNAMIC TABLES
+   ============================================================ */
+// Cálculo OT — six fixed intensities
+const OT_INT = [0.85,0.75,0.65,0.55,0.45,0.35];
+(function buildOTTable(){
+  const t = $('ot-table');
+  OT_INT.forEach(i=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${Math.round(i*100)}%</td><td class="v" id="ot-lastre-${i}">–</td>
+      <td><input type="number" step="0.1" id="ot-dur-${i}"></td>`;
+    t.appendChild(tr);
+  });
+})();
+
+// Curva & carga — curva individual, same 6 intensities
+(function buildCCTable(){
+  const t = $('cc-table');
+  OT_INT.forEach(i=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${Math.round(i*100)}%</td><td><input type="number" step="0.1" id="cc-t-${i}"></td>`;
+    t.appendChild(tr);
+  });
+})();
+
+// Carga en regleta de trabajo — 1.00 down to 0.10 step .05
+const CARGA_INT = [];
+for(let i=100; i>=10; i-=5){ CARGA_INT.push(Math.round(i)/100); }
+(function buildCargaTable(){
+  const t = $('cc-carga-table');
+  CARGA_INT.forEach(i=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${Math.round(i*100)}%</td><td class="v" id="cc-carga-${i}">–</td>`;
+    t.appendChild(tr);
+  });
+})();
+
+// Perfil Fisiológico — build both sheets (Deportiva has 6 categories, Boulder 4)
+function buildPerfil(kind){
+  const isDep = kind==='deportiva';
+  const root = $('panel-'+kind);
+  const title = isDep ? 'PERFIL FISIOLÓGICO - <span class="profile-mode">DEPORTIVA</span>' : 'PERFIL FISIOLÓGICO - <span class="profile-mode">BOULDER</span>';
+  const dsiMin = isDep ? 65 : 80, dsiObj = isDep ? 75 : 90;
+  const capLabel = isDep ? 'Capacidad Desoxigenación (FTIanae)' : 'Capacidad Anaeróbica (FTIanae)';
+
+  root.innerHTML = `
+    <div class="section-head"><h2>${title}</h2></div>
+
+    <div class="card">
+      <h3>Referencia</h3>
+      <div class="grid3">
+        <div class="out linked"><span class="k">RP IRCRA (3:3:3)</span><span class="v linked" id="${kind}-rp">–</span></div>
+        <div class="out linked"><span class="k">RP IRCRA Objetivo</span><span class="v linked" id="${kind}-rpobj">–</span></div>
+        <div class="out linked"><span class="k">MED_40 <span class="unit">(mm)</span></span><span class="v linked" id="${kind}-med40">–</span></div>
+      </div>
+      <div class="grid3">
+        <div class="field"><label>Regleta de entrenamiento <span class="unit">(mm) — editable</span></label><input type="number" step="0.1" id="${kind}-reglaEnt"></div>
+        <div class="out hi"><span class="k">OT <span class="unit">(% Fmáx)</span></span><span class="v linked" id="${kind}-ot">–</span></div>
+        <div class="out hi"><span class="k">CF <span class="unit">(% Fmáx)</span></span><span class="v linked" id="${kind}-cf">–</span></div>
+      </div>
+      <p class="note">Los campos con ⇄ se enlazan automáticamente desde Fuerza, Resistencia y Cálculo OT — no hace falta volver a escribirlos.</p>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Fuerza Máxima de Agarre (Correlación N/kg/mm — IRCRA)</h3>
+        <table class="grid-table">
+          <tr><td>Mínimo</td><td class="v linked" id="${kind}-fm-min">–</td><td>IRCRA</td></tr>
+          <tr><td>Objetivo</td><td class="v linked" id="${kind}-fm-obj">–</td><td>IRCRA</td></tr>
+          <tr><td>Actual</td><td class="v linked" id="${kind}-fm-act">–</td><td>IRCRA</td></tr>
+        </table>
+        <div class="out hi" style="margin-top:10px;"><span class="k">Nota <span class="unit">(0–10)</span></span><span class="v" id="${kind}-fm-nota">–</span></div>
+      </div>
+      <div class="card">
+        <h3>Fuerza de Contacto (RFD200ms / DSI200ms)</h3>
+        <table class="grid-table">
+          <tr><td>Mínimo</td><td>${dsiMin}</td><td>%</td></tr>
+          <tr><td>Objetivo</td><td>${dsiObj}</td><td>%</td></tr>
+          <tr><td>Actual</td><td class="v linked" id="${kind}-fc-act">–</td><td>%</td></tr>
+        </table>
+        <div class="out hi" style="margin-top:10px;"><span class="k">Nota <span class="unit">(0–10)</span></span><span class="v" id="${kind}-fc-nota">–</span></div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>Fuerza de Tracción (%RM que supone tu peso corporal)</h3>
+        <table class="grid-table">
+          <tr><td>Mínimo</td><td>-100</td><td>%</td></tr>
+          <tr><td>Objetivo</td><td>-55</td><td>%</td></tr>
+          <tr><td>Actual</td><td class="v linked" id="${kind}-ft-act">–</td><td>%</td></tr>
+        </table>
+        <div class="out hi" style="margin-top:10px;"><span class="k">Nota <span class="unit">(0–10)</span></span><span class="v" id="${kind}-ft-nota">–</span></div>
+      </div>
+      <div class="card">
+        <h3>${capLabel}</h3>
+        <table class="grid-table">
+          <tr><td>Mínimo</td><td>800</td><td>N/kg·s</td></tr>
+          <tr><td>Objetivo</td><td>4000</td><td>N/kg·s</td></tr>
+          <tr><td>Actual</td><td class="v linked" id="${kind}-fa-act">–</td><td>N/kg·s</td></tr>
+        </table>
+        <div class="out hi" style="margin-top:10px;"><span class="k">Nota <span class="unit">(0–10)</span></span><span class="v" id="${kind}-fa-nota">–</span></div>
+      </div>
+    </div>
+
+    ${isDep ? `
+    <div class="grid2">
+      <div class="card">
+        <h3>Capacidad Reoxigenación (FTIreox/FTIanae)</h3>
+        <table class="grid-table">
+          <tr><td>Mínimo</td><td>1</td><td>%</td></tr>
+          <tr><td>Objetivo</td><td>2.5</td><td>%</td></tr>
+          <tr><td>Actual</td><td class="v linked" id="${kind}-reox-act">–</td><td>%</td></tr>
+        </table>
+        <div class="out hi" style="margin-top:10px;"><span class="k">Nota <span class="unit">(0–10)</span></span><span class="v" id="${kind}-reox-nota">–</span></div>
+      </div>
+      <div class="card">
+        <h3>Capacidad Aeróbica (Correlación CF%peso corporal — IRCRA)</h3>
+        <table class="grid-table">
+          <tr><td>Mínimo</td><td class="v linked" id="${kind}-aer-min">–</td><td>IRCRA</td></tr>
+          <tr><td>Objetivo</td><td class="v linked" id="${kind}-aer-obj">–</td><td>IRCRA</td></tr>
+          <tr><td>Actual</td><td class="v linked" id="${kind}-aer-act">–</td><td>IRCRA</td></tr>
+        </table>
+        <div class="out hi" style="margin-top:10px;"><span class="k">Nota <span class="unit">(0–10)</span></span><span class="v" id="${kind}-aer-nota">–</span></div>
+      </div>
+    </div>` : ''}
+
+    <div class="card">
+      <h3 class="profile-title"><span class="profile-main">PERFIL FISIOLÓGICO</span> - <span class="profile-mode">${isDep ? "DEPORTIVA" : "BOULDER"}</span></h3>
+      <div class="radar-wrap">
+        <div class="radar-chart"><svg viewBox="0 0 300 300" width="390" height="390" id="${kind}-radar"></svg></div>
+        <div class="radar-legend" id="${kind}-legend"></div>
+      </div>
+    </div>
+  `;
+}
+buildPerfil('deportiva');
+buildPerfil('boulder');
+
+/* ============================================================
+   RADAR CHART RENDER
+   ============================================================ */
+function renderRadar(svgId, labels, scores){
+  const svg = $(svgId);
+  const n = labels.length;
+  const cx=150, cy=150, R=105;
+  const startAngle = -90; // top
+  const step = 360/n;
+  const pt = (i, r) => {
+    const ang = (startAngle + i*step) * Math.PI/180;
+    return [cx + r*Math.cos(ang), cy + r*Math.sin(ang)];
+  };
+  let svgStr = '';
+  // grid rings
+  [0.25,0.5,0.75,1].forEach(f=>{
+    let pts=[]; for(let i=0;i<n;i++){ const [x,y]=pt(i,R*f); pts.push(x.toFixed(1)+','+y.toFixed(1)); }
+    svgStr += `<polygon points="${pts.join(' ')}" fill="none" stroke="rgba(242,237,225,0.12)" stroke-width="1"/>`;
+  });
+  // spokes
+  for(let i=0;i<n;i++){ const [x,y]=pt(i,R); svgStr += `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(242,237,225,0.12)" stroke-width="1"/>`; }
+  // data polygon
+  let dataPts=[];
+  for(let i=0;i<n;i++){ const s = scores[i]===null||scores[i]===undefined?0:scores[i]; const [x,y]=pt(i, R*(s/10)); dataPts.push([x,y]); }
+  svgStr += `<polygon points="${dataPts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="rgba(124,144,112,0.35)" stroke="#7c9070" stroke-width="2.5" stroke-linejoin="round"/>`;
+  dataPts.forEach(([x,y])=>{ svgStr += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="#1c211e" stroke="#7c9070" stroke-width="2"/>`; });
+  // labels
+  for(let i=0;i<n;i++){
+    const [x,y] = pt(i, R+23);
+    let anchor = 'middle';
+    if(x < cx-10) anchor='end'; else if(x > cx+10) anchor='start';
+    let dy = 0;
+    if(y < cy-60) dy = -2;
+    else if(y > cy+60) dy = 5;
+    svgStr += `<text x="${x.toFixed(1)}" y="${(y+dy).toFixed(1)}" text-anchor="${anchor}" dominant-baseline="middle" fill="#f2ede1" font-size="12" font-weight="800" font-family="Work Sans, sans-serif">${labels[i]}</text>`;
+  }
+  svg.innerHTML = svgStr;
+}
+
+/* ============================================================
+   MAIN RECALC
+   ============================================================ */
+function recalcAll(){
+  /* ---------- Global ---------- */
+  const peso = num('g-peso');
+  const med40 = num('g-med40');
+  const lastre = num('g-lastre');
+
+  /* ---------- FUERZA ---------- */
+  const mht14 = num('f-mht14');
+  const med40est = mht14!==null ? (-0.25*mht14)+24 : null;
+  out('f-med40est', med40est, 0, ' mm');
+
+  function dsi(rfd, thr, fmax){ if(rfd===null||thr===null||fmax===null||fmax===0) return null; return ((rfd*0.2)+thr)*100/fmax; }
+
+  // Dominant
+  const dF1=num('f-d-fmax1'), dR1=num('f-d-rfd1'), dT1=num('f-d-thr1'); const dDSI1=dsi(dR1,dT1,dF1); out('f-d-dsi1',dDSI1,1);
+  const dF2=num('f-d-fmax2'), dR2=num('f-d-rfd2'), dT2=num('f-d-thr2'); const dDSI2=dsi(dR2,dT2,dF2); out('f-d-dsi2',dDSI2,1);
+  const dF3=num('f-d-fmax3'), dR3=num('f-d-rfd3'), dT3=num('f-d-thr3'); const dDSI3=dsi(dR3,dT3,dF3); out('f-d-dsi3',dDSI3,1);
+  const dFmed = avg(dF1,dF2,dF3); out('f-d-fmaxmed', dFmed, 1, ' N');
+  const dFrel = (dFmed!==null && med40 && peso) ? div(dFmed, med40*peso) : null; out('f-d-fmaxrel', dFrel, 3);
+  const dIRCRA = dFrel!==null ? (dFrel-0.0322)/0.0193 : null; out('f-d-ircra', dIRCRA, 0);
+  const dDSImedia = avg(dDSI1,dDSI2,dDSI3); out('f-d-dsimedia', dDSImedia, 1, ' %');
+
+  // Non-dominant
+  const nF1=num('f-n-fmax1'), nR1=num('f-n-rfd1'), nT1=num('f-n-thr1'); const nDSI1=dsi(nR1,nT1,nF1); out('f-n-dsi1',nDSI1,1);
+  const nF2=num('f-n-fmax2'), nR2=num('f-n-rfd2'), nT2=num('f-n-thr2'); const nDSI2=dsi(nR2,nT2,nF2); out('f-n-dsi2',nDSI2,1);
+  const nF3=num('f-n-fmax3'), nR3=num('f-n-rfd3'), nT3=num('f-n-thr3'); const nDSI3=dsi(nR3,nT3,nF3); out('f-n-dsi3',nDSI3,1);
+  const nFmed = avg(nF1,nF2,nF3); out('f-n-fmaxmed', nFmed, 1, ' N');
+  const nFrel = (nFmed!==null && med40 && peso) ? div(nFmed, med40*peso) : null; out('f-n-fmaxrel', nFrel, 3);
+  const nDSImedia = avg(nDSI1,nDSI2,nDSI3); out('f-n-dsimedia', nDSImedia, 1, ' %');
+
+  const maw5est = (dFmed!==null && nFmed!==null && peso!==null) ? (((0.8157*(dFmed+nFmed)/9.8))+16.517)-peso : null;
+  out('f-maw5est', maw5est, 1, ' kg');
+
+  const fkg=num('f-kg'), freps=num('f-reps');
+  const rm1 = (peso!==null && fkg!==null && freps!==null) ? ((peso+fkg)/(1.0278-(0.0278*freps)))-peso : null;
+  out('f-1rm', rm1, 1, ' kg');
+  const rmpct = (peso!==null && rm1!==null) ? (peso/(rm1+peso))*100 : null;
+  out('f-rmpct', rmpct, 1, ' %');
+  const fvmp = num('f-vmp');
+  const vmppct = fvmp!==null ? (-53.472*fvmp)+110.68 : null;
+  out('f-vmppct', vmppct, 1, ' %');
+
+  /* ---------- RESISTENCIA ---------- */
+  const rFmaxInput = num('r-fmax');
+  const rFmax = rFmaxInput!==null ? rFmaxInput : dFmed;
+  out('r-fmax-used', rFmax, 1, ' N');
+
+  const lastreFTI = (peso!==null && lastre!==null) ? ((peso+lastre)*0.8)-peso : null;
+  out('r-lastreFTI', lastreFTI, 1, ' kg');
+
+  const rt73 = num('r-t73'), rt81 = num('r-t81');
+  const ftireox = (peso!==null && lastre!==null && med40!==null && rt73!==null) ? (((((peso+lastre)/peso)/med40)*100)*0.8)*9.8*(rt73*(7/10)) : null;
+  out('r-ftireox', ftireox, 1);
+  const ftianae = (peso!==null && lastre!==null && med40!==null && rt81!==null) ? (((((peso+lastre)/peso)/med40)*100)*0.8)*9.8*(rt81*(8/9)) : null;
+  out('r-ftianae', ftianae, 1);
+  const reox = (ftireox!==null && ftianae) ? ftireox/ftianae : null;
+  out('r-reox', reox, 2, ' %');
+
+  const rCFdom = num('r-cfdom'), rWdom = num('r-wdom'), rCFnodom = num('r-cfnodom'), rWnodom = num('r-wnodom');
+  const cfbw = (rCFdom!==null && peso) ? (rCFdom/(peso*9.8))*100 : null; out('r-cfbw', cfbw, 1);
+  const cfmaxN = (rCFnodom!==null && rFmax) ? (rCFnodom/rFmax)*100 : null; out('r-cfmaxN', cfmaxN, 1);
+  const ircraCF = (cfbw!==null) ? ((rCFdom/(peso*9.8)+0.107)/0.02) : null; out('r-ircraCF', ircraCF, 0);
+  const cfmaxD = (rCFdom!==null && rFmax) ? (rCFdom/rFmax)*100 : null; out('r-cfmaxD', cfmaxD, 1);
+  const feeN = (rWnodom!==null && rCFnodom!==null && peso) ? (rWnodom + rCFnodom*7*24)/peso : null; out('r-feeN', feeN, 1);
+  const wbw = (rWdom!==null && peso) ? (rWdom/9.8)/peso : null; out('r-wbw', wbw, 2);
+  const ircraW = (wbw!==null) ? (wbw+15.249)/1.607 : null; out('r-ircraW', ircraW, 0);
+  const feeD = (rWdom!==null && rCFdom!==null && peso) ? (rWdom + rCFdom*7*24)/peso : null; out('r-feeD', feeD, 1);
+  const ircraFEE = (feeD!==null) ? (0.0248*feeD)+2.5563 : null; out('r-ircraFEE', ircraFEE, 0);
+
+  /* ---------- CALCULO OT ---------- */
+  const durs = {};
+  OT_INT.forEach(i=>{
+    const lastreI = (peso!==null && lastre!==null) ? ((peso+lastre)*i)-peso : null;
+    out('ot-lastre-'+i, lastreI, 1);
+    durs[i] = num('ot-dur-'+i);
+  });
+  // pairs table: order 0.85,0.75,0.65,0.55,0.45,0.35
+  const P = OT_INT.map(i=>durs[i]);
+  const Q = OT_INT;
+  const diffs = []; for(let k=0;k<5;k++){ diffs.push( (P[k+1]!=null && P[k]!=null) ? P[k+1]-P[k] : null ); }
+  const pctch = []; for(let k=0;k<4;k++){ pctch.push( (diffs[k+1]!=null && diffs[k]!=null && diffs[k]!==0) ? ((diffs[k+1]-diffs[k])/diffs[k])*100 : null ); }
+  const paresLabels = ['85→75','75→65','65→55','55→45','45→35'];
+  const otLabels = ['OT 75%','OT 65%','OT 55%','OT 45%'];
+  let paresHtml = '<tr><th>Tramo</th>'+paresLabels.map(l=>`<th>${l}</th>`).join('')+'</tr><tr><td>Δ Duración</td>'+diffs.map(d=>`<td>${fmt(d,2)}</td>`).join('')+'</tr><tr><td>% cambio</td>'+pctch.map(p=>`<td>${fmt(p,1)}</td>`).join('')+'</tr>';
+  $('ot-pares').innerHTML = paresHtml;
+  let sugPares = null;
+  for(let k=0;k<pctch.length;k++){ if(pctch[k]!==null && pctch[k]>=50){ sugPares = otLabels[k]; break; } }
+  out('ot-sug-pares', sugPares, 0);
+  if($('ot-sug-pares')) $('ot-sug-pares').textContent = sugPares || '–';
+
+  const r2_75 = pearsonSq(OT_INT.slice(0,2), [P[0],P[1]]) !== null ? 1 : null; // 85-75 trivial (2 pts)
+  const r2_85_65 = pearsonSq([Q[0],Q[1],Q[2]], [P[0],P[1],P[2]]);
+  const r2_85_55 = pearsonSq([Q[0],Q[1],Q[2],Q[3]], [P[0],P[1],P[2],P[3]]);
+  const r2_65_35 = pearsonSq([Q[2],Q[3],Q[4],Q[5]], [P[2],P[3],P[4],P[5]]);
+  const r2_55_35 = pearsonSq([Q[3],Q[4],Q[5]], [P[3],P[4],P[5]]);
+  const r2_45_35 = pearsonSq([Q[4],Q[5]],[P[4],P[5]]) !== null ? 1 : null;
+  const suma75 = (r2_75!==null && r2_85_65!==null) ? r2_75 : (r2_85_65!==null ? r2_85_65 : null);
+  const sumaVal75 = [r2_75, r2_85_65].filter(x=>x!==null); const suma75v = sumaVal75.length? sumaVal75.reduce((a,b)=>a+b,0): null;
+  const sumaVal65 = [r2_85_65, r2_65_35].filter(x=>x!==null); const suma65v = sumaVal65.length? sumaVal65.reduce((a,b)=>a+b,0): null;
+  const sumaVal55 = [r2_85_55, r2_55_35].filter(x=>x!==null); const suma55v = sumaVal55.length? sumaVal55.reduce((a,b)=>a+b,0): null;
+  out('ot-r2-75', suma75v, 2); out('ot-r2-65', suma65v, 2); out('ot-r2-55', suma55v, 2);
+  let sugR2 = null;
+  const sums = [['75%',suma75v],['65%',suma65v],['55%',suma55v]].filter(s=>s[1]!==null);
+  if(sums.length){ sums.sort((a,b)=>b[1]-a[1]); sugR2 = sums[0][0]; }
+  out('ot-sug-r2', sugR2, 0); if($('ot-sug-r2')) $('ot-sug-r2').textContent = sugR2 || '–';
+  ['ot-r2-75box','ot-r2-65box','ot-r2-55box'].forEach(id=>$(id) && $(id).classList.remove('hi'));
+  if(sugR2==='75%' && $('ot-r2-75box')) $('ot-r2-75box').classList.add('hi');
+  if(sugR2==='65%' && $('ot-r2-65box')) $('ot-r2-65box').classList.add('hi');
+  if(sugR2==='55%' && $('ot-r2-55box')) $('ot-r2-55box').classList.add('hi');
+
+  const frpc = (peso!==null && lastre!==null) ? (((peso+lastre)/peso)-1)*100 : null;
+  out('ot-frpc', frpc, 1);
+  let sugFrpc = null, sugFrpcVal = null;
+  if(frpc!==null){ if(frpc<30){ sugFrpc='75%'; sugFrpcVal=75; } else if(frpc<=50){ sugFrpc='65%'; sugFrpcVal=65; } else { sugFrpc='55%'; sugFrpcVal=55; } }
+  if($('ot-sug-frpc')) $('ot-sug-frpc').textContent = sugFrpc || '–';
+
+  // Auto-suggest final OT if user hasn't touched it manually
+  const otFinalEl = $('ot-final');
+  if(otFinalEl && otFinalEl.dataset.auto !== 'false' && sugFrpcVal!==null){
+    if(document.activeElement !== otFinalEl){ otFinalEl.value = sugFrpcVal; }
+  }
+  const otFinal = num('ot-final');
+  out('ot-final-out', otFinal, 0, otFinal!==null ? ' % de tu fuerza máxima de agarre' : '');
+
+  /* ---------- CURVA & CARGA ---------- */
+  const ccXs = [], ccYs = [];
+  OT_INT.forEach(i=>{ const t = num('cc-t-'+i); ccXs.push(Math.log(i)); ccYs.push(t); });
+  const reg = linreg(ccXs, ccYs);
+  out('cc-a', reg? reg.a : null, 2);
+  out('cc-b', reg? reg.b : null, 2);
+  const ccIntObj = num('cc-intObj');
+  const tEst = (reg && ccIntObj!==null && ccIntObj>0) ? reg.a*Math.log(ccIntObj)+reg.b : null;
+  out('cc-tEst', tEst, 1);
+  const ccFrac = num('cc-frac');
+  const tParcial = (tEst!==null && ccFrac!==null) ? tEst*ccFrac : null;
+  out('cc-tParcial', tParcial, 1);
+
+  const ccRegla = num('cc-regla');
+  const diffTam = (ccRegla!==null && med40!==null) ? ccRegla - med40 : null;
+  out('cc-difftam', diffTam, 1);
+  const diffFuerza = diffTam!==null ? diffTam*1.9357 : null;
+  out('cc-difffuerza', diffFuerza, 1);
+  const fmaxRegla = (peso!==null && lastre!==null && diffFuerza!==null) ? (peso+lastre)*(1+0.01*diffFuerza) : null;
+  out('cc-fmaxregla', fmaxRegla, 1);
+  CARGA_INT.forEach(i=>{
+    const val = (fmaxRegla!==null && peso!==null) ? (fmaxRegla*i)-peso : null;
+    out('cc-carga-'+i, val, 1);
+  });
+
+  /* ---------- PERFILES ---------- */
+  const rp = num('g-gradoRP'), rpObj = num('g-gradoObj');
+  ['deportiva','boulder'].forEach(kind=>{
+    const isDep = kind==='deportiva';
+    out(kind+'-rp', rp, 0); out(kind+'-rpobj', rpObj, 0); out(kind+'-med40', med40, 1, ' mm');
+    out(kind+'-ot', otFinal, 0, otFinal!==null?' %':''); out(kind+'-cf', cfmaxD, 1, cfmaxD!==null?' %':'');
+
+    out(kind+'-fm-min', rp, 0); out(kind+'-fm-obj', rpObj, 0); out(kind+'-fm-act', dIRCRA, 0);
+    const fmNota = nota(rp, rpObj, dIRCRA); out(kind+'-fm-nota', fmNota, 1);
+
+    out(kind+'-fc-act', dDSImedia, 1);
+    const dsiMinV = isDep?65:80, dsiObjV = isDep?75:90;
+    const fcNota = nota(dsiMinV, dsiObjV, dDSImedia); out(kind+'-fc-nota', fcNota, 1);
+
+    const tracDeficit = rmpct!==null ? rmpct-100 : null;
+    out(kind+'-ft-act', tracDeficit, 1);
+    const ftNota = nota(-100,-55, tracDeficit); out(kind+'-ft-nota', ftNota, 1);
+
+    out(kind+'-fa-act', ftianae, 1);
+    const faNota = nota(800,4000, ftianae); out(kind+'-fa-nota', faNota, 1);
+
+    let scores, labels;
+    if(isDep){
+      out(kind+'-reox-act', reox!==null? reox : null, 2);
+      const reoxNota = nota(1,2.5, reox); out(kind+'-reox-nota', reoxNota, 1);
+      out(kind+'-aer-min', rp, 0); out(kind+'-aer-obj', rpObj, 0); out(kind+'-aer-act', ircraCF, 0);
+      const aerNota = nota(rp, rpObj, ircraCF); out(kind+'-aer-nota', aerNota, 1);
+      // Orden del perfil: Fmax agarre → RFD 200ms → Desox. → Reox. → Aero. → Tracción
+      labels = ['Fmax agarre','RFD 200ms','Desox.','Reox.','Aero.','Tracción'];
+      scores = [fmNota, fcNota, faNota, reoxNota, aerNota, ftNota];
+    } else {
+      // Boulder mantiene únicamente sus cuatro capacidades disponibles.
+      labels = ['Fmax agarre','RFD 200ms','Anaeróbica','Tracción'];
+      scores = [fmNota, fcNota, faNota, ftNota];
+    }
+    renderRadar(kind+'-radar', labels, scores);
+    const legend = $(kind+'-legend');
+    if(legend){ legend.innerHTML = labels.map((l,idx)=>{
+      const score = scores[idx];
+      const hasScore = score!==null && score!==undefined && isFinite(score);
+      const low = hasScore && Number(score)<5;
+      const lowClass = low ? ' low-score' : '';
+      const width = hasScore ? Math.max(0, Math.min(100, Number(score)*10)) : 0;
+      return `<div class="row"><span>${l}</span><b class="${lowClass.trim()}">${hasScore ? fmt(score,1) : '–'}</b><div class="score-bar"><div class="score-bar-fill${lowClass}" style="width:${width}%"></div></div></div>`;
+    }).join(''); }
+  });
+}
+
+/* ============================================================
+   EVENTS / TABS / PERSISTENCE
+   ============================================================ */
+document.addEventListener('input', e=>{
+  if(e.target.id==='ot-final'){ e.target.dataset.auto='false'; }
+  recalcAll(); saveState();
+});
+document.addEventListener('change', ()=>{ recalcAll(); saveState(); });
+
+document.getElementById('tabs').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-tab]'); if(!btn) return;
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+});
+
+const ALL_IDS = () => Array.from(document.querySelectorAll('input, select')).map(el=>el.id).filter(Boolean);
+
+function saveState(){
+  const data = {};
+  ALL_IDS().forEach(id=>{ const el = $(id); data[id] = el.value; });
+  localStorage.setItem('kaska_bateria_test', JSON.stringify(data));
+}
+function loadState(){
+  const raw = localStorage.getItem('kaska_bateria_test');
+  if(!raw) return;
+  try{
+    const data = JSON.parse(raw);
+    Object.keys(data).forEach(id=>{ const el = $(id); if(el) el.value = data[id]; });
+  }catch(e){ console.warn('No se pudo cargar el estado guardado', e); }
+}
+
+$('btnExport').addEventListener('click', ()=>{
+  const data = {}; ALL_IDS().forEach(id=>{ data[id] = $(id).value; });
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const a = document.createElement('a');
+  const nombre = ($('g-nombre').value || 'test').replace(/[^a-z0-9]+/gi,'_');
+  a.href = URL.createObjectURL(blob);
+  a.download = `kaska_${nombre}_${($('g-fecha').value||'sin_fecha')}.json`;
+  a.click();
+});
+$('btnImport').addEventListener('click', ()=> $('fileImport').click());
+$('fileImport').addEventListener('change', e=>{
+  const file = e.target.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ev=>{
+    try{
+      const data = JSON.parse(ev.target.result);
+      Object.keys(data).forEach(id=>{ const el=$(id); if(el) el.value = data[id]; });
+      recalcAll(); saveState();
+    }catch(err){ alert('El archivo no es un JSON de batería válido.'); }
+  };
+  reader.readAsText(file);
+});
+$('btnReset').addEventListener('click', ()=>{
+  if(!confirm('Esto borrará todos los datos del test actual. ¿Continuar?')) return;
+  localStorage.removeItem('kaska_bateria_test');
+  document.querySelectorAll('input').forEach(el=> el.value='');
+  document.querySelectorAll('select').forEach(el=> el.selectedIndex=0);
+  $('ot-final').dataset.auto = 'true';
+  recalcAll();
+});
+
+/* init */
+loadState();
+recalcAll();
+</script>
+</body>
+</html>
