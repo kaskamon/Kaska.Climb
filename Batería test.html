@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kaska.Climb | Batería de Test</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -27,8 +28,7 @@
   body{
     margin:0;
     min-height:100vh;
-    background:
-      radial-gradient(120% 90% at 15% 0%, #262d28 0%, var(--stone-900) 55%, #121614 100%);
+    background:#494d4b;
     color:var(--chalk);
     font-family:'Work Sans', sans-serif;
   }
@@ -101,7 +101,18 @@
   .section-head h2{ font-size:26px; }
   .section-head .sub{ color:var(--chalk-faint); font-size:13px; }
   .profile-mode{ color:var(--moss); }
-  .profile-title{ font-size:24px !important; font-weight:800; text-align:center; letter-spacing:.4px; }
+  .profile-header{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    grid-template-areas:"brand title action";
+    align-items:center;
+    gap:14px;
+    margin:0 0 20px;
+  }
+  .profile-header .eyebrow{ grid-area:brand; margin:0; font-size:15px; letter-spacing:3px; }
+  .profile-header .profile-title{ grid-area:title; margin:0; white-space:nowrap; }
+  .profile-header .icon-btn{ grid-area:action; justify-self:end; }
+  .profile-title{ font-size:30px !important; font-weight:800; text-align:center; letter-spacing:.4px; }
   .profile-title .profile-main{ color:var(--chalk); }
 
   .card{
@@ -163,7 +174,7 @@
   }
   .radar-chart svg{
     display:block;
-    width:min(100%,390px);
+    width:min(100%,507px);
     height:auto;
     overflow:visible;
   }
@@ -205,8 +216,16 @@
   .score-bar-fill.low-score{ background:#e05252; }
   @media (max-width:760px){
     .radar-wrap{ grid-template-columns:1fr; gap:14px; }
-    .radar-chart svg{ width:min(100%,380px); }
-    .profile-title{ font-size:21px !important; }
+    .radar-chart svg{ width:min(100%,494px); }
+    .profile-header{
+      grid-template-columns:1fr auto;
+      grid-template-areas:
+        "title title"
+        "brand action";
+      row-gap:10px;
+    }
+    .profile-header .profile-title{ white-space:normal; }
+    .profile-title{ font-size:25px !important; }
   }
 
   footer{ text-align:center; color:var(--chalk-faint); font-size:12px; padding:30px 0 10px; }
@@ -637,10 +656,14 @@ function buildPerfil(kind){
       </div>
     </div>` : ''}
 
-    <div class="card">
-      <h3 class="profile-title"><span class="profile-main">PERFIL FISIOLÓGICO</span> - <span class="profile-mode">${isDep ? "DEPORTIVA" : "BOULDER"}</span></h3>
+    <div class="card" id="${kind}-perfil-card">
+      <div class="profile-header">
+        <span class="eyebrow">Kaska.Climb</span>
+        <h3 class="profile-title"><span class="profile-main">PERFIL FISIOLÓGICO</span> - <span class="profile-mode">${isDep ? "DEPORTIVA" : "BOULDER"}</span></h3>
+        <button class="icon-btn" onclick="exportarPerfilPNG('${kind}')">Exportar</button>
+      </div>
       <div class="radar-wrap">
-        <div class="radar-chart"><svg viewBox="0 0 300 300" width="390" height="390" id="${kind}-radar"></svg></div>
+        <div class="radar-chart"><svg viewBox="-45 -45 390 390" width="507" height="507" id="${kind}-radar"></svg></div>
         <div class="radar-legend" id="${kind}-legend"></div>
       </div>
     </div>
@@ -691,6 +714,26 @@ function renderRadar(svgId, labels, scores){
     svgStr += `<text x="${x.toFixed(1)}" y="${(y+dy).toFixed(1)}" text-anchor="${anchor}" dominant-baseline="middle" fill="#f2ede1" font-size="12" font-weight="800" font-family="Work Sans, sans-serif">${labels[i]}</text>`;
   }
   svg.innerHTML = svgStr;
+}
+
+async function exportarPerfilPNG(kind){
+  const card = $(kind+'-perfil-card');
+  if(!card) return;
+  const btn = card.querySelector('.icon-btn');
+  if(btn) btn.style.display = 'none';
+  try{
+    const canvas = await html2canvas(card, { backgroundColor: '#494d4b', scale: 2, useCORS: true, allowTaint: true });
+    const nombre = ($('g-nombre') && $('g-nombre').value ? $('g-nombre').value : 'perfil').replace(/[^a-z0-9]+/gi,'_');
+    const link = document.createElement('a');
+    link.download = `kaska_perfil_${kind}_${nombre}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }catch(e){
+    console.error(e);
+    alert('Error al generar la imagen: ' + e.message);
+  }finally{
+    if(btn) btn.style.display = '';
+  }
 }
 
 /* ============================================================
