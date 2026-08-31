@@ -1055,8 +1055,8 @@ function recalcAll(){
       scores = [fmNota, fcNota, faNota, reoxNota, aerNota, ftNota];
     } else {
       // Boulder mantiene únicamente sus cuatro capacidades disponibles.
-      labels = ['Fmax agarre','RFD 200ms','Anae.','Tracción'];
-      scores = [fmNota, fcNota, faNota, ftNota];
+      labels = ['Fmax agarre','Anae.','RFD 200ms','Tracción'];
+      scores = [fmNota, faNota, fcNota, ftNota];
     }
     renderRadar(kind+'-radar', labels, scores);
     perfilData[kind] = { labels, scores };
