@@ -277,6 +277,7 @@
         <div class="out"><span class="k">MED_40 estimado</span><span class="v" id="f-med40est">–</span></div>
         <div class="out"><span class="k">MAW_5 estimado <span class="unit">(kg lastre)</span></span><span class="v" id="f-maw5est">–</span></div>
       </div>
+      <p class="note">MED_40 testado y Lastre MAW_5 testado se toman de «Datos del cliente». MAW_5 estimado usa la Fmáx absoluta media una vez completes los tests bilaterales de abajo.</p>
     </div>
 
     <div class="grid2">
@@ -382,6 +383,7 @@
 
     <div class="card">
       <h3>Tiempo al fallo por intensidad</h3>
+      <p class="note" style="margin-top:0;">El lastre de cada intensidad se calcula solo a partir del peso y del lastre máx. MAW_5 de «Datos del cliente». Anota el tiempo al fallo real de cada serie.</p>
       <table class="grid-table" id="ot-table">
         <tr><th>Intensidad</th><th>Lastre (kg)</th><th>Duración al fallo (segs)</th></tr>
       </table>
@@ -596,8 +598,8 @@ function buildPerfil(kind){
       <div class="card">
         <h3>Fuerza de Tracción (%RM que supone tu peso corporal)</h3>
         <table class="grid-table">
-          <tr><td>Mínimo</td><td>-100</td><td>%</td></tr>
-          <tr><td>Objetivo</td><td>-55</td><td>%</td></tr>
+          <tr><td>Mínimo</td><td>100</td><td>%</td></tr>
+          <tr><td>Objetivo</td><td>45</td><td>%</td></tr>
           <tr><td>Actual</td><td class="v linked" id="${kind}-ft-act">–</td><td>%</td></tr>
         </table>
         <div class="out hi" style="margin-top:10px;"><span class="k">Nota <span class="unit">(0–10)</span></span><span class="v" id="${kind}-ft-nota">–</span></div>
@@ -672,7 +674,12 @@ function renderRadar(svgId, labels, scores){
   let dataPts=[];
   for(let i=0;i<n;i++){ const s = scores[i]===null||scores[i]===undefined?0:scores[i]; const [x,y]=pt(i, R*(s/10)); dataPts.push([x,y]); }
   svgStr += `<polygon points="${dataPts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="rgba(124,144,112,0.35)" stroke="#7c9070" stroke-width="2.5" stroke-linejoin="round"/>`;
-  dataPts.forEach(([x,y])=>{ svgStr += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="#1c211e" stroke="#7c9070" stroke-width="2"/>`; });
+  dataPts.forEach(([x,y],i)=>{
+    const s = scores[i];
+    const isLow = s!==null && s!==undefined && isFinite(s) && Number(s)<5;
+    const dotColor = isLow ? '#e05252' : '#7c9070';
+    svgStr += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="4" fill="#1c211e" stroke="${dotColor}" stroke-width="2"/>`;
+  });
   // labels
   for(let i=0;i<n;i++){
     const [x,y] = pt(i, R+23);
@@ -898,9 +905,9 @@ function recalcAll(){
     const dsiMinV = isDep?65:80, dsiObjV = isDep?75:90;
     const fcNota = nota(dsiMinV, dsiObjV, dDSImedia); out(kind+'-fc-nota', fcNota, 1);
 
-    const tracDeficit = rmpct!==null ? rmpct-100 : null;
-    out(kind+'-ft-act', tracDeficit, 1);
-    const ftNota = nota(-100,-55, tracDeficit); out(kind+'-ft-nota', ftNota, 1);
+    const ftNota = nota(100, 45, rmpct);
+    out(kind+'-ft-act', rmpct, 1, rmpct!==null ? ' %' : '');
+    out(kind+'-ft-nota', ftNota, 1);
 
     out(kind+'-fa-act', ftianae, 1);
     const faNota = nota(800,4000, ftianae); out(kind+'-fa-nota', faNota, 1);
@@ -916,7 +923,7 @@ function recalcAll(){
       scores = [fmNota, fcNota, faNota, reoxNota, aerNota, ftNota];
     } else {
       // Boulder mantiene únicamente sus cuatro capacidades disponibles.
-      labels = ['Fmax agarre','RFD 200ms','Anaeróbica','Tracción'];
+      labels = ['Fmax agarre','RFD 200ms','Anae.','Tracción'];
       scores = [fmNota, fcNota, faNota, ftNota];
     }
     renderRadar(kind+'-radar', labels, scores);
