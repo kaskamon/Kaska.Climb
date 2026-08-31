@@ -234,6 +234,68 @@
     .profile-title{ font-size:25px !important; }
   }
 
+  /* ---------- ESCALAS DE REFERENCIA (chips compactos) ---------- */
+  .scale-ref-title{
+    font-size:11px; color:var(--chalk-faint); text-transform:uppercase;
+    letter-spacing:0.8px; font-weight:700; margin:16px 0 8px;
+  }
+  .scale-ref{ display:flex; gap:5px; }
+  .scale-ref .seg{
+    flex:1; text-align:center; padding:7px 4px; border-radius:9px;
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.08);
+    transition:all .2s ease;
+  }
+  .scale-ref .seg .cat{
+    font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px;
+    color:var(--chalk-faint); white-space:nowrap;
+  }
+  .scale-ref .seg .rng{
+    font-size:11px; color:var(--chalk-dim); margin-top:3px;
+    font-variant-numeric:tabular-nums;
+  }
+  .scale-ref .seg.active{ background:rgba(124,144,112,0.22); border-color:var(--moss); }
+  .scale-ref .seg.active .cat{ color:var(--moss-light); }
+  .scale-ref .seg.active .rng{ color:var(--chalk); font-weight:600; }
+  .scale-ref-foot{ color:var(--chalk-faint); font-size:11px; margin-top:6px; }
+  @media (max-width:520px){
+    .scale-ref .seg .cat{ font-size:8.5px; }
+    .scale-ref .seg .rng{ font-size:10px; }
+  }
+
+  .fti-group{
+    background:rgba(38,45,40,0.35); border:1px solid rgba(242,237,225,0.09);
+    border-radius:14px; padding:16px; display:flex; flex-direction:column;
+  }
+  .fti-group .field{ margin-bottom:0; }
+  .fti-group .out:last-child{ margin-bottom:0; }
+  .fti-subgrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .fti-subgrid .out{ margin-bottom:0; }
+  @media (max-width:480px){ .fti-subgrid{ grid-template-columns:1fr; } }
+  .grid4{ display:grid; grid-template-columns:repeat(4,1fr); gap:24px; }
+  @media (max-width:760px){ .grid4{ grid-template-columns:1fr 1fr; } }
+
+  .ot-layout{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
+  .ot-layout .ot-viz-card{ display:flex; flex-direction:column; overflow:hidden; }
+  .ot-layout .ot-viz-card .cc-chart-wrap{ flex:1 1 auto; min-height:0; display:flex; align-items:center; justify-content:center; }
+  .ot-layout .ot-viz-card .cc-chart-wrap svg{ width:100%; height:100%; }
+  .ot-layout .ot-viz-card .ot-viz-readout{ flex:0 0 auto; }
+  @media (max-width:760px){ .ot-layout{ grid-template-columns:1fr; } }
+
+  .ot-viz-readout{ margin-top:14px; }
+  .ot-viz-readout .v{ display:flex; align-items:baseline; gap:2px; }
+  .ot-viz-input{
+    background:transparent; border:none; color:inherit;
+    font: inherit; font-weight:700; font-size:16px; font-family:'Work Sans', sans-serif;
+    width:34px; text-align:right; padding:0; margin:0; line-height:1; height:19px;
+    -moz-appearance:textfield;
+  }
+  .ot-viz-input::-webkit-outer-spin-button,
+  .ot-viz-input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  .ot-viz-input:focus{ outline:none; color:var(--chalk); }
+
+  .card-pushfoot{ display:flex; flex-direction:column; height:100%; }
+  .card-pushfoot > .out.hi:last-child{ margin-top:auto; margin-bottom:0; }
+
   footer{ text-align:center; color:var(--chalk-faint); font-size:12px; padding:30px 0 10px; }
   .link-btn{ background:none; border:none; color:var(--moss-light); text-decoration:underline; cursor:pointer; font-size:12px; padding:0; }
 
@@ -339,9 +401,15 @@
     <div class="card">
       <h3>Regleta &amp; MAW_5</h3>
       <div class="grid3">
-        <div class="field"><label>MHT_14 <span class="unit">(segs)</span></label><input type="number" step="0.01" id="f-mht14"></div>
-        <div class="out"><span class="k">MED_40 estimado</span><span class="v" id="f-med40est">–</span></div>
-        <div class="out"><span class="k">MAW_5 estimado <span class="unit">(kg lastre)</span></span><span class="v" id="f-maw5est">–</span></div>
+        <div class="field"><label>MHT_14 <span class="unit">(seg.)</span></label><input type="number" step="0.01" id="f-mht14"></div>
+        <div class="field"><label>MED_40 estimado</label><input type="text" id="f-med40est" readonly value="–"></div>
+        <div class="field"><label>MAW_5 estimado</label><input type="text" id="f-maw5est" readonly value="–"></div>
+      </div>
+      <div class="scale-ref-title">Referencia MHT_14 · 14mm (seg.)</div>
+      <div class="scale-ref" id="scale-mht14">
+        <div class="seg" id="scale-mht14-bajo"><div class="cat">Bajo</div><div class="rng">0–30</div></div>
+        <div class="seg" id="scale-mht14-medio"><div class="cat">Medio</div><div class="rng">30–50</div></div>
+        <div class="seg" id="scale-mht14-alto"><div class="cat">Alto</div><div class="rng">50+</div></div>
       </div>
     </div>
 
@@ -382,7 +450,7 @@
           <div class="field"><label>Kg levantados</label><input type="number" step="0.1" id="f-kg"></div>
           <div class="field"><label>Reps realizadas</label><input type="number" step="1" id="f-reps"></div>
           <div class="out hi"><span class="k">1RM estimada <span class="unit">(kg añadidos)</span></span><span class="v" id="f-1rm">–</span></div>
-          <div class="out"><span class="k">%RM que supone tu peso corporal</span><span class="v" id="f-rmpct">–</span></div>
+          <div class="out hi"><span class="k">%RM que supone tu peso corporal</span><span class="v" id="f-rmpct">–</span></div>
         </div>
         <div>
           <p class="note" style="margin-top:0;">Si tienes encoder lineal — 2 series de 3 reps, apunta la más rápida</p>
@@ -398,24 +466,41 @@
     <div class="section-head"><h2>Resistencia</h2></div>
 
     <div class="card">
-      <h3>Referencia</h3>
-      <div class="grid3">
-        <div class="field"><label>Fmáx (N) <span class="unit">— vacío = usa Fmáx dominante de Fuerza</span></label><input type="number" step="0.1" id="r-fmax"></div>
-        <div class="out"><span class="k">Fmáx usada</span><span class="v linked" id="r-fmax-used">–</span></div>
+      <h3>FTIs — Test bilaterales</h3>
+      <div class="grid4"><div class="out hi" style="margin-bottom:18px;"><span class="k">Lastre para FTIs <span class="unit">(kg)</span></span><span class="v" id="r-lastreFTI">–</span></div></div>
+      <div class="grid2">
+        <div class="fti-group">
+          <div class="field"><label>Tiempo al fallo 8":1" <span class="unit">(seg.)</span></label><input type="number" step="0.1" id="r-t81"></div>
+          <div class="out hi"><span class="k">FTIanae <span class="unit">(N/kg/mm)</span></span><span class="v" id="r-ftianae">–</span></div>
+        </div>
+        <div class="fti-group">
+          <div class="field"><label>Tiempo al fallo 7":3" <span class="unit">(seg.)</span></label><input type="number" step="0.1" id="r-t73"></div>
+          <div class="fti-subgrid">
+            <div class="out"><span class="k">FTIreox <span class="unit">(N/kg/mm)</span></span><span class="v" id="r-ftireox">–</span></div>
+            <div class="out hi"><span class="k">Capacidad de Reox <span class="unit">(%)</span></span><span class="v" id="r-reox">–</span></div>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="card">
-      <h3>FTIs — Test bilaterales</h3>
-      <div class="grid3">
-        <div class="out"><span class="k">Lastre para FTIs <span class="unit">(kg)</span></span><span class="v" id="r-lastreFTI">–</span></div>
-        <div class="field"><label>Tiempo al fallo 7":3" <span class="unit">(segs)</span></label><input type="number" step="0.1" id="r-t73"></div>
-        <div class="field"><label>Tiempo al fallo 8":1" <span class="unit">(segs)</span></label><input type="number" step="0.1" id="r-t81"></div>
+      <h3>Referencia</h3>
+      <div class="scale-ref-title">FTI ANAE <span class="unit">(N/kg/mm)</span></div>
+      <div class="scale-ref" id="scale-fti">
+        <div class="seg" id="scale-fti-muybaja"><div class="cat">Muy baja</div><div class="rng">&lt;1000</div></div>
+        <div class="seg" id="scale-fti-baja"><div class="cat">Baja</div><div class="rng">1000–2000</div></div>
+        <div class="seg" id="scale-fti-media"><div class="cat">Media</div><div class="rng">2000–3000</div></div>
+        <div class="seg" id="scale-fti-alta"><div class="cat">Alta</div><div class="rng">3000–4000</div></div>
+        <div class="seg" id="scale-fti-muyalta"><div class="cat">Muy alta</div><div class="rng">&gt;4000</div></div>
       </div>
-      <div class="grid3">
-        <div class="out hi"><span class="k">FTIanae <span class="unit">(N/kg/mm)</span></span><span class="v" id="r-ftianae">–</span></div>
-        <div class="out"><span class="k">FTIreox <span class="unit">(N/kg/mm)</span></span><span class="v" id="r-ftireox">–</span></div>
-        <div class="out"><span class="k">Capacidad de Reox <span class="unit">(%)</span></span><span class="v" id="r-reox">–</span></div>
+
+      <div class="scale-ref-title">Reox <span class="unit">(FTI reox / FTI anae)</span></div>
+      <div class="scale-ref" id="scale-reox">
+        <div class="seg" id="scale-reox-nula"><div class="cat">Nula*</div><div class="rng">&lt;1</div></div>
+        <div class="seg" id="scale-reox-baja"><div class="cat">Baja</div><div class="rng">1–1.5</div></div>
+        <div class="seg" id="scale-reox-media"><div class="cat">Media</div><div class="rng">1.6–2</div></div>
+        <div class="seg" id="scale-reox-alta"><div class="cat">Alta</div><div class="rng">2.1–2.5</div></div>
+        <div class="seg" id="scale-reox-muyalta"><div class="cat">Muy alta</div><div class="rng">&gt;2.5</div></div>
       </div>
     </div>
 
@@ -426,7 +511,7 @@
         <div class="field"><label>W' <span class="unit">(N·s)</span></label><input type="number" step="0.1" id="r-wdom"></div>
         <div class="out"><span class="k">CF / Body Weight <span class="unit">(%)</span></span><span class="v" id="r-cfbw">–</span></div>
         <div class="out hi"><span class="k">CF / Fmáx <span class="unit">(%)</span></span><span class="v" id="r-cfmaxD">–</span></div>
-        <div class="out"><span class="k">IRCRA (CF/BW)</span><span class="v" id="r-ircraCF">–</span></div>
+        <div class="out hi"><span class="k">IRCRA (CF/BW)</span><span class="v" id="r-ircraCF">–</span></div>
         <div class="out"><span class="k">W' / Body Weight <span class="unit">(kg·s)</span></span><span class="v" id="r-wbw">–</span></div>
         <div class="out"><span class="k">IRCRA (W'/BW)</span><span class="v" id="r-ircraW">–</span></div>
         <div class="out"><span class="k">FEE <span class="unit">(N/kg·s)</span></span><span class="v" id="r-feeD">–</span></div>
@@ -446,20 +531,32 @@
   <section class="panel" id="panel-ot">
     <div class="section-head"><h2>Cálculo del Umbral de Oclusión (OT)</h2></div>
 
-    <div class="card">
-      <h3>Tiempo al fallo por intensidad</h3>
-      <table class="grid-table" id="ot-table">
-        <tr><th>Intensidad</th><th>Lastre (kg)</th><th>Duración al fallo (segs)</th></tr>
-      </table>
+    <div class="ot-layout">
+      <div class="card ot-table-card" id="ot-table-card">
+        <h3>Tiempo al fallo por intensidad</h3>
+        <table class="grid-table" id="ot-table">
+          <tr><th>Intensidad</th><th>Lastre (kg)</th><th>Tiempo al fallo (seg.)</th></tr>
+        </table>
+      </div>
+      <div class="card ot-viz-card" id="ot-viz-card">
+        <h3>Por visualización</h3>
+        <div class="cc-chart-wrap" style="max-width:100%; margin:0;">
+          <svg viewBox="0 0 520 300" id="ot-chart"></svg>
+        </div>
+        <div class="out hi ot-viz-readout">
+          <span class="k">El OT está al</span>
+          <span class="v"><input type="number" step="1" id="ot-final-viz" class="ot-viz-input">%</span>
+        </div>
+      </div>
     </div>
 
     <div class="grid2">
-      <div class="card">
+      <div class="card card-pushfoot">
         <h3>Por pares — incrementos</h3>
         <table class="grid-table" id="ot-pares"></table>
         <div class="out hi"><span class="k">Sugerencia (por pares)</span><span class="v" id="ot-sug-pares">–</span></div>
       </div>
-      <div class="card">
+      <div class="card card-pushfoot">
         <h3>Por fuerza relativa al peso</h3>
         <div class="out"><span class="k">FRpc <span class="unit">(sobrepeso relativo, %)</span></span><span class="v" id="ot-frpc">–</span></div>
         <table class="grid-table">
@@ -471,13 +568,23 @@
     </div>
 
     <div class="card">
-      <h3>Regresión R²</h3>
+      <h3>Por sumatorio de R²</h3>
       <div class="grid3">
         <div class="out" id="ot-r2-75box"><span class="k">Suma R² · 75%</span><span class="v" id="ot-r2-75">–</span></div>
         <div class="out" id="ot-r2-65box"><span class="k">Suma R² · 65%</span><span class="v" id="ot-r2-65">–</span></div>
         <div class="out" id="ot-r2-55box"><span class="k">Suma R² · 55%</span><span class="v" id="ot-r2-55">–</span></div>
       </div>
-      <div class="out hi"><span class="k">Sugerencia (R² por sumatorio)</span><span class="v" id="ot-sug-r2">–</span></div>
+      <div class="out hi"><span class="k">Sugerencia (por sumatorio de R²)</span><span class="v" id="ot-sug-r2">–</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Por R² lineal</h3>
+      <div class="grid3">
+        <div class="out" id="ot-r2lin-75box"><span class="k">R² lineal · 75%</span><span class="v" id="ot-r2lin-75">–</span></div>
+        <div class="out" id="ot-r2lin-65box"><span class="k">R² lineal · 65%</span><span class="v" id="ot-r2lin-65">–</span></div>
+        <div class="out" id="ot-r2lin-55box"><span class="k">R² lineal · 55%</span><span class="v" id="ot-r2lin-55">–</span></div>
+      </div>
+      <div class="out hi"><span class="k">Sugerencia (R² lineal)</span><span class="v" id="ot-sug-r2lin">–</span></div>
     </div>
 
     <div class="card">
@@ -494,7 +601,7 @@
     <div class="section-head"><h2>Curva &amp; Carga</h2></div>
 
     <div class="card">
-      <h3>Curva individual — tiempo hasta el fallo por intensidad</h3>
+      <h3>Curva individual</h3>
       <div class="cc-curva-row">
         <table class="grid-table" id="cc-table" style="table-layout:fixed;">
           <tr><th style="width:45%;">Intensidad</th><th style="width:55%;">Tiempo</th></tr>
@@ -515,8 +622,8 @@
       <h3>Carga en regleta de trabajo</h3>
       <div class="grid3">
         <div class="field"><label>Regleta de trabajo <span class="unit">(mm)</span></label><input type="number" step="0.1" id="cc-regla"></div>
-        <div class="out"><span class="k">Diferencia tamaño <span class="unit">(mm)</span></span><span class="v" id="cc-difftam">–</span></div>
-        <div class="out"><span class="k">Diferencia fuerza aplicada <span class="unit">(%)</span></span><span class="v" id="cc-difffuerza">–</span></div>
+        <div class="field"><label>Diferencia tamaño <span class="unit">(mm)</span></label><input type="text" id="cc-difftam" readonly value="–"></div>
+        <div class="field"><label>Diferencia fuerza aplicada <span class="unit">(%)</span></label><input type="text" id="cc-difffuerza" readonly value="–"></div>
       </div>
       <div class="out hi"><span class="k">Fmáx en regleta de trabajo <span class="unit">(kg)</span></span><span class="v" id="cc-fmaxregla">–</span></div>
       <table class="grid-table" id="cc-carga-table" style="margin-top:12px;">
@@ -544,7 +651,7 @@ const $ = id => document.getElementById(id);
 const num = id => { const el = $(id); if(!el) return null; const v = parseFloat(el.value); return isNaN(v) ? null : v; };
 const setv = id => v => { const el = $(id); if(!el) return; el.value = v; };
 const fmt = (x, d=2) => (x===null || x===undefined || isNaN(x) || !isFinite(x)) ? '–' : Number(x).toFixed(d);
-const out = (id, x, d=2, suffix='') => { const el = $(id); if(!el) return; el.textContent = (x===null||x===undefined||isNaN(x)||!isFinite(x)) ? '–' : fmt(x,d)+suffix; };
+const out = (id, x, d=2, suffix='') => { const el = $(id); if(!el) return; const text = (x===null||x===undefined||isNaN(x)||!isFinite(x)) ? '–' : fmt(x,d)+suffix; if(el.tagName==='INPUT'||el.tagName==='SELECT') el.value = text; else el.textContent = text; };
 const div = (a,b) => (a===null||b===null||b===0||!isFinite(b)) ? null : a/b;
 const avg = (...xs) => { const v = xs.filter(x=>x!==null && !isNaN(x)); return v.length ? v.reduce((a,b)=>a+b,0)/v.length : null; };
 
@@ -567,6 +674,34 @@ function linreg(xs, ys){
   const a = (n*sxy - sx*sy)/den; const b = (sy - a*sx)/n;
   return {a,b};
 }
+function updateScale(prefix, segs, values){
+  const vals = (Array.isArray(values) ? values : [values]).filter(v=>v!==null && v!==undefined && isFinite(v));
+  segs.forEach(s=>{
+    const el = $(prefix+'-'+s.id);
+    if(!el) return;
+    const active = vals.some(v=> v>=s.min && v<s.max);
+    el.classList.toggle('active', active);
+  });
+}
+const SCALE_MHT14 = [
+  {id:'bajo', min:-Infinity, max:30},
+  {id:'medio', min:30, max:50},
+  {id:'alto', min:50, max:Infinity}
+];
+const SCALE_FTI = [
+  {id:'muybaja', min:-Infinity, max:1000},
+  {id:'baja', min:1000, max:2000},
+  {id:'media', min:2000, max:3000},
+  {id:'alta', min:3000, max:4000},
+  {id:'muyalta', min:4000, max:Infinity}
+];
+const SCALE_REOX = [
+  {id:'nula', min:-Infinity, max:1},
+  {id:'baja', min:1, max:1.6},
+  {id:'media', min:1.6, max:2.1},
+  {id:'alta', min:2.1, max:2.6},
+  {id:'muyalta', min:2.6, max:Infinity}
+];
 function nota(min, obj, actual){
   if(actual===null || min===null || obj===null || min===obj) return null;
   let t = (actual - min) / (obj - min);
@@ -696,6 +831,49 @@ function renderCurvaChart(svgId, xsRaw, ysRaw, model){
   svg.innerHTML = s;
 }
 
+function renderOTChart(svgId, xsSec, ysFrac, model){
+  const svg = $(svgId); if(!svg) return;
+  const pts = []; for(let i=0;i<xsSec.length;i++){ if(xsSec[i]!=null && ysFrac[i]!=null) pts.push([xsSec[i], ysFrac[i]]); }
+  if(pts.length < 2){ svg.innerHTML = ''; return; }
+  const W=520,H=300, padL=40,padR=14,padT=14,padB=26;
+  const xVals = pts.map(p=>p[0]);
+  let xMax = Math.max(...xVals)*1.15;
+  xMax = Math.ceil(xMax/20)*20; if(xMax<20) xMax=20;
+  const xMin=0, yMin=0, yMax=1;
+  const X = x => padL + (x-xMin)/(xMax-xMin)*(W-padL-padR);
+  const Y = y => H-padB - (y-yMin)/(yMax-yMin)*(H-padT-padB);
+  let s='';
+  for(let i=0;i<=6;i++){
+    const gx = padL + i*(W-padL-padR)/6;
+    s+=`<line x1="${gx.toFixed(1)}" y1="${padT}" x2="${gx.toFixed(1)}" y2="${H-padB}" stroke="rgba(242,237,225,0.1)" stroke-width="1"/>`;
+    const xVal = Math.round((xMax/6)*i);
+    s+=`<text x="${gx.toFixed(1)}" y="${(H-padB+16).toFixed(1)}" text-anchor="middle" font-size="9.5" fill="#8d9187" font-family="Work Sans, sans-serif">${xVal}</text>`;
+  }
+  for(let i=0;i<=10;i++){
+    const gy = padT + i*(H-padT-padB)/10;
+    s+=`<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W-padR}" y2="${gy.toFixed(1)}" stroke="rgba(242,237,225,0.08)" stroke-width="1"/>`;
+    const yVal = 100 - i*10;
+    if(i%2===0) s+=`<text x="${(padL-6).toFixed(1)}" y="${(gy+3).toFixed(1)}" text-anchor="end" font-size="9.5" fill="#8d9187" font-family="Work Sans, sans-serif">${yVal}%</text>`;
+  }
+  if(model){
+    let path='';
+    const steps=48;
+    const xDataMin = Math.min(...xVals), xDataMax = Math.max(...xVals);
+    for(let i=0;i<=steps;i++){
+      const x = xDataMin + (xDataMax-xDataMin)*i/steps;
+      if(x<=0) continue;
+      const y = evalModel(model, x);
+      if(y===null || !isFinite(y)) continue;
+      const px=X(x), py=Y(Math.max(0,Math.min(1,y)));
+      path += (path?' L':'M')+px.toFixed(1)+','+py.toFixed(1);
+    }
+    s += `<path d="${path}" fill="none" stroke="#7c9070" stroke-width="2.5" stroke-linecap="round"/>`;
+  }
+  pts.forEach(([x,y])=>{ s += `<circle cx="${X(x).toFixed(1)}" cy="${Y(y).toFixed(1)}" r="5" fill="#1c211e" stroke="#a7bd98" stroke-width="2.5"/>`; });
+  s += `<text x="${(W/2).toFixed(1)}" y="${(H-2).toFixed(1)}" text-anchor="middle" font-size="10" fill="#8d9187" font-family="Work Sans, sans-serif">Tiempo al fallo (seg.)</text>`;
+  svg.innerHTML = s;
+}
+
 /* ============================================================
    BUILD DYNAMIC TABLES
    ============================================================ */
@@ -747,12 +925,7 @@ function buildPerfil(kind){
 
     <div class="card">
       <h3>Referencia</h3>
-      <div class="grid3">
-        <div class="out linked"><span class="k">RP IRCRA (3:3:3)</span><span class="v linked" id="${kind}-rp">–</span></div>
-        <div class="out linked"><span class="k">RP IRCRA Objetivo</span><span class="v linked" id="${kind}-rpobj">–</span></div>
-        <div class="out linked"><span class="k">MED_40 <span class="unit">(mm)</span></span><span class="v linked" id="${kind}-med40">–</span></div>
-      </div>
-      <div class="grid3">
+      <div class="grid2">
         <div class="out hi"><span class="k">OT <span class="unit">(% Fmáx)</span></span><span class="v linked" id="${kind}-ot">–</span></div>
         <div class="out hi"><span class="k">CF <span class="unit">(% Fmáx)</span></span><span class="v linked" id="${kind}-cf">–</span></div>
       </div>
@@ -769,7 +942,7 @@ function buildPerfil(kind){
         <div class="out hi" style="margin-top:10px;"><span class="k">Nota <span class="unit">(0–10)</span></span><span class="v" id="${kind}-fm-nota">–</span></div>
       </div>
       <div class="card">
-        <h3>Fuerza de Contacto (RFD200ms / DSI200ms)</h3>
+        <h3>Fuerza de Contacto (RFD200ms)</h3>
         <table class="grid-table">
           <tr><td>Mínimo</td><td>${dsiMin}</td><td>%</td></tr>
           <tr><td>Objetivo</td><td>${dsiObj}</td><td>%</td></tr>
@@ -1003,6 +1176,14 @@ function actualizarGradoIRCRA(){
 /* ============================================================
    MAIN RECALC
    ============================================================ */
+function syncOTChartHeight(){
+  const tableCard = $('ot-table-card'), vizCard = $('ot-viz-card');
+  if(!tableCard || !vizCard) return;
+  if(window.innerWidth <= 760){ vizCard.style.height = ''; return; }
+  const h = tableCard.offsetHeight;
+  if(h>0) vizCard.style.height = h+'px';
+}
+
 function recalcAll(){
   poblarGradosNativos();
   actualizarGradoIRCRA();
@@ -1015,6 +1196,7 @@ function recalcAll(){
   const mht14 = num('f-mht14');
   const med40est = mht14!==null ? (-0.25*mht14)+24 : null;
   out('f-med40est', med40est, 0, ' mm');
+  updateScale('scale-mht14', SCALE_MHT14, mht14);
 
   function dsi(rfd, thr, fmax){ if(rfd===null||thr===null||fmax===null||fmax===0) return null; return ((rfd*0.2)+thr)*100/fmax; }
 
@@ -1048,9 +1230,7 @@ function recalcAll(){
   out('f-vmppct', vmppct, 1, ' %');
 
   /* ---------- RESISTENCIA ---------- */
-  const rFmaxInput = num('r-fmax');
-  const rFmax = rFmaxInput!==null ? rFmaxInput : dFmed;
-  out('r-fmax-used', rFmax, 1, ' N');
+  const rFmax = dFmed;
 
   const lastreFTI = (peso!==null && lastre!==null) ? ((peso+lastre)*0.8)-peso : null;
   out('r-lastreFTI', lastreFTI, 1, ' kg');
@@ -1062,6 +1242,8 @@ function recalcAll(){
   out('r-ftianae', ftianae, 1);
   const reox = (ftireox!==null && ftianae) ? ftireox/ftianae : null;
   out('r-reox', reox, 2, ' %');
+  updateScale('scale-fti', SCALE_FTI, [ftianae, ftireox]);
+  updateScale('scale-reox', SCALE_REOX, reox);
 
   const rCFdom = num('r-cfdom'), rWdom = num('r-wdom'), rCFnodom = num('r-cfnodom'), rWnodom = num('r-wnodom');
   const cfbw = (rCFdom!==null && peso) ? (rCFdom/(peso*9.8))*100 : null; out('r-cfbw', cfbw, 1);
@@ -1084,10 +1266,17 @@ function recalcAll(){
   // pairs table: order 0.85,0.75,0.65,0.55,0.45,0.35
   const P = OT_INT.map(i=>durs[i]);
   const Q = OT_INT;
+
+  // Por visualización: duración (seg.) en X, intensidad (%) en Y
+  const otSeconds = [], otFrac = [];
+  OT_INT.forEach(i=>{ if(durs[i]!=null){ otSeconds.push(durs[i]); otFrac.push(i); } });
+  const otVizModel = fitBestModel(otSeconds, otFrac);
+  renderOTChart('ot-chart', otSeconds, otFrac, otVizModel);
+
   const diffs = []; for(let k=0;k<5;k++){ diffs.push( (P[k+1]!=null && P[k]!=null) ? P[k+1]-P[k] : null ); }
   const pctch = []; for(let k=0;k<4;k++){ pctch.push( (diffs[k+1]!=null && diffs[k]!=null && diffs[k]!==0) ? ((diffs[k+1]-diffs[k])/diffs[k])*100 : null ); }
   const paresLabels = ['85→75','75→65','65→55','55→45','45→35'];
-  const otLabels = ['OT 75%','OT 65%','OT 55%','OT 45%'];
+  const otLabels = ['75%','65%','55%','45%'];
   let paresHtml = '<tr><th>Tramo</th>'+paresLabels.map(l=>`<th>${l}</th>`).join('')+'</tr><tr><td>Δ Duración</td>'+diffs.map(d=>`<td>${fmt(d,2)}</td>`).join('')+'</tr><tr><td>% cambio</td>'+pctch.map(p=>`<td>${fmt(p,1)}</td>`).join('')+'</tr>';
   $('ot-pares').innerHTML = paresHtml;
   let sugPares = null;
@@ -1101,10 +1290,12 @@ function recalcAll(){
   const r2_65_35 = pearsonSq([Q[2],Q[3],Q[4],Q[5]], [P[2],P[3],P[4],P[5]]);
   const r2_55_35 = pearsonSq([Q[3],Q[4],Q[5]], [P[3],P[4],P[5]]);
   const r2_45_35 = pearsonSq([Q[4],Q[5]],[P[4],P[5]]) !== null ? 1 : null;
-  const suma75 = (r2_75!==null && r2_85_65!==null) ? r2_75 : (r2_85_65!==null ? r2_85_65 : null);
-  const sumaVal75 = [r2_75, r2_85_65].filter(x=>x!==null); const suma75v = sumaVal75.length? sumaVal75.reduce((a,b)=>a+b,0): null;
-  const sumaVal65 = [r2_85_65, r2_65_35].filter(x=>x!==null); const suma65v = sumaVal65.length? sumaVal65.reduce((a,b)=>a+b,0): null;
-  const sumaVal55 = [r2_85_55, r2_55_35].filter(x=>x!==null); const suma55v = sumaVal55.length? sumaVal55.reduce((a,b)=>a+b,0): null;
+  // Suma R² · 75% = R²(85-75) + R²(65-35)  [Excel F25 = SUM(F23:F24)]
+  const sumaVal75 = [r2_75, r2_65_35].filter(x=>x!==null); const suma75v = sumaVal75.length? sumaVal75.reduce((a,b)=>a+b,0): null;
+  // Suma R² · 65% = R²(85-65) + R²(55-35)  [Excel H25 = SUM(H23:H24)]
+  const sumaVal65 = [r2_85_65, r2_55_35].filter(x=>x!==null); const suma65v = sumaVal65.length? sumaVal65.reduce((a,b)=>a+b,0): null;
+  // Suma R² · 55% = R²(85-55) + R²(45-35)  [Excel J25 = SUM(J23:J24)]
+  const sumaVal55 = [r2_85_55, r2_45_35].filter(x=>x!==null); const suma55v = sumaVal55.length? sumaVal55.reduce((a,b)=>a+b,0): null;
   out('ot-r2-75', suma75v, 2); out('ot-r2-65', suma65v, 2); out('ot-r2-55', suma55v, 2);
   let sugR2 = null;
   const sums = [['75%',suma75v],['65%',suma65v],['55%',suma55v]].filter(s=>s[1]!==null);
@@ -1114,6 +1305,20 @@ function recalcAll(){
   if(sugR2==='75%' && $('ot-r2-75box')) $('ot-r2-75box').classList.add('hi');
   if(sugR2==='65%' && $('ot-r2-65box')) $('ot-r2-65box').classList.add('hi');
   if(sugR2==='55%' && $('ot-r2-55box')) $('ot-r2-55box').classList.add('hi');
+
+  // Por R² lineal — RSQ progresivo excluyendo el punto más alto de intensidad
+  const r2lin_75 = pearsonSq([Q[1],Q[2],Q[3],Q[4],Q[5]], [P[1],P[2],P[3],P[4],P[5]]);
+  const r2lin_65 = r2_65_35;
+  const r2lin_55 = r2_55_35;
+  out('ot-r2lin-75', r2lin_75, 3); out('ot-r2lin-65', r2lin_65, 3); out('ot-r2lin-55', r2lin_55, 3);
+  let sugR2lin = null;
+  const sumsLin = [['75%',r2lin_75],['65%',r2lin_65],['55%',r2lin_55]].filter(s=>s[1]!==null);
+  if(sumsLin.length){ sumsLin.sort((a,b)=>b[1]-a[1]); sugR2lin = sumsLin[0][0]; }
+  out('ot-sug-r2lin', sugR2lin, 0); if($('ot-sug-r2lin')) $('ot-sug-r2lin').textContent = sugR2lin || '–';
+  ['ot-r2lin-75box','ot-r2lin-65box','ot-r2lin-55box'].forEach(id=>$(id) && $(id).classList.remove('hi'));
+  if(sugR2lin==='75%' && $('ot-r2lin-75box')) $('ot-r2lin-75box').classList.add('hi');
+  if(sugR2lin==='65%' && $('ot-r2lin-65box')) $('ot-r2lin-65box').classList.add('hi');
+  if(sugR2lin==='55%' && $('ot-r2lin-55box')) $('ot-r2lin-55box').classList.add('hi');
 
   const frpc = (peso!==null && lastre!==null) ? (((peso+lastre)/peso)-1)*100 : null;
   out('ot-frpc', frpc, 1);
@@ -1127,7 +1332,9 @@ function recalcAll(){
     if(document.activeElement !== otFinalEl){ otFinalEl.value = sugFrpcVal; }
   }
   const otFinal = num('ot-final');
-  out('ot-final-out', otFinal, 0, otFinal!==null ? ' % de tu fuerza máxima de agarre' : '');
+  out('ot-final-out', otFinal, 0, otFinal!==null ? '% de tu fuerza máxima de agarre' : '');
+  const otVizEl = $('ot-final-viz');
+  if(otVizEl && document.activeElement !== otVizEl){ otVizEl.value = otFinal!==null ? Math.round(otFinal) : ''; }
 
   /* ---------- CURVA & CARGA ---------- */
   const ccXsRaw = [], ccYs = [];
@@ -1159,7 +1366,6 @@ function recalcAll(){
   const rp = num('g-gradoRP'), rpObj = num('g-gradoObj');
   ['deportiva','boulder'].forEach(kind=>{
     const isDep = kind==='deportiva';
-    out(kind+'-rp', rp, 0); out(kind+'-rpobj', rpObj, 0); out(kind+'-med40', med40, 1, ' mm');
     out(kind+'-ot', otFinal, 0, otFinal!==null?' %':''); out(kind+'-cf', cfmaxD, 1, cfmaxD!==null?' %':'');
 
     out(kind+'-fm-min', rp, 0); out(kind+'-fm-obj', rpObj, 0); out(kind+'-fm-act', dIRCRA, 0);
@@ -1202,6 +1408,8 @@ function recalcAll(){
       return `<div class="row"><span>${l}</span><b class="${lowClass.trim()}">${hasScore ? fmt(score,1) : '–'}</b><div class="score-bar"><div class="score-bar-fill${lowClass}" style="width:${width}%"></div></div></div>`;
     }).join(''); }
   });
+
+  syncOTChartHeight();
 }
 
 /* ============================================================
@@ -1209,6 +1417,10 @@ function recalcAll(){
    ============================================================ */
 document.addEventListener('input', e=>{
   if(e.target.id==='ot-final'){ e.target.dataset.auto='false'; }
+  if(e.target.id==='ot-final-viz'){
+    const master = $('ot-final');
+    if(master){ master.value = e.target.value; master.dataset.auto='false'; }
+  }
   recalcAll(); saveState();
 });
 document.addEventListener('change', ()=>{ recalcAll(); saveState(); });
@@ -1220,6 +1432,7 @@ document.getElementById('tabs').addEventListener('click', e=>{
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
   window.scrollTo({top:0, behavior:'smooth'});
+  if(btn.dataset.tab==='ot') requestAnimationFrame(syncOTChartHeight);
 });
 
 const ALL_IDS = () => Array.from(document.querySelectorAll('input, select')).map(el=>el.id).filter(Boolean);
@@ -1283,6 +1496,8 @@ if(_datosGuardados){
   });
 }
 recalcAll();
+let _resizeTO;
+window.addEventListener('resize', ()=>{ clearTimeout(_resizeTO); _resizeTO = setTimeout(syncOTChartHeight, 120); });
 </script>
 </body>
 </html>
