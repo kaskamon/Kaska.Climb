@@ -160,7 +160,7 @@
 
   .cc-curva-row{ display:grid; grid-template-columns:minmax(150px,200px) 1fr; gap:16px; align-items:start; }
   .cc-curva-row table{ margin:0; }
-  .cc-chart-wrap{ background:var(--stone-800); border:1px solid rgba(242,237,225,0.1); border-radius:14px; padding:10px; margin:0; max-width:480px; }
+  .cc-chart-wrap{ background:var(--stone-800); border:1px solid rgba(242,237,225,0.1); border-radius:14px; padding:10px; margin:0 auto; max-width:480px; justify-self:center; width:100%; }
   .cc-chart-wrap svg{ display:block; width:100%; height:auto; }
   @media (max-width:760px){ .cc-curva-row{ grid-template-columns:1fr; } }
 
@@ -593,8 +593,28 @@ function evalModel(model, x){
     case 'lin': return model.a*x+model.b;
     case 'pow': return model.A*Math.pow(x, model.B);
     case 'exp': return model.A*Math.exp(model.B*x);
+    case 'quad': return model.a*x*x+model.b*x+model.c;
+    case 'inv': return model.a/x+model.b;
   }
   return null;
+}
+function solve3x3(M, V){
+  const det = m => m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1]) - m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0]) + m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]);
+  const D = det(M);
+  if(Math.abs(D) < 1e-12) return null;
+  const withCol = (col) => M.map((row,i)=> row.map((val,j)=> j===col ? V[i] : val));
+  return [det(withCol(0))/D, det(withCol(1))/D, det(withCol(2))/D];
+}
+function quadReg(X, Y){
+  const n = X.length; if(n < 4) return null;
+  let Sx=0,Sx2=0,Sx3=0,Sx4=0,Sy=0,Sxy=0,Sx2y=0;
+  for(let i=0;i<n;i++){
+    const x=X[i], y=Y[i], x2=x*x;
+    Sx+=x; Sx2+=x2; Sx3+=x2*x; Sx4+=x2*x2; Sy+=y; Sxy+=x*y; Sx2y+=x2*y;
+  }
+  const sol = solve3x3([[Sx4,Sx3,Sx2],[Sx3,Sx2,Sx],[Sx2,Sx,n]], [Sx2y,Sxy,Sy]);
+  if(!sol) return null;
+  return { a: sol[0], b: sol[1], c: sol[2] };
 }
 function fitBestModel(xsRaw, ysRaw){
   const pts = []; for(let i=0;i<xsRaw.length;i++){ if(xsRaw[i]!=null && ysRaw[i]!=null) pts.push([xsRaw[i], ysRaw[i]]); }
@@ -617,6 +637,13 @@ function fitBestModel(xsRaw, ysRaw){
     r = linreg(X, lnY);
     if(r){ const A=Math.exp(r.b), B=r.a; const pred = X.map(x=>A*Math.exp(B*x)); candidates.push({type:'exp', A, B, r2:computeR2(Y,pred), label:`y = ${fmt(A,2)}·e^(${fmt(B,2)}·x)`}); }
   }
+
+  const q = quadReg(X, Y);
+  if(q){ const pred = X.map(x=>q.a*x*x+q.b*x+q.c); candidates.push({type:'quad', a:q.a, b:q.b, c:q.c, r2:computeR2(Y,pred), label:`y = ${fmt(q.a,2)}·x² + ${fmt(q.b,2)}·x + ${fmt(q.c,2)}`}); }
+
+  const invX = X.map(x=>1/x);
+  r = linreg(invX, Y);
+  if(r){ const pred = X.map(x=>r.a/x+r.b); candidates.push({type:'inv', a:r.a, b:r.b, r2:computeR2(Y,pred), label:`y = ${fmt(r.a,2)}/x + ${fmt(r.b,2)}`}); }
 
   const valid = candidates.filter(c=>c.r2!==null && isFinite(c.r2));
   if(!valid.length) return null;
@@ -663,8 +690,8 @@ function renderCurvaChart(svgId, xsRaw, ysRaw, model){
   }
   pts.forEach(([x,y])=>{ s += `<circle cx="${X(x).toFixed(1)}" cy="${Y(y).toFixed(1)}" r="4.5" fill="#a7bd98"/>`; });
   if(model){
-    s += `<text x="${W-padR}" y="${H-padB-30}" text-anchor="end" font-size="13" font-weight="700" fill="#f2ede1" font-family="Work Sans, sans-serif">${model.label}</text>`;
-    s += `<text x="${W-padR}" y="${H-padB-13}" text-anchor="end" font-size="13" font-weight="700" fill="#c9c3b4" font-family="Work Sans, sans-serif">R² = ${fmt(model.r2,3)}</text>`;
+    s += `<text x="${W-padR}" y="${padT+14}" text-anchor="end" font-size="13" font-weight="700" fill="#f2ede1" font-family="Work Sans, sans-serif">${model.label}</text>`;
+    s += `<text x="${W-padR}" y="${padT+31}" text-anchor="end" font-size="13" font-weight="700" fill="#c9c3b4" font-family="Work Sans, sans-serif">R² = ${fmt(model.r2,3)}</text>`;
   }
   svg.innerHTML = s;
 }
