@@ -49,6 +49,7 @@
     border-bottom:1px solid rgba(242,237,225,0.1);
   }
   .topbar-inner{
+    position:relative;
     max-width:1180px; margin:0 auto; padding:16px 24px;
     display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
   }
@@ -81,6 +82,8 @@
   }
   .icon-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
   .icon-btn.danger:hover{ background:var(--danger); border-color:var(--danger); }
+  #btnGuion{ text-transform:none; }
+  .icon-btn.active{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
 
   /* ---------- LAYOUT ---------- */
   .wrap{ max-width:1180px; margin:0 auto; padding:28px 24px 80px; }
@@ -157,6 +160,21 @@
   .badge{ display:inline-block; padding:3px 10px; border-radius:999px; font-size:11px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase; }
   .badge.moss{ background:rgba(124,144,112,0.22); color:var(--moss-light); }
   .badge.amber{ background:rgba(201,154,91,0.2); color:var(--amber); }
+
+  .guion-step-head{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    flex-wrap:wrap; margin-bottom:12px;
+  }
+  .guion-step-head h3{ margin:0; }
+  .guion-badges{ display:flex; gap:8px; flex-wrap:wrap; }
+  .guion-step p{ margin:0; font-size:14px; line-height:1.55; color:var(--chalk-dim); }
+  .guion-step p + p{ margin-top:10px; }
+  .guion-num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px; border-radius:7px; background:var(--moss);
+    color:var(--stone-900); font-size:12px; font-weight:800; margin-right:9px;
+    flex:0 0 auto;
+  }
 
   .cc-curva-row{ display:grid; grid-template-columns:minmax(150px,200px) 1fr; gap:16px; align-items:start; }
   .cc-curva-row table{ margin:0; }
@@ -365,6 +383,7 @@
         Inicio
       </a>
     </div>
+    <button class="icon-btn" id="btnGuion" data-tab="guion">Guión</button>
   </div>
 </div>
 
@@ -637,6 +656,94 @@
 
   <!-- ============ PERFIL BOULDER ============ -->
   <section class="panel" id="panel-boulder"></section>
+
+  <!-- ============ GUIÓN ============ -->
+  <section class="panel" id="panel-guion">
+    <div class="section-head"><h2>Guión de test</h2></div>
+
+    <div class="card">
+      <h3>Antes de empezar</h3>
+      <p style="margin:0; font-size:14px; line-height:1.55; color:var(--chalk-dim);">Descansa <strong style="color:var(--chalk);">48h</strong> antes de realizar la batería de test.</p>
+    </div>
+
+    <div class="card guion-step">
+      <div class="guion-step-head">
+        <h3><span class="guion-num">1</span>MHT_14</h3>
+        <div class="guion-badges"><span class="badge moss">Máx. 2 intentos</span><span class="badge amber">10' recup.</span></div>
+      </div>
+      <p>Tiempo máximo de suspensión en la regleta de 14mm. Si te escurres o sientes que no lo has hecho bien, descansa 10' y repite. Si no, descansa 10' y pasa a MED_40.</p>
+    </div>
+
+    <div class="card guion-step">
+      <div class="guion-step-head">
+        <h3><span class="guion-num">2</span>MED_40</h3>
+        <div class="guion-badges"><span class="badge moss">Máx. 2 intentos</span><span class="badge amber">10' recup.</span></div>
+      </div>
+      <p>Se trata de buscar la regleta en la que eres capaz de aguantar 40" de suspensión. Sabiendo el tiempo que has aguantado en 14mm, te daré una estimación para encontrarla en un máximo de 2 intentos. Descansa 10' y pasa a RM Dominadas.</p>
+    </div>
+
+    <div class="card guion-step">
+      <div class="guion-step-head">
+        <h3><span class="guion-num">3</span>RM Dominadas</h3>
+        <div class="guion-badges"><span class="badge moss">2 series de 3–5, mejor resultado</span><span class="badge amber">3' recup.</span></div>
+      </div>
+      <p>Se trata de ver cuál es tu RM en dominadas. Haz una serie de entre 3 y 5 dominadas lastradas lo más próximas al fallo posible. Si no has afinado, descansa 3–5' y repite otra serie. Apunta el número de dominadas completas y el lastre utilizado (ej.: 3 dominadas con 42kg). Descansa 3' y pasa a Fmáx y RFD.</p>
+    </div>
+
+    <div class="card guion-step">
+      <div class="guion-step-head">
+        <h3><span class="guion-num">4</span>Fmáx &amp; RFD</h3>
+        <div class="guion-badges"><span class="badge moss">3 por mano · repetir máx. 1</span><span class="badge amber">3' recup.</span></div>
+      </div>
+      <p>Test de Fmáx y RFD200ms con Tindeq. 3 tirones por mano (haz el test de cada mano por separado). No debe haber una diferencia de más del 10% entre tirones. Repite como máximo 1 tirón. Descansa 3' y pasa a MAW_5.</p>
+    </div>
+
+    <div class="card guion-step">
+      <div class="guion-step-head">
+        <h3><span class="guion-num">5</span>MAW_5</h3>
+        <div class="guion-badges"><span class="badge moss">Máx. 3 intentos</span><span class="badge amber">3' recup.</span></div>
+      </div>
+      <p>Máximo lastre que eres capaz de aguantar suspendido 5" en tu regleta MED_40. Te daré una estimación para afinar más y no gastar intentos de más. Descansa 3' y pasa a FTIanae.</p>
+    </div>
+
+    <div class="card guion-step">
+      <div class="guion-step-head">
+        <h3><span class="guion-num">6</span>FTIanae</h3>
+        <div class="guion-badges"><span class="badge amber">45' recup. (30–60')</span></div>
+      </div>
+      <p>Suspensiones 8":1" hasta que te caigas, en tu regleta MED_40, con el lastre que te diré una vez hechos los test anteriores. Descansarás entre 30' y 60' antes de realizar el siguiente test.</p>
+    </div>
+
+    <div class="card guion-step">
+      <div class="guion-step-head">
+        <h3><span class="guion-num">7</span>FTIreox</h3>
+        <div class="guion-badges"><span class="badge amber">10' recup.</span></div>
+      </div>
+      <p>Suspensiones 7":3" hasta que te caigas, en tu regleta MED_40, con el lastre que te diré una vez hechos los test anteriores. Descansa 10' y pasa a CF.</p>
+    </div>
+
+    <div class="card guion-step">
+      <div class="guion-step-head">
+        <h3><span class="guion-num">8</span>CF de las dos manos</h3>
+        <div class="guion-badges"><span class="badge amber">La que necesites en coger aire</span></div>
+      </div>
+      <p>Test de CF con Tindeq. Primero una mano y luego la otra. Es fundamental tener el brazo totalmente estirado y tirar con todo desde la primera repetición, o el test saldrá mal — y no conviene repetirlo, ya que es <strong style="color:var(--chalk);">muy demandante</strong>.</p>
+    </div>
+
+    <div class="card">
+      <h3>Protocolo de campo — Umbral de Oclusión</h3>
+      <p style="margin:0 0 14px; font-size:14px; line-height:1.55; color:var(--chalk-dim);">
+        <strong style="color:var(--chalk);">48h de descanso.</strong> Después, en los siguientes días que vayas al rocódromo, tras calentar, harás una suspensión con el lastre indicado para cada intensidad (a veces sumando lastre, otras quitando peso con una polea). Harás una suspensión al fallo con cada intensidad, en tu regleta MED_40, y anotarás el tiempo de cada una.
+      </p>
+      <table class="grid-table">
+        <tr><th>Día</th><th>Intensidades</th></tr>
+        <tr><td>Día 1</td><td>85% (<input type="number" step="0.1" id="guion-d1-85" style="width:60px;"> kg) · 55% (<input type="number" step="0.1" id="guion-d1-55" style="width:60px;"> kg)</td></tr>
+        <tr><td>Día 2</td><td>75% (<input type="number" step="0.1" id="guion-d2-75" style="width:60px;"> kg) · 45% (<input type="number" step="0.1" id="guion-d2-45" style="width:60px;"> kg)</td></tr>
+        <tr><td>Día 3</td><td>65% (<input type="number" step="0.1" id="guion-d3-65" style="width:60px;"> kg) · 35% (<input type="number" step="0.1" id="guion-d3-35" style="width:60px;"> kg)</td></tr>
+      </table>
+      <p class="note">Descanso entre suspensiones: mínimo 10 veces el tiempo de la primera suspensión.</p>
+    </div>
+  </section>
 
 </div>
 
@@ -1425,15 +1532,22 @@ document.addEventListener('input', e=>{
 });
 document.addEventListener('change', ()=>{ recalcAll(); saveState(); });
 
+function switchToTab(tabName){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+  const navBtn = document.querySelector(`nav.tabs button[data-tab="${tabName}"]`);
+  if(navBtn) navBtn.classList.add('active');
+  const guionBtn = $('btnGuion');
+  if(guionBtn) guionBtn.classList.toggle('active', tabName==='guion');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+tabName).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(tabName==='ot') requestAnimationFrame(syncOTChartHeight);
+}
 document.getElementById('tabs').addEventListener('click', e=>{
   const btn = e.target.closest('button[data-tab]'); if(!btn) return;
-  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
-  window.scrollTo({top:0, behavior:'smooth'});
-  if(btn.dataset.tab==='ot') requestAnimationFrame(syncOTChartHeight);
+  switchToTab(btn.dataset.tab);
 });
+$('btnGuion').addEventListener('click', ()=> switchToTab('guion'));
 
 const ALL_IDS = () => Array.from(document.querySelectorAll('input, select')).map(el=>el.id).filter(Boolean);
 
