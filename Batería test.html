@@ -158,6 +158,12 @@
   .badge.moss{ background:rgba(124,144,112,0.22); color:var(--moss-light); }
   .badge.amber{ background:rgba(201,154,91,0.2); color:var(--amber); }
 
+  .cc-curva-row{ display:grid; grid-template-columns:minmax(150px,200px) 1fr; gap:16px; align-items:start; }
+  .cc-curva-row table{ margin:0; }
+  .cc-chart-wrap{ background:var(--stone-800); border:1px solid rgba(242,237,225,0.1); border-radius:14px; padding:10px; margin:0; max-width:480px; }
+  .cc-chart-wrap svg{ display:block; width:100%; height:auto; }
+  @media (max-width:760px){ .cc-curva-row{ grid-template-columns:1fr; } }
+
   .radar-wrap{
     display:grid;
     grid-template-columns:minmax(360px,1.45fr) minmax(220px,0.75fr);
@@ -489,18 +495,19 @@
 
     <div class="card">
       <h3>Curva individual — tiempo hasta el fallo por intensidad</h3>
-      <table class="grid-table" id="cc-table">
-        <tr><th>Intensidad</th><th>Tiempo hasta el fallo (segs)</th></tr>
-      </table>
-      <div class="grid3">
-        <div class="out"><span class="k">a (pendiente)</span><span class="v" id="cc-a">–</span></div>
-        <div class="out"><span class="k">b (intersección)</span><span class="v" id="cc-b">–</span></div>
-        <div class="field"><label>Intensidad objetivo</label><input type="number" step="0.01" id="cc-intObj" value="0.8"></div>
+      <div class="cc-curva-row">
+        <table class="grid-table" id="cc-table" style="table-layout:fixed;">
+          <tr><th style="width:45%;">Intensidad</th><th style="width:55%;">Tiempo</th></tr>
+        </table>
+        <div class="cc-chart-wrap"><svg viewBox="0 0 560 280" id="cc-chart"></svg></div>
       </div>
-      <div class="grid3">
-        <div class="out hi"><span class="k">Tiempo estimado <span class="unit">(segs)</span></span><span class="v" id="cc-tEst">–</span></div>
-        <div class="field"><label>Fracción de fallo</label><input type="number" step="0.01" id="cc-frac" value="0.25"></div>
-        <div class="out"><span class="k">T' al fallo parcial <span class="unit">(segs)</span></span><span class="v" id="cc-tParcial">–</span></div>
+      <div class="grid2">
+        <div class="field"><label>Intensidad <span class="unit">(%)</span></label><input type="number" step="1" id="cc-intObj" value="80"></div>
+        <div class="field"><label>Proximidad al fallo <span class="unit">(%)</span></label><input type="number" step="1" id="cc-frac" value="25"></div>
+      </div>
+      <div class="grid2">
+        <div class="out hi"><span class="k">Tiempo total <span class="unit">(seg.)</span></span><span class="v" id="cc-tEst">–</span></div>
+        <div class="out hi"><span class="k">Tiempo parcial <span class="unit">(seg.)</span></span><span class="v" id="cc-tParcial">–</span></div>
       </div>
     </div>
 
@@ -568,6 +575,101 @@ function nota(min, obj, actual){
 }
 
 /* ============================================================
+   CURVA INDIVIDUAL — ajuste multi-modelo (se queda con el R² más alto)
+   ============================================================ */
+function computeR2(yActual, yPred){
+  const pts = []; for(let i=0;i<yActual.length;i++){ if(yActual[i]!=null && yPred[i]!=null && isFinite(yPred[i])) pts.push([yActual[i], yPred[i]]); }
+  const n = pts.length; if(n<2) return null;
+  const mean = pts.reduce((s,[a])=>s+a,0)/n;
+  let ssRes=0, ssTot=0;
+  pts.forEach(([a,p])=>{ ssRes += (a-p)*(a-p); ssTot += (a-mean)*(a-mean); });
+  if(ssTot===0) return null;
+  return 1 - ssRes/ssTot;
+}
+function evalModel(model, x){
+  if(!model || x<=0) return null;
+  switch(model.type){
+    case 'log': return model.a*Math.log(x)+model.b;
+    case 'lin': return model.a*x+model.b;
+    case 'pow': return model.A*Math.pow(x, model.B);
+    case 'exp': return model.A*Math.exp(model.B*x);
+  }
+  return null;
+}
+function fitBestModel(xsRaw, ysRaw){
+  const pts = []; for(let i=0;i<xsRaw.length;i++){ if(xsRaw[i]!=null && ysRaw[i]!=null) pts.push([xsRaw[i], ysRaw[i]]); }
+  if(pts.length < 3) return null;
+  const X = pts.map(p=>p[0]), Y = pts.map(p=>p[1]);
+  const lnX = X.map(Math.log);
+  const candidates = [];
+
+  let r = linreg(lnX, Y);
+  if(r){ const pred = X.map(x=>r.a*Math.log(x)+r.b); candidates.push({type:'log', a:r.a, b:r.b, r2:computeR2(Y,pred), label:`y = ${fmt(r.a,2)}·ln(x) + ${fmt(r.b,2)}`}); }
+
+  r = linreg(X, Y);
+  if(r){ const pred = X.map(x=>r.a*x+r.b); candidates.push({type:'lin', a:r.a, b:r.b, r2:computeR2(Y,pred), label:`y = ${fmt(r.a,2)}·x + ${fmt(r.b,2)}`}); }
+
+  if(Y.every(y=>y>0)){
+    const lnY = Y.map(Math.log);
+    r = linreg(lnX, lnY);
+    if(r){ const A=Math.exp(r.b), B=r.a; const pred = X.map(x=>A*Math.pow(x,B)); candidates.push({type:'pow', A, B, r2:computeR2(Y,pred), label:`y = ${fmt(A,2)}·x^${fmt(B,2)}`}); }
+
+    r = linreg(X, lnY);
+    if(r){ const A=Math.exp(r.b), B=r.a; const pred = X.map(x=>A*Math.exp(B*x)); candidates.push({type:'exp', A, B, r2:computeR2(Y,pred), label:`y = ${fmt(A,2)}·e^(${fmt(B,2)}·x)`}); }
+  }
+
+  const valid = candidates.filter(c=>c.r2!==null && isFinite(c.r2));
+  if(!valid.length) return null;
+  valid.sort((a,b)=>b.r2-a.r2);
+  return valid[0];
+}
+function renderCurvaChart(svgId, xsRaw, ysRaw, model){
+  const svg = $(svgId); if(!svg) return;
+  const pts = []; for(let i=0;i<xsRaw.length;i++){ if(xsRaw[i]!=null && ysRaw[i]!=null) pts.push([xsRaw[i], ysRaw[i]]); }
+  if(pts.length < 2){ svg.innerHTML = ''; return; }
+  const W=560,H=280, padL=42,padR=16,padT=16,padB=26;
+  const xVals = pts.map(p=>p[0]), yVals = pts.map(p=>p[1]);
+  let xMin=Math.min(...xVals), xMax=Math.max(...xVals);
+  let yMin=Math.min(...yVals), yMax=Math.max(...yVals);
+  const xPad=(xMax-xMin)*0.2||0.05, yPad=(yMax-yMin)*0.2||1;
+  xMin=Math.max(0.01,xMin-xPad); xMax+=xPad; yMin=Math.max(0,yMin-yPad); yMax+=yPad;
+  if(yMax===yMin) yMax=yMin+1;
+  const X = x => padL + (x-xMin)/(xMax-xMin)*(W-padL-padR);
+  const Y = y => H-padB - (y-yMin)/(yMax-yMin)*(H-padT-padB);
+  let s='';
+  for(let i=0;i<=5;i++){
+    const gx=padL+i*(W-padL-padR)/5;
+    s+=`<line x1="${gx.toFixed(1)}" y1="${padT}" x2="${gx.toFixed(1)}" y2="${H-padB}" stroke="rgba(242,237,225,0.1)" stroke-width="1"/>`;
+    const xVal = xMin + (xMax-xMin)*i/5;
+    s+=`<text x="${gx.toFixed(1)}" y="${(H-padB+16).toFixed(1)}" text-anchor="middle" font-size="9.5" fill="#8d9187" font-family="Work Sans, sans-serif">${Math.round(xVal*100)}%</text>`;
+  }
+  for(let i=0;i<=4;i++){
+    const gy=padT+i*(H-padT-padB)/4;
+    s+=`<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W-padR}" y2="${gy.toFixed(1)}" stroke="rgba(242,237,225,0.1)" stroke-width="1"/>`;
+    const yVal = yMax - (yMax-yMin)*i/4;
+    s+=`<text x="${(padL-6).toFixed(1)}" y="${(gy+3).toFixed(1)}" text-anchor="end" font-size="9.5" fill="#8d9187" font-family="Work Sans, sans-serif">${fmt(yVal,0)}s</text>`;
+  }
+  if(model){
+    let path='';
+    const steps=48;
+    for(let i=0;i<=steps;i++){
+      const x = xMin + (xMax-xMin)*i/steps;
+      const y = evalModel(model, x);
+      if(y===null || !isFinite(y)) continue;
+      const px=X(x), py=Y(y);
+      path += (path?' L':'M')+px.toFixed(1)+','+py.toFixed(1);
+    }
+    s += `<path d="${path}" fill="none" stroke="#7c9070" stroke-width="2" stroke-dasharray="2,5" stroke-linecap="round"/>`;
+  }
+  pts.forEach(([x,y])=>{ s += `<circle cx="${X(x).toFixed(1)}" cy="${Y(y).toFixed(1)}" r="4.5" fill="#a7bd98"/>`; });
+  if(model){
+    s += `<text x="${W-padR}" y="${H-padB-30}" text-anchor="end" font-size="13" font-weight="700" fill="#f2ede1" font-family="Work Sans, sans-serif">${model.label}</text>`;
+    s += `<text x="${W-padR}" y="${H-padB-13}" text-anchor="end" font-size="13" font-weight="700" fill="#c9c3b4" font-family="Work Sans, sans-serif">R² = ${fmt(model.r2,3)}</text>`;
+  }
+  svg.innerHTML = s;
+}
+
+/* ============================================================
    BUILD DYNAMIC TABLES
    ============================================================ */
 // Cálculo OT — six fixed intensities
@@ -582,10 +684,11 @@ const OT_INT = [0.85,0.75,0.65,0.55,0.45,0.35];
   });
 })();
 
-// Curva & carga — curva individual, same 6 intensities
+// Curva & carga — curva individual: mismas 6 intensidades que el OT (el 100% no se usa, siempre son los 5 segs de MAW_5)
+const CC_INT = OT_INT;
 (function buildCCTable(){
   const t = $('cc-table');
-  OT_INT.forEach(i=>{
+  CC_INT.forEach(i=>{
     const tr = document.createElement('tr');
     tr.innerHTML = `<td>${Math.round(i*100)}%</td><td><input type="number" step="0.1" id="cc-t-${i}"></td>`;
     t.appendChild(tr);
@@ -1000,15 +1103,16 @@ function recalcAll(){
   out('ot-final-out', otFinal, 0, otFinal!==null ? ' % de tu fuerza máxima de agarre' : '');
 
   /* ---------- CURVA & CARGA ---------- */
-  const ccXs = [], ccYs = [];
-  OT_INT.forEach(i=>{ const t = num('cc-t-'+i); ccXs.push(Math.log(i)); ccYs.push(t); });
-  const reg = linreg(ccXs, ccYs);
-  out('cc-a', reg? reg.a : null, 2);
-  out('cc-b', reg? reg.b : null, 2);
-  const ccIntObj = num('cc-intObj');
-  const tEst = (reg && ccIntObj!==null && ccIntObj>0) ? reg.a*Math.log(ccIntObj)+reg.b : null;
+  const ccXsRaw = [], ccYs = [];
+  CC_INT.forEach(i=>{ const t = num('cc-t-'+i); ccXsRaw.push(i); ccYs.push(t); });
+  const ccBest = fitBestModel(ccXsRaw, ccYs);
+  renderCurvaChart('cc-chart', ccXsRaw, ccYs, ccBest);
+  const ccIntObjPct = num('cc-intObj');
+  const ccIntObj = ccIntObjPct!==null ? ccIntObjPct/100 : null;
+  const tEst = (ccBest && ccIntObj!==null && ccIntObj>0) ? evalModel(ccBest, ccIntObj) : null;
   out('cc-tEst', tEst, 1);
-  const ccFrac = num('cc-frac');
+  const ccFracPct = num('cc-frac');
+  const ccFrac = ccFracPct!==null ? ccFracPct/100 : null;
   const tParcial = (tEst!==null && ccFrac!==null) ? tEst*ccFrac : null;
   out('cc-tParcial', tParcial, 1);
 
