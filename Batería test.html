@@ -1566,13 +1566,29 @@ function loadState(){
   }catch(e){ console.warn('No se pudo cargar el estado guardado', e); return null; }
 }
 
-$('btnExport').addEventListener('click', ()=>{
+$('btnExport').addEventListener('click', async ()=>{
   const data = {}; ALL_IDS().forEach(id=>{ data[id] = $(id).value; });
-  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
-  const a = document.createElement('a');
   const nombre = ($('g-nombre').value || 'test').replace(/[^a-z0-9]+/gi,'_');
+  const filename = `kaska_${nombre}_${($('g-fecha').value||'sin_fecha')}.json`;
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+
+  // En móvil (Android/iOS), usar el panel nativo de compartir: permite guardar
+  // en Drive/Dropbox/Archivos eligiendo carpeta y nombre. En escritorio, donde
+  // esta API normalmente no aplica a archivos, cae automáticamente a la descarga normal.
+  try{
+    const file = new File([blob], filename, {type:'application/json'});
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title: filename});
+      return;
+    }
+  }catch(err){
+    if(err && err.name === 'AbortError') return; // el usuario canceló el panel, no descargar también
+    // si falla por otro motivo, seguimos con la descarga normal de abajo
+  }
+
+  const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `kaska_${nombre}_${($('g-fecha').value||'sin_fecha')}.json`;
+  a.download = filename;
   a.click();
 });
 $('btnImport').addEventListener('click', ()=> $('fileImport').click());
