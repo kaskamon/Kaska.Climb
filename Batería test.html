@@ -50,10 +50,10 @@
   }
   .topbar-inner{
     position:relative;
-    max-width:1180px; margin:0 auto; padding:16px 24px;
+    max-width:1600px; margin:0 auto; padding:16px 24px;
     display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
   }
-  .brand{ display:flex; flex-direction:column; gap:2px; }
+  .brand{ display:flex; flex-direction:column; gap:2px; flex:0 0 auto; }
   .eyebrow{
     display:inline-flex; align-items:center; gap:10px;
     font-size:11px; letter-spacing:4px; font-weight:700;
@@ -63,11 +63,11 @@
   .brand h1{ font-size:22px; }
   .brand h1 span{ color:var(--moss); }
 
-  nav.tabs{ display:flex; gap:6px; flex-wrap:wrap; }
+  nav.tabs{ display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; }
   nav.tabs button{
     background:transparent; border:1px solid rgba(242,237,225,0.14);
     color:var(--chalk-dim); font-family:'Work Sans',sans-serif; font-weight:600;
-    font-size:13px; letter-spacing:0.3px; padding:9px 16px; border-radius:10px;
+    font-size:12.5px; letter-spacing:0.3px; padding:9px 13px; border-radius:10px;
     cursor:pointer; transition:all .2s ease; white-space:nowrap;
   }
   nav.tabs button:hover{ border-color:var(--moss); color:var(--chalk); }
@@ -175,6 +175,16 @@
     color:var(--stone-900); font-size:12px; font-weight:800; margin-right:9px;
     flex:0 0 auto;
   }
+
+  /* ---------- CM-PAT (tabla, formato CSAI) ---------- */
+  .cmpat-anchor-note{
+    display:block; font-size:11.5px; color:var(--chalk-faint);
+    margin-top:4px; font-weight:400; line-height:1.45;
+  }
+
+  /* ---------- CSAI-2R ---------- */
+  table.grid-table.csai-table td:first-child{ padding-right:16px; }
+  table.grid-table.csai-table input{ width:56px; }
 
   .cc-curva-row{ display:grid; grid-template-columns:minmax(150px,200px) 1fr; gap:16px; align-items:start; }
   .cc-curva-row table{ margin:0; }
@@ -291,6 +301,19 @@
   @media (max-width:480px){ .fti-subgrid{ grid-template-columns:1fr; } }
   .grid4{ display:grid; grid-template-columns:repeat(4,1fr); gap:24px; }
   @media (max-width:760px){ .grid4{ grid-template-columns:1fr 1fr; } }
+  .grid5{ display:grid; grid-template-columns:repeat(5,1fr); gap:16px; }
+  @media (max-width:760px){ .grid5{ grid-template-columns:1fr 1fr; } }
+
+  /* ---------- Semáforo de puntuación (CM-PAT) ---------- */
+  input.sc-red{ border-color:var(--danger) !important; background:rgba(201,112,91,0.22) !important; color:var(--chalk) !important; }
+  input.sc-amber{ border-color:var(--amber) !important; background:rgba(201,154,91,0.22) !important; color:var(--chalk) !important; }
+  input.sc-green{ border-color:var(--moss) !important; background:rgba(124,144,112,0.24) !important; color:var(--chalk) !important; }
+  .out.sc-red{ border-color:var(--danger); background:rgba(201,112,91,0.14); }
+  .out.sc-red .v{ color:var(--danger); }
+  .out.sc-amber{ border-color:var(--amber); background:rgba(201,154,91,0.14); }
+  .out.sc-amber .v{ color:var(--amber); }
+  .out.sc-green{ border-color:var(--moss); background:rgba(124,144,112,0.14); }
+  .out.sc-green .v{ color:var(--chalk); }
 
   .ot-layout{ display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start; }
   .ot-layout .ot-viz-card{ display:flex; flex-direction:column; overflow:hidden; }
@@ -371,6 +394,8 @@
       <button data-tab="resistencia">Resistencia</button>
       <button data-tab="ot">Cálculo OT</button>
       <button data-tab="curva">Curva &amp; Carga</button>
+      <button data-tab="tecnico">Técnico-táctico</button>
+      <button data-tab="psicologico">Psicológico</button>
       <button data-tab="deportiva">Perfil Deportiva</button>
       <button data-tab="boulder">Perfil Boulder</button>
     </nav>
@@ -655,6 +680,162 @@
     </div>
   </section>
 
+  <!-- ============ TÉCNICO-TÁCTICO (CM-PAT) ============ -->
+  <section class="panel" id="panel-tecnico">
+    <div class="section-head"><h2>Técnico-táctico</h2></div>
+
+    <div class="card">
+      <h3>CM-PAT</h3>
+      <div class="field"><label>Trabajo desarrollado</label><input type="text" id="cmpat-trabajo" placeholder="Vía, bloque o ejercicio evaluado"></div>
+      <p class="note" style="margin-top:0;">Se rellena viendo el vídeo de un pegue a vista de una vía. Puntúa cada ítem de 1 (ancla inferior) a 5 (ancla superior) según el comportamiento observado.</p>
+    </div>
+
+    <div class="card">
+      <h3>Base de sustentación</h3>
+      <table class="grid-table csai-table">
+        <tr><th>Ítem</th><th>Puntuación</th></tr>
+        <tr><td>Precisión de manos<span class="cmpat-anchor-note">1: Desordenado, descontrolado, no coloca bien, ruidoso y ajustes constantes · 5: Ubicadas adecuadamente, con precisión y sin hacer ruido</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-manos"></td></tr>
+        <tr><td>Precisión de pies<span class="cmpat-anchor-note">1: Desordenado, descontrolado, no coloca bien, ruidoso y ajustes constantes · 5: Ubicadas adecuadamente, con precisión y sin hacer ruido</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-pies"></td></tr>
+      </table>
+      <div class="out" style="margin-top:16px;"><span class="k">Media · Base de sustentación</span><span class="v" id="cmpat-avg-base">–</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Transiciones</h3>
+      <table class="grid-table csai-table">
+        <tr><th>Ítem</th><th>Puntuación</th></tr>
+        <tr><td>Equilibrio dinámico<span class="cmpat-anchor-note">1: Movimientos sin equilibrio y pérdida de control · 5: Movimientos perfectamente equilibrados</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-equilibrio"></td></tr>
+        <tr><td>Fluidez<span class="cmpat-anchor-note">1: Movimientos erráticos y espasmódicos · 5: Movimientos suaves y sin esfuerzo</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-fluidez"></td></tr>
+        <tr><td>Movimientos exploratorios<span class="cmpat-anchor-note">1: Frecuentes y largos · 5: Deliberados y certeros, ausencia de movimientos exploratorios</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-exploratorios"></td></tr>
+        <tr><td>Secuencia<span class="cmpat-anchor-note">1: Nunca encuentra la secuencia correcta · 5: Movimientos en secuencia perfecta</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-secuencia"></td></tr>
+      </table>
+      <div class="out" style="margin-top:16px;"><span class="k">Media · Transiciones</span><span class="v" id="cmpat-avg-transiciones">–</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Coordinación</h3>
+      <table class="grid-table csai-table">
+        <tr><th>Ítem</th><th>Puntuación</th></tr>
+        <tr><td>Inicio del movimiento<span class="cmpat-anchor-note">1: Inicia con los brazos · 5: Cuando es posible los movimientos se inician desde el tren inferior</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-inicio"></td></tr>
+        <tr><td>Extensión (tensión corporal)<span class="cmpat-anchor-note">1: Movimientos flojos y carecen de tensión · 5: Los movimientos demuestran tensión corporal cuando es requerida</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-extension"></td></tr>
+      </table>
+      <div class="out" style="margin-top:16px;"><span class="k">Media · Coordinación</span><span class="v" id="cmpat-avg-coordinacion">–</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Técnica</h3>
+      <table class="grid-table csai-table">
+        <tr><th>Ítem</th><th>Puntuación</th></tr>
+        <tr><td>Repertorio de movimientos<span class="cmpat-anchor-note">1: Repertorio limitado de habilidades y técnicas · 5: Amplio repertorio de habilidades y técnicas</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-repertorio"></td></tr>
+        <tr><td>Brazos<span class="cmpat-anchor-note">1: Brazos flexionados en momentos inapropiados · 5: Brazos estirados cuando es apropiado</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-brazos"></td></tr>
+      </table>
+      <div class="out" style="margin-top:16px;"><span class="k">Media · Técnica</span><span class="v" id="cmpat-avg-tecnica">–</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Táctica</h3>
+      <table class="grid-table csai-table">
+        <tr><th>Ítem</th><th>Puntuación</th></tr>
+        <tr><td>Ritmo<span class="cmpat-anchor-note">1: No cambia el ritmo para reflejar las secciones fáciles y difíciles · 5: Ritmo variado, acelera en las secciones duras</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-ritmo"></td></tr>
+        <tr><td>Compromiso y confianza<span class="cmpat-anchor-note">1: Vacilación frecuente, miedo a escalar por encima de la chapa · 5: Compromiso total en cada movimiento, escala hasta la caída</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-compromiso"></td></tr>
+        <tr><td>Descansos<span class="cmpat-anchor-note">1: Ineficientes, mal escogidos o no usa · 5: Optimiza los descansos disponibles y posiciones estables</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-descansos"></td></tr>
+        <tr><td>Chapajes<span class="cmpat-anchor-note">1: Chapajes desde posiciones ineficientes y peligrosas · 5: Eficientes, correctamente seleccionados y sin esfuerzo</span></td><td><input type="number" min="1" max="5" step="1" id="cmpat-chapajes"></td></tr>
+      </table>
+      <div class="out" style="margin-top:16px;"><span class="k">Media · Táctica</span><span class="v" id="cmpat-avg-tactica">–</span></div>
+    </div>
+
+    <div class="card">
+      <h3>Resultados</h3>
+      <div class="grid5">
+        <div class="out"><span class="k">Base de sustentación</span><span class="v" id="cmpat-res-base">–</span></div>
+        <div class="out"><span class="k">Transiciones</span><span class="v" id="cmpat-res-transiciones">–</span></div>
+        <div class="out"><span class="k">Coordinación</span><span class="v" id="cmpat-res-coordinacion">–</span></div>
+        <div class="out"><span class="k">Técnica</span><span class="v" id="cmpat-res-tecnica">–</span></div>
+        <div class="out"><span class="k">Táctica</span><span class="v" id="cmpat-res-tactica">–</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PSICOLÓGICO (CSAI-2R) ============ -->
+  <section class="panel" id="panel-psicologico">
+    <div class="section-head"><h2>Psicológico</h2></div>
+
+    <div class="card">
+      <h3>CAS-20</h3>
+      <p class="note" style="margin-top:0;">Se puede completar en cualquier momento. Puntúa cada afirmación de 1 (nada en absoluto) a 4 (muchísimo), según cómo te sientes al escalar.</p>
+      <table class="grid-table csai-table">
+        <tr><th>Afirmación</th><th>Puntuación</th></tr>
+        <tr><td>01. Intento bloquear constantemente pensamientos sobre caer o lesionarme</td><td><input type="number" min="1" max="4" step="1" id="csai-01"></td></tr>
+        <tr><td>02. Me siento confiado mientras escalo</td><td><input type="number" min="1" max="4" step="1" id="csai-02"></td></tr>
+        <tr><td>03. Escalo preocupado o con miedo</td><td><input type="number" min="1" max="4" step="1" id="csai-03"></td></tr>
+        <tr><td>04. Me cuesta mantenerme en calma mientras escalo</td><td><input type="number" min="1" max="4" step="1" id="csai-04"></td></tr>
+        <tr><td>05. Confío en mis habilidades para afrontar situaciones inesperadas</td><td><input type="number" min="1" max="4" step="1" id="csai-05"></td></tr>
+        <tr><td>06. Puedo llegar a bajarme de una vía porque siento pánico o miedo a caer</td><td><input type="number" min="1" max="4" step="1" id="csai-06"></td></tr>
+        <tr><td>07. Siento mis movimientos tensos o rígidos</td><td><input type="number" min="1" max="4" step="1" id="csai-07"></td></tr>
+        <tr><td>08. Me siento "como un flan"</td><td><input type="number" min="1" max="4" step="1" id="csai-08"></td></tr>
+        <tr><td>09. Me cuesta entender lo que otros (asegurador, compañeros) me dicen debido al miedo</td><td><input type="number" min="1" max="4" step="1" id="csai-09"></td></tr>
+        <tr><td>10. Me siento con confianza porque me veo consiguiendo mi objetivo</td><td><input type="number" min="1" max="4" step="1" id="csai-10"></td></tr>
+        <tr><td>11. Al escalar me entra "la moto"</td><td><input type="number" min="1" max="4" step="1" id="csai-11"></td></tr>
+        <tr><td>12. Tengo confianza en rendir bien mientras escalo</td><td><input type="number" min="1" max="4" step="1" id="csai-12"></td></tr>
+        <tr><td>13. Mis músculos están tensos</td><td><input type="number" min="1" max="4" step="1" id="csai-13"></td></tr>
+        <tr><td>14. Me da vergüenza, sobre todo cuando otros me ven escalar</td><td><input type="number" min="1" max="4" step="1" id="csai-14"></td></tr>
+        <tr><td>15. Me sudan las palmas de las manos por los nervios</td><td><input type="number" min="1" max="4" step="1" id="csai-15"></td></tr>
+        <tr><td>16. Me cuesta concentrarme en escalar por mis propios miedos</td><td><input type="number" min="1" max="4" step="1" id="csai-16"></td></tr>
+        <tr><td>17. Me preocupa no escalar bien</td><td><input type="number" min="1" max="4" step="1" id="csai-17"></td></tr>
+        <tr><td>18. Me cuesta tomar decisiones en la vía debido a la ansiedad</td><td><input type="number" min="1" max="4" step="1" id="csai-18"></td></tr>
+        <tr><td>19. Me siento abrumado por la incertidumbre de lo que me voy a encontrar por arriba</td><td><input type="number" min="1" max="4" step="1" id="csai-19"></td></tr>
+        <tr><td>20. Me cuesta mantenerme calmado</td><td><input type="number" min="1" max="4" step="1" id="csai-20"></td></tr>
+      </table>
+      <div class="grid3" style="margin-top:16px;">
+        <div class="out"><span class="k">Ansiedad cognitiva <span class="unit">(pts)</span></span><span class="v" id="csai-cog-pts">–</span></div>
+        <div class="out"><span class="k">Ansiedad somática <span class="unit">(pts)</span></span><span class="v" id="csai-som-pts">–</span></div>
+        <div class="out"><span class="k">Autoconfianza <span class="unit">(pts)</span></span><span class="v" id="csai-auto-pts">–</span></div>
+      </div>
+      <div class="grid3" style="margin-top:10px;">
+        <div class="out"><span class="k">Ansiedad cognitiva <span class="unit">(%)</span></span><span class="v" id="csai-cog-pct">–</span></div>
+        <div class="out"><span class="k">Ansiedad somática <span class="unit">(%)</span></span><span class="v" id="csai-som-pct">–</span></div>
+        <div class="out"><span class="k">Autoconfianza <span class="unit">(%)</span></span><span class="v" id="csai-auto-pct">–</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>CSAI-2R</h3>
+      <div class="field"><label>Trabajo desarrollado</label><input type="text" id="csai2-trabajo" placeholder="Competición o contexto evaluado"></div>
+      <p class="note" style="margin-top:0;">Rellénalo entre 15 y 45 minutos antes de rendir. Puntúa cada afirmación de 1 (nada en absoluto) a 4 (muchísimo).</p>
+      <table class="grid-table csai-table">
+        <tr><th>Afirmación</th><th>Puntuación</th></tr>
+        <tr><td>01. Estoy muy inquieto</td><td><input type="number" min="1" max="4" step="1" id="csai2-01"></td></tr>
+        <tr><td>02. Me preocupa no rendir en esta competición tan bien como podría hacerlo</td><td><input type="number" min="1" max="4" step="1" id="csai2-02"></td></tr>
+        <tr><td>03. Estoy seguro de mí mismo</td><td><input type="number" min="1" max="4" step="1" id="csai2-03"></td></tr>
+        <tr><td>04. Noto mi cuerpo tenso</td><td><input type="number" min="1" max="4" step="1" id="csai2-04"></td></tr>
+        <tr><td>05. Me preocupa perder</td><td><input type="number" min="1" max="4" step="1" id="csai2-05"></td></tr>
+        <tr><td>06. Siento tensión en mi estómago</td><td><input type="number" min="1" max="4" step="1" id="csai2-06"></td></tr>
+        <tr><td>07. Estoy seguro de que puedo hacer frente al desafío</td><td><input type="number" min="1" max="4" step="1" id="csai2-07"></td></tr>
+        <tr><td>08. Me preocupa bloquearme ante la presión</td><td><input type="number" min="1" max="4" step="1" id="csai2-08"></td></tr>
+        <tr><td>09. Mi corazón se acelera</td><td><input type="number" min="1" max="4" step="1" id="csai2-09"></td></tr>
+        <tr><td>10. Tengo confianza en hacerlo bien</td><td><input type="number" min="1" max="4" step="1" id="csai2-10"></td></tr>
+        <tr><td>11. Me preocupa un bajo rendimiento</td><td><input type="number" min="1" max="4" step="1" id="csai2-11"></td></tr>
+        <tr><td>12. Tengo un nudo en el estómago</td><td><input type="number" min="1" max="4" step="1" id="csai2-12"></td></tr>
+        <tr><td>13. Tengo confianza porque me veo alcanzando mi objetivo</td><td><input type="number" min="1" max="4" step="1" id="csai2-13"></td></tr>
+        <tr><td>14. Me preocupa que los demás se sientan decepcionados con mi rendimiento</td><td><input type="number" min="1" max="4" step="1" id="csai2-14"></td></tr>
+        <tr><td>15. Mis manos están sudorosas</td><td><input type="number" min="1" max="4" step="1" id="csai2-15"></td></tr>
+        <tr><td>16. Confío en responder bien ante la presión</td><td><input type="number" min="1" max="4" step="1" id="csai2-16"></td></tr>
+        <tr><td>17. Noto mi cuerpo rígido</td><td><input type="number" min="1" max="4" step="1" id="csai2-17"></td></tr>
+        <tr><td>18. Siento un vacío en el estómago</td><td><input type="number" min="1" max="4" step="1" id="csai2-18"></td></tr>
+      </table>
+      <div class="grid3" style="margin-top:16px;">
+        <div class="out"><span class="k">Ansiedad cognitiva <span class="unit">(pts)</span></span><span class="v" id="csai2-cog-pts">–</span></div>
+        <div class="out"><span class="k">Ansiedad somática <span class="unit">(pts)</span></span><span class="v" id="csai2-som-pts">–</span></div>
+        <div class="out"><span class="k">Autoconfianza <span class="unit">(pts)</span></span><span class="v" id="csai2-auto-pts">–</span></div>
+      </div>
+      <div class="grid3" style="margin-top:10px;">
+        <div class="out"><span class="k">Ansiedad cognitiva <span class="unit">(%)</span></span><span class="v" id="csai2-cog-pct">–</span></div>
+        <div class="out"><span class="k">Ansiedad somática <span class="unit">(%)</span></span><span class="v" id="csai2-som-pct">–</span></div>
+        <div class="out"><span class="k">Autoconfianza <span class="unit">(%)</span></span><span class="v" id="csai2-auto-pct">–</span></div>
+      </div>
+    </div>
+  </section>
+
   <!-- ============ PERFIL DEPORTIVA ============ -->
   <section class="panel" id="panel-deportiva"></section>
 
@@ -741,9 +922,9 @@
       </p>
       <table class="grid-table">
         <tr><th>Día</th><th>Intensidades</th></tr>
-        <tr><td>Día 1</td><td>85% (<input type="number" step="0.1" id="guion-d1-85" style="width:60px;"> kg) · 55% (<input type="number" step="0.1" id="guion-d1-55" style="width:60px;"> kg)</td></tr>
-        <tr><td>Día 2</td><td>75% (<input type="number" step="0.1" id="guion-d2-75" style="width:60px;"> kg) · 45% (<input type="number" step="0.1" id="guion-d2-45" style="width:60px;"> kg)</td></tr>
-        <tr><td>Día 3</td><td>65% (<input type="number" step="0.1" id="guion-d3-65" style="width:60px;"> kg) · 35% (<input type="number" step="0.1" id="guion-d3-35" style="width:60px;"> kg)</td></tr>
+        <tr><td>Día 1</td><td>85% (<input type="number" step="0.1" id="guion-d1-85" style="width:78px;"> kg) · 55% (<input type="number" step="0.1" id="guion-d1-55" style="width:78px;"> kg)</td></tr>
+        <tr><td>Día 2</td><td>75% (<input type="number" step="0.1" id="guion-d2-75" style="width:78px;"> kg) · 45% (<input type="number" step="0.1" id="guion-d2-45" style="width:78px;"> kg)</td></tr>
+        <tr><td>Día 3</td><td>65% (<input type="number" step="0.1" id="guion-d3-65" style="width:78px;"> kg) · 35% (<input type="number" step="0.1" id="guion-d3-35" style="width:78px;"> kg)</td></tr>
       </table>
       <p class="note">Descanso entre suspensiones: mínimo 10 veces el tiempo de la primera suspensión.</p>
     </div>
@@ -1369,10 +1550,15 @@ function recalcAll(){
 
   /* ---------- CALCULO OT ---------- */
   const durs = {};
+  const GUION_FIELD_MAP = {0.85:'guion-d1-85', 0.75:'guion-d2-75', 0.65:'guion-d3-65', 0.55:'guion-d1-55', 0.45:'guion-d2-45', 0.35:'guion-d3-35'};
   OT_INT.forEach(i=>{
     const lastreI = (peso!==null && lastre!==null) ? ((peso+lastre)*i)-peso : null;
     out('ot-lastre-'+i, lastreI, 1);
     durs[i] = num('ot-dur-'+i);
+    const gEl = $(GUION_FIELD_MAP[i]);
+    if(gEl && gEl.dataset.auto !== 'false' && document.activeElement !== gEl){
+      gEl.value = lastreI!==null ? fmt(lastreI,1) : '';
+    }
   });
   // pairs table: order 0.85,0.75,0.65,0.55,0.45,0.35
   const P = OT_INT.map(i=>durs[i]);
@@ -1520,6 +1706,87 @@ function recalcAll(){
     }).join(''); }
   });
 
+  /* ---------- CM-PAT ---------- */
+  const scoreColor = (el, v, redMax, amberMax) => {
+    if(!el) return;
+    const target = el.classList.contains('out') ? el : (el.closest('.out') || el);
+    target.classList.remove('sc-red','sc-amber','sc-green');
+    if(v===null || v===undefined || !isFinite(v)) return;
+    if(v < redMax) target.classList.add('sc-red');
+    else if(v < amberMax) target.classList.add('sc-amber');
+    else target.classList.add('sc-green');
+  };
+  const CMPAT_ITEM_IDS = ['manos','pies','equilibrio','fluidez','exploratorios','secuencia','inicio','extension','repertorio','brazos','ritmo','compromiso','descansos','chapajes'];
+  CMPAT_ITEM_IDS.forEach(id => scoreColor($('cmpat-'+id), num('cmpat-'+id), 2.5, 3.5));
+
+  const cmpatBase = avg(num('cmpat-manos'), num('cmpat-pies'));
+  out('cmpat-avg-base', cmpatBase, 2); out('cmpat-res-base', cmpatBase, 2);
+  scoreColor($('cmpat-avg-base'), cmpatBase, 2.5, 3.5); scoreColor($('cmpat-res-base'), cmpatBase, 2.5, 3.5);
+  const cmpatTrans = avg(num('cmpat-equilibrio'), num('cmpat-fluidez'), num('cmpat-exploratorios'), num('cmpat-secuencia'));
+  out('cmpat-avg-transiciones', cmpatTrans, 2); out('cmpat-res-transiciones', cmpatTrans, 2);
+  scoreColor($('cmpat-avg-transiciones'), cmpatTrans, 2.5, 3.5); scoreColor($('cmpat-res-transiciones'), cmpatTrans, 2.5, 3.5);
+  const cmpatCoord = avg(num('cmpat-inicio'), num('cmpat-extension'));
+  out('cmpat-avg-coordinacion', cmpatCoord, 2); out('cmpat-res-coordinacion', cmpatCoord, 2);
+  scoreColor($('cmpat-avg-coordinacion'), cmpatCoord, 2.5, 3.5); scoreColor($('cmpat-res-coordinacion'), cmpatCoord, 2.5, 3.5);
+  const cmpatTec = avg(num('cmpat-repertorio'), num('cmpat-brazos'));
+  out('cmpat-avg-tecnica', cmpatTec, 2); out('cmpat-res-tecnica', cmpatTec, 2);
+  scoreColor($('cmpat-avg-tecnica'), cmpatTec, 2.5, 3.5); scoreColor($('cmpat-res-tecnica'), cmpatTec, 2.5, 3.5);
+  const cmpatTac = avg(num('cmpat-ritmo'), num('cmpat-compromiso'), num('cmpat-descansos'), num('cmpat-chapajes'));
+  out('cmpat-avg-tactica', cmpatTac, 2); out('cmpat-res-tactica', cmpatTac, 2);
+  scoreColor($('cmpat-avg-tactica'), cmpatTac, 2.5, 3.5); scoreColor($('cmpat-res-tactica'), cmpatTac, 2.5, 3.5);
+
+  /* ---------- Semáforo CSAI (ansiedad: alto=malo · autoconfianza: alto=bueno) ---------- */
+  const anxietyColor = (el, pct) => {
+    if(!el) return;
+    const target = el.classList.contains('out') ? el : (el.closest('.out') || el);
+    target.classList.remove('sc-red','sc-amber','sc-green');
+    if(pct===null || !isFinite(pct)) return;
+    if(pct >= 65) target.classList.add('sc-red');
+    else if(pct >= 40) target.classList.add('sc-amber');
+    else target.classList.add('sc-green');
+  };
+  const confidenceColor = (el, pct) => {
+    if(!el) return;
+    const target = el.classList.contains('out') ? el : (el.closest('.out') || el);
+    target.classList.remove('sc-red','sc-amber','sc-green');
+    if(pct===null || !isFinite(pct)) return;
+    if(pct < 40) target.classList.add('sc-red');
+    else if(pct < 65) target.classList.add('sc-amber');
+    else target.classList.add('sc-green');
+  };
+
+  /* ---------- CSAI-2R ---------- */
+  const csai = id => num('csai-'+id);
+  const csaiSum = (...ids) => { const vs = ids.map(csai).filter(v=>v!==null); return vs.length ? vs.reduce((a,b)=>a+b,0) : null; };
+  const csaiCogPts = csaiSum('01','04','06','09','16','17','18','20');
+  const csaiSomPts = csaiSum('03','07','08','11','13','14','15','19');
+  const csaiAutoPts = csaiSum('02','05','10','12');
+  const csaiCogPct = csaiCogPts!==null ? (csaiCogPts/32)*100 : null;
+  const csaiSomPct = csaiSomPts!==null ? (csaiSomPts/32)*100 : null;
+  const csaiAutoPct = csaiAutoPts!==null ? (csaiAutoPts/16)*100 : null;
+  out('csai-cog-pts', csaiCogPts, 0); out('csai-cog-pct', csaiCogPct, 1, ' %');
+  out('csai-som-pts', csaiSomPts, 0); out('csai-som-pct', csaiSomPct, 1, ' %');
+  out('csai-auto-pts', csaiAutoPts, 0); out('csai-auto-pct', csaiAutoPct, 1, ' %');
+  anxietyColor($('csai-cog-pts'), csaiCogPct); anxietyColor($('csai-cog-pct'), csaiCogPct);
+  anxietyColor($('csai-som-pts'), csaiSomPct); anxietyColor($('csai-som-pct'), csaiSomPct);
+  confidenceColor($('csai-auto-pts'), csaiAutoPct); confidenceColor($('csai-auto-pct'), csaiAutoPct);
+
+  /* ---------- CSAI-2R · 2 ---------- */
+  const csai2 = id => num('csai2-'+id);
+  const csai2Sum = (...ids) => { const vs = ids.map(csai2).filter(v=>v!==null); return vs.length ? vs.reduce((a,b)=>a+b,0) : null; };
+  const csai2CogPts = csai2Sum('02','05','08','11','14');
+  const csai2SomPts = csai2Sum('01','04','06','09','12','15','17','18');
+  const csai2AutoPts = csai2Sum('03','07','10','13','16');
+  const csai2CogPct = csai2CogPts!==null ? (csai2CogPts/20)*100 : null;
+  const csai2SomPct = csai2SomPts!==null ? (csai2SomPts/32)*100 : null;
+  const csai2AutoPct = csai2AutoPts!==null ? (csai2AutoPts/20)*100 : null;
+  out('csai2-cog-pts', csai2CogPts, 0); out('csai2-cog-pct', csai2CogPct, 1, ' %');
+  out('csai2-som-pts', csai2SomPts, 0); out('csai2-som-pct', csai2SomPct, 1, ' %');
+  out('csai2-auto-pts', csai2AutoPts, 0); out('csai2-auto-pct', csai2AutoPct, 1, ' %');
+  anxietyColor($('csai2-cog-pts'), csai2CogPct); anxietyColor($('csai2-cog-pct'), csai2CogPct);
+  anxietyColor($('csai2-som-pts'), csai2SomPct); anxietyColor($('csai2-som-pct'), csai2SomPct);
+  confidenceColor($('csai2-auto-pts'), csai2AutoPct); confidenceColor($('csai2-auto-pct'), csai2AutoPct);
+
   syncOTChartHeight();
 }
 
@@ -1532,6 +1799,7 @@ document.addEventListener('input', e=>{
     const master = $('ot-final');
     if(master){ master.value = e.target.value; master.dataset.auto='false'; }
   }
+  if(e.target.id && e.target.id.startsWith('guion-d')){ e.target.dataset.auto='false'; }
   recalcAll(); saveState();
 });
 document.addEventListener('change', ()=>{ recalcAll(); saveState(); });
@@ -1618,6 +1886,7 @@ $('btnReset').addEventListener('click', ()=>{
   document.querySelectorAll('input').forEach(el=> el.value='');
   document.querySelectorAll('select').forEach(el=> el.selectedIndex=0);
   $('ot-final').dataset.auto = 'true';
+  document.querySelectorAll('[id^="guion-d"]').forEach(el=> el.dataset.auto = 'true');
   recalcAll();
 });
 
