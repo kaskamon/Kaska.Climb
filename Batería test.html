@@ -940,6 +940,24 @@
    HELPERS
    ============================================================ */
 const $ = id => document.getElementById(id);
+
+function notifyExport(filename, detail){
+  if(!('Notification' in window)) return;
+  const show = () => {
+    try{
+      new Notification('Kaska.Climb · Exportado', {
+        body: detail ? `${filename}\n${detail}` : filename,
+        icon: '/logo-192.png',
+        tag: 'kaska-export'
+      });
+    }catch(e){ /* si falla, no interrumpimos el flujo por esto */ }
+  };
+  if(Notification.permission === 'granted'){
+    show();
+  }else if(Notification.permission !== 'denied'){
+    Notification.requestPermission().then(p=>{ if(p==='granted') show(); });
+  }
+}
 const num = id => { const el = $(id); if(!el) return null; const v = parseFloat(el.value); return isNaN(v) ? null : v; };
 const setv = id => v => { const el = $(id); if(!el) return; el.value = v; };
 const fmt = (x, d=2) => (x===null || x===undefined || isNaN(x) || !isFinite(x)) ? '–' : Number(x).toFixed(d);
@@ -1410,9 +1428,10 @@ async function exportarPerfilPNG(kind){
     const canvas = await html2canvas($('pf-export-inner'), { backgroundColor: '#494d4b', scale: 2, useCORS: true, allowTaint: true });
     const nombre = ($('g-nombre') && $('g-nombre').value ? $('g-nombre').value : 'perfil').replace(/[^a-z0-9]+/gi,'_');
     const link = document.createElement('a');
-    link.download = `kaska_perfil_${kind}_${nombre}.png`;
+    link.download = `perfil_${kind}_${nombre}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
+    notifyExport(link.download, 'Imagen guardada');
   }catch(e){
     console.error(e);
     alert('Error al generar la imagen: ' + e.message);
@@ -1841,7 +1860,7 @@ function loadState(){
 $('btnExport').addEventListener('click', async ()=>{
   const data = {}; ALL_IDS().forEach(id=>{ data[id] = $(id).value; });
   const nombre = ($('g-nombre').value || 'test').replace(/[^a-z0-9]+/gi,'_');
-  const filename = `kaska_${nombre}_${($('g-fecha').value||'sin_fecha')}.json`;
+  const filename = `${nombre}_${($('g-fecha').value||'sin_fecha')}.json`;
   const jsonText = JSON.stringify(data,null,2);
 
   // En móvil (Android/iOS), usar el panel nativo de compartir: permite guardar
@@ -1856,23 +1875,29 @@ $('btnExport').addEventListener('click', async ()=>{
       const file = new File([jsonText], filename, {type: mime});
       if(navigator.canShare && navigator.canShare({files:[file]})){
         await navigator.share({files:[file], title: filename});
-        return true;
+        return 'shared';
       }
     }catch(err){
-      if(err && err.name === 'AbortError') return true; // el usuario canceló el panel, no descargar también
+      if(err && err.name === 'AbortError') return 'cancelled'; // el usuario canceló el panel, no descargar también
       // si falla por otro motivo, probamos el siguiente tipo / la descarga normal
     }
     return false;
   };
 
-  if(await tryShare('application/json')) return;
-  if(await tryShare('text/plain')) return;
+  const r1 = await tryShare('application/json');
+  if(r1==='shared'){ notifyExport(filename, 'Compartido correctamente'); return; }
+  if(r1==='cancelled') return;
+
+  const r2 = await tryShare('text/plain');
+  if(r2==='shared'){ notifyExport(filename, 'Compartido correctamente'); return; }
+  if(r2==='cancelled') return;
 
   const blob = new Blob([jsonText], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
   a.click();
+  notifyExport(filename, 'Guardado en Descargas');
 });
 $('btnImport').addEventListener('click', ()=> $('fileImport').click());
 $('fileImport').addEventListener('change', e=>{
