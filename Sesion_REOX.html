@@ -549,29 +549,26 @@ async function enviarSesion(){
 
   const val = id => { const el = document.getElementById(id); return el && el.value !== '' ? el.value : undefined; };
 
-  // El Sheet guarda el % de pérdida/ganancia, no el valor bruto en N (más fácil de leer de un vistazo).
+  // Se envía el valor bruto en N. Tu Sheet ya tiene su propia fórmula que calcula
+  // el % comparándolo con el historial real del cliente — no lo calculamos aquí,
+  // para no duplicar el cálculo con una referencia que en la app aún es de prueba.
   const pfInicialN = parseFloat(val('pf-inicial'));
-  const pctInicial = !isNaN(pfInicialN) ? Number((((REF_PF - pfInicialN) / REF_PF) * 100).toFixed(1)) : undefined;
 
   const payload = {
     nombre: 'Mikel García',
     fecha: FECHA_PAYLOAD,
     mesociclo: 'REOX',
-    pfInicial: pctInicial,
+    pfInicial: !isNaN(pfInicialN) ? pfInicialN : undefined,
   };
   if(!sesionBloqueada){
     const pfFinalN = parseFloat(val('pf-final'));
-    // % respecto al PFinicial de HOY (mismo criterio que el umbral de parada del 15%)
-    const pctFinal = (!isNaN(pfInicialN) && !isNaN(pfFinalN) && pfInicialN)
-      ? Number((((pfInicialN - pfFinalN) / pfInicialN) * 100).toFixed(1))
-      : undefined;
 
     payload.fmaxDer = val('fmax-der');
     payload.fmaxIzq = val('fmax-izq');
     payload.campo1 = val('susp-int');
     payload.campo2 = val('campus-hmh');
     payload.campo3 = val('travesias');
-    payload.pfFinal = pctFinal;
+    payload.pfFinal = !isNaN(pfFinalN) ? pfFinalN : undefined;
   }
 
   const rows = sesionBloqueada ? [
