@@ -932,7 +932,7 @@
 
 </div>
 
-<input type="file" id="fileImport" accept="application/json" style="display:none;">
+<input type="file" id="fileImport" accept=".json,*/*" style="display:none;">
 <div id="export-stage" style="position:fixed; top:-100000px; left:-100000px; z-index:-1;"></div>
 
 <script>
@@ -1842,22 +1842,33 @@ $('btnExport').addEventListener('click', async ()=>{
   const data = {}; ALL_IDS().forEach(id=>{ data[id] = $(id).value; });
   const nombre = ($('g-nombre').value || 'test').replace(/[^a-z0-9]+/gi,'_');
   const filename = `kaska_${nombre}_${($('g-fecha').value||'sin_fecha')}.json`;
-  const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+  const jsonText = JSON.stringify(data,null,2);
 
   // En móvil (Android/iOS), usar el panel nativo de compartir: permite guardar
-  // en Drive/Dropbox/Archivos eligiendo carpeta y nombre. En escritorio, donde
+  // en Drive/Dropbox/Archivos eligiendo carpeta y nombre. Muchos navegadores
+  // Android solo permiten compartir ciertos tipos de archivo "seguros" y
+  // rechazan application/json en silencio, así que probamos también con
+  // text/plain (el contenido sigue siendo el mismo JSON válido, solo cambia
+  // la etiqueta de tipo para que el sistema lo acepte). En escritorio, donde
   // esta API normalmente no aplica a archivos, cae automáticamente a la descarga normal.
-  try{
-    const file = new File([blob], filename, {type:'application/json'});
-    if(navigator.canShare && navigator.canShare({files:[file]})){
-      await navigator.share({files:[file], title: filename});
-      return;
+  const tryShare = async (mime) => {
+    try{
+      const file = new File([jsonText], filename, {type: mime});
+      if(navigator.canShare && navigator.canShare({files:[file]})){
+        await navigator.share({files:[file], title: filename});
+        return true;
+      }
+    }catch(err){
+      if(err && err.name === 'AbortError') return true; // el usuario canceló el panel, no descargar también
+      // si falla por otro motivo, probamos el siguiente tipo / la descarga normal
     }
-  }catch(err){
-    if(err && err.name === 'AbortError') return; // el usuario canceló el panel, no descargar también
-    // si falla por otro motivo, seguimos con la descarga normal de abajo
-  }
+    return false;
+  };
 
+  if(await tryShare('application/json')) return;
+  if(await tryShare('text/plain')) return;
+
+  const blob = new Blob([jsonText], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = filename;
