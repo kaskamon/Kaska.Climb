@@ -214,7 +214,7 @@
     <div class="eyebrow">Mikel García · Mesociclo Reox · Semana 3</div>
     <h2 class="session-title">REOX <span>(ROCO)</span></h2>
     <div class="meta">
-      <span><b>Fecha:</b> Miércoles, 16 sept.</span>
+      <span><b>Fecha:</b> <span id="fechaDisplay">—</span></span>
     </div>
   </div>
 
@@ -415,6 +415,11 @@
 </div>
 
 <script>
+const HOY = new Date();
+const FECHA_DISPLAY = HOY.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'short' });
+const FECHA_PAYLOAD = HOY.toLocaleDateString('es-ES'); // dd/mm/aaaa, formato del Sheet
+document.getElementById('fechaDisplay').textContent = FECHA_DISPLAY.charAt(0).toUpperCase() + FECHA_DISPLAY.slice(1);
+
 document.querySelectorAll('.ex-check').forEach(cb=>{
   cb.addEventListener('change', ()=>{
     cb.closest('.ex-box').classList.toggle('ex-done', cb.checked);
@@ -482,6 +487,8 @@ document.getElementById('refPfValor').textContent = REF_PF + ' N';
 document.getElementById('refFechaTxt').textContent = `(última sesión entrenada — ${REF_FECHA})`;
 
 let sesionBloqueada = false;
+let pctPFinicial = null;
+let valorPFinicialHoy = null;
 
 const pfInicialInput = document.getElementById('pf-inicial');
 const recoveryBox = document.getElementById('recoveryStatus');
@@ -542,32 +549,42 @@ async function enviarSesion(){
 
   const val = id => { const el = document.getElementById(id); return el && el.value !== '' ? el.value : undefined; };
 
+  // El Sheet guarda el % de pérdida/ganancia, no el valor bruto en N (más fácil de leer de un vistazo).
+  const pfInicialN = parseFloat(val('pf-inicial'));
+  const pctInicial = !isNaN(pfInicialN) ? (((REF_PF - pfInicialN) / REF_PF) * 100).toFixed(1) : undefined;
+
   const payload = {
     nombre: 'Mikel García',
-    fecha: '16/09/2026',
+    fecha: FECHA_PAYLOAD,
     mesociclo: 'REOX',
-    pfInicial: val('pf-inicial'),
+    pfInicial: pctInicial,
   };
   if(!sesionBloqueada){
+    const pfFinalN = parseFloat(val('pf-final'));
+    // % respecto al PFinicial de HOY (mismo criterio que el umbral de parada del 15%)
+    const pctFinal = (!isNaN(pfInicialN) && !isNaN(pfFinalN) && pfInicialN)
+      ? (((pfInicialN - pfFinalN) / pfInicialN) * 100).toFixed(1)
+      : undefined;
+
     payload.fmaxDer = val('fmax-der');
     payload.fmaxIzq = val('fmax-izq');
     payload.campo1 = val('susp-int');
     payload.campo2 = val('campus-hmh');
     payload.campo3 = val('travesias');
-    payload.pfFinal = val('pf-final');
+    payload.pfFinal = pctFinal;
   }
 
   const rows = sesionBloqueada ? [
-    ['Test PFinicial (N)', payload.pfInicial ?? '—'],
+    ['Test PFinicial (N)', val('pf-inicial') ?? '—'],
     ['Sesión', 'No entrenada — no recuperado'],
   ] : [
-    ['Test PFinicial (N)', payload.pfInicial ?? '—'],
-    ['Fmax 5" mano izq. (N)', payload.fmaxIzq ?? '—'],
-    ['Fmax 5" mano der. (N)', payload.fmaxDer ?? '—'],
-    ['SuspInt OT (series)', payload.campo1 ?? '—'],
-    ['Campus-HMH (series)', payload.campo2 ?? '—'],
-    ['Traves con sueltas (pegues)', payload.campo3 ?? '—'],
-    ['Test PFfinal (N)', payload.pfFinal ?? '—'],
+    ['Test PFinicial (N)', val('pf-inicial') ?? '—'],
+    ['Fmax 5" mano izq. (N)', val('fmax-izq') ?? '—'],
+    ['Fmax 5" mano der. (N)', val('fmax-der') ?? '—'],
+    ['SuspInt OT (series)', val('susp-int') ?? '—'],
+    ['Campus-HMH (series)', val('campus-hmh') ?? '—'],
+    ['Traves con sueltas (pegues)', val('travesias') ?? '—'],
+    ['Test PFfinal (N)', val('pf-final') ?? '—'],
   ];
   document.getElementById('modalTable').innerHTML = rows.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
 
