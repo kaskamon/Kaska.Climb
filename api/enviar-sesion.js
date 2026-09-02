@@ -61,13 +61,13 @@ module.exports = async (req, res) => {
     fila[2] = fecha;         // C - Fecha
     fila[3] = mesociclo;     // D - Mesociclo
 
-    fila[columnas.pfInicial] = pfInicial ?? '';
+    fila[columnas.pfInicial] = pfInicial !== undefined && pfInicial !== '' ? Number(pfInicial) : '';
     if (fmaxDer !== undefined) fila[columnas.fmaxDer] = fmaxDer;
     if (fmaxIzq !== undefined) fila[columnas.fmaxIzq] = fmaxIzq;
     if (campo1 !== undefined) fila[columnas.campo1] = campo1;
     if (campo2 !== undefined) fila[columnas.campo2] = campo2;
     if (campo3 !== undefined) fila[columnas.campo3] = campo3;
-    if (pfFinal !== undefined) fila[columnas.pfFinal] = pfFinal;
+    if (pfFinal !== undefined && pfFinal !== '') fila[columnas.pfFinal] = Number(pfFinal);
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
