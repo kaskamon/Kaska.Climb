@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Test conexión Sheet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e; --stone-800:#262d28; --chalk:#f2ede1; --chalk-dim:#c9c3b4;
+    --moss:#7c9070; --moss-light:#a7bd98; --danger:#c9705b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; background:var(--stone-900); color:var(--chalk);
+    font-family:'Work Sans', sans-serif; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  h1{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; font-size:22px; margin:0 0 8px; }
+  .card{
+    background:rgba(38,45,40,0.6); border:1px solid rgba(242,237,225,0.12);
+    border-radius:20px; padding:36px 30px; max-width:420px; width:100%; text-align:center;
+  }
+  .sub{ font-size:13px; color:var(--chalk-dim); margin-bottom:26px; line-height:1.5; }
+  button{
+    background:var(--moss); color:var(--stone-900); border:none; padding:14px 22px;
+    border-radius:12px; font-family:'Work Sans',sans-serif; font-weight:800; font-size:14px;
+    text-transform:uppercase; letter-spacing:0.5px; cursor:pointer; width:100%;
+  }
+  button:disabled{ opacity:0.6; cursor:default; }
+  .result{ margin-top:20px; font-size:13px; padding:14px; border-radius:12px; display:none; text-align:left; line-height:1.5; }
+  .result.show{ display:block; }
+  .result.ok{ background:rgba(124,144,112,0.16); border:1px solid rgba(124,144,112,0.4); color:var(--chalk); }
+  .result.err{ background:rgba(201,112,91,0.16); border:1px solid rgba(201,112,91,0.45); color:var(--chalk); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Test de conexión</h1>
+    <div class="sub">Escribe una fila de prueba en la pestaña "Test conexión" de tu Sheet, usando la cuenta de servicio real.</div>
+    <button id="btnTest">Probar conexión</button>
+    <div class="result" id="result"></div>
+  </div>
+
+  <script>
+    const btn = document.getElementById('btnTest');
+    const result = document.getElementById('result');
+
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      btn.textContent = 'Probando...';
+      result.className = 'result';
+
+      try {
+        const res = await fetch('/api/test-sheet');
+        const data = await res.json();
+
+        if (data.success) {
+          result.classList.add('show', 'ok');
+          result.innerHTML = '<strong>✓ Conexión correcta.</strong><br>' + data.message + '<br><br>Revisa tu Sheet, pestaña "Test conexión" — debería haber una fila nueva.';
+        } else {
+          result.classList.add('show', 'err');
+          result.innerHTML = '<strong>✗ Error.</strong><br>' + data.error;
+        }
+      } catch (e) {
+        result.classList.add('show', 'err');
+        result.innerHTML = '<strong>✗ Error de red.</strong><br>' + e.message;
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Probar conexión';
+    });
+  </script>
+</body>
+</html>
