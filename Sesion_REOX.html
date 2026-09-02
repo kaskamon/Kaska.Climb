@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Sesión — REOX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e;
+    --stone-800:#262d28;
+    --stone-700:#333b34;
+    --stone-650:#3c453d;
+    --chalk:#f2ede1;
+    --chalk-dim:#c9c3b4;
+    --chalk-faint:#8d9187;
+    --moss:#7c9070;
+    --moss-light:#a7bd98;
+    --moss-deep:#4d5c46;
+    --amber:#c99a5b;
+    --danger:#c9705b;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; min-height:100vh; background:#494d4b; color:var(--chalk);
+    font-family:'Work Sans', sans-serif;
+  }
+  h1,h2,h3{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.5px; margin:0; }
+
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:rgba(28,33,30,0.92); backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(242,237,225,0.1);
+  }
+  .topbar-inner{ max-width:760px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px; font-weight:700; color:var(--moss-light); text-transform:uppercase; }
+  .eyebrow::before{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .brand h1{ font-size:20px; margin-top:2px; }
+  .brand h1 span{ color:var(--moss); }
+  .back-btn{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.16); color:var(--chalk);
+    padding:9px 14px; border-radius:10px; font-size:12px; font-weight:700; letter-spacing:0.5px;
+    text-transform:uppercase; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    text-decoration:none; transition:all .2s ease;
+  }
+  .back-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+
+  .wrap{ max-width:760px; margin:0 auto; padding:24px 24px 90px; }
+
+  .session-head{ margin-bottom:24px; }
+  .session-head .meta{ display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:10px; font-size:13px; color:var(--chalk-faint); }
+  .session-head .meta b{ color:var(--chalk-dim); font-weight:700; }
+  .session-title{ font-size:30px; }
+  .session-title span{ color:var(--moss); }
+
+  .progress-track{ display:flex; gap:4px; padding:0 24px 12px; max-width:760px; margin:0 auto; }
+  .progress-track .seg{ flex:1; height:4px; border-radius:999px; background:rgba(242,237,225,0.14); overflow:hidden; transition:background .25s ease; }
+  .progress-track .seg.done{ background:var(--moss); }
+  .progress-track .seg.current{ background:linear-gradient(90deg, var(--moss) 50%, rgba(242,237,225,0.14) 50%); }
+
+  .block{
+    background:rgba(38,45,40,0.55); border:1px solid rgba(242,237,225,0.12);
+    border-radius:20px; padding:24px; margin-bottom:20px; backdrop-filter:blur(8px);
+  }
+  .block-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:18px; }
+  .block-head h2{ font-size:20px; color:var(--moss-light); }
+
+  .step{ padding:16px 0; border-top:1px dashed rgba(242,237,225,0.1); }
+  .step:first-child{ border-top:none; padding-top:0; }
+  .step-title{ font-size:15px; font-weight:700; color:var(--chalk); margin-bottom:6px; }
+  .step-note{ font-size:13px; color:var(--chalk-dim); line-height:1.55; }
+  .ex-box{
+    position:relative;
+    background:rgba(38,45,40,0.5); border:1px solid rgba(242,237,225,0.1);
+    border-radius:12px; padding:12px 46px 12px 16px; margin:6px 0 10px;
+    display:grid; grid-template-columns:max-content max-content 1fr;
+    row-gap:6px; column-gap:9px; align-items:baseline;
+    transition:opacity .2s ease;
+  }
+  .ex-box.ex-done{ opacity:0.45; }
+  .ex-check{
+    position:absolute; top:50%; right:14px; transform:translateY(-50%);
+    width:21px; height:21px; accent-color:var(--moss); cursor:pointer; flex:0 0 auto;
+  }
+  .ex-row{ display:contents; }
+  .ex-row .ex-name{ font-weight:700; color:var(--moss-light); font-size:13.5px; }
+  .ex-row .ex-arrow{ color:var(--chalk-faint); font-size:12px; }
+  .ex-row .ex-series{ font-weight:700; color:var(--chalk); font-size:13.5px; font-variant-numeric:tabular-nums; }
+  .ex-row .ex-series.full{ grid-column:1/-1; color:var(--moss-light); }
+  .ex-box .ex-subnote{ grid-column:1/-1; font-size:12px; color:var(--chalk-faint); font-style:italic; margin:-3px 0 9px 2px; }
+  @media (max-width:640px){
+    .ex-box{ grid-template-columns:1fr; row-gap:2px; }
+    .ex-row{ display:block; margin-bottom:8px; }
+    .ex-row:last-child{ margin-bottom:0; }
+    .ex-row .ex-arrow{ display:none; }
+    .ex-row .ex-name{ display:block; }
+    .ex-row .ex-series{ display:block; }
+    .ex-row .ex-series.full{ grid-column:auto; }
+  }
+
+  .ref-row{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.08);
+    border-radius:12px; padding:12px 16px; margin-top:12px;
+  }
+  .ref-row .k{ font-size:12.5px; color:var(--chalk-dim); }
+  .ref-row .k .unit{ color:var(--chalk-faint); font-weight:400; }
+  .ref-row .v{ font-size:16px; font-weight:700; color:var(--moss-light); font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  .field{ display:flex; flex-direction:column; gap:6px; margin-top:14px; }
+  .field label{ font-size:12.5px; color:var(--chalk-dim); font-weight:700; }
+  .field label .unit{ color:var(--chalk-faint); font-weight:400; }
+  input[type=number]{
+    background:var(--stone-700); border:1px solid rgba(242,237,225,0.18);
+    color:var(--chalk); border-radius:10px; padding:12px 14px; font-size:16px;
+    font-family:'Work Sans',sans-serif; width:100%; font-weight:700;
+  }
+  input[type=number]::placeholder{ color:var(--chalk-faint); font-weight:400; }
+  input[type=number]:focus{ outline:2px solid var(--moss); outline-offset:1px; border-color:var(--moss); }
+  input[type=number].field-error{ border-color:var(--danger); background:rgba(201,112,91,0.12); }
+  .field-error-msg{ font-size:12px; color:var(--danger); font-weight:600; display:none; margin-top:-2px; }
+  .field.has-error .field-error-msg{ display:block; }
+  .top-error-banner{
+    display:none; background:rgba(201,112,91,0.16); border:1px solid rgba(201,112,91,0.4);
+    color:var(--chalk); border-radius:12px; padding:12px 16px; margin-bottom:16px; font-size:13px; font-weight:600;
+  }
+  .top-error-banner.show{ display:block; }
+
+  .recovery-status{
+    display:none; align-items:center; gap:12px; margin-top:12px;
+    padding:14px 16px; border-radius:12px; font-size:13.5px; line-height:1.5;
+  }
+  .recovery-status.show{ display:flex; }
+  .recovery-status .dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
+  .recovery-status.ok{ background:rgba(124,144,112,0.16); border:1px solid rgba(124,144,112,0.4); color:var(--chalk); }
+  .recovery-status.ok .dot{ background:var(--moss-light); }
+  .recovery-status.warn{ background:rgba(201,112,91,0.16); border:1px solid rgba(201,112,91,0.45); color:var(--chalk); }
+  .recovery-status.warn .dot{ background:var(--danger); }
+  .recovery-status b{ font-weight:800; }
+
+  .block.blocked{ opacity:0.35; pointer-events:none; position:relative; filter:grayscale(0.4); transition:opacity .25s ease, filter .25s ease; }
+  .block.blocked::after{
+    content:"No aplica hoy"; position:absolute; top:24px; right:24px;
+    font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase; font-weight:800;
+    color:var(--danger); background:rgba(201,112,91,0.15); border:1px solid rgba(201,112,91,0.4);
+    padding:4px 10px; border-radius:999px;
+  }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:560px){ .grid2{ grid-template-columns:1fr; } }
+
+  .send-bar{ margin-top:28px; padding:0; }
+  .send-btn{
+    width:100%; background:var(--moss); color:var(--stone-900); border:none;
+    padding:16px; border-radius:14px; font-family:'Work Sans',sans-serif; font-weight:800;
+    font-size:14px; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35); transition:transform .15s ease, background .2s ease;
+  }
+  .send-btn:hover{ background:var(--moss-light); transform:translateY(-1px); }
+  .send-btn:active{ transform:translateY(0); }
+  .send-btn-quick{ display:none; margin-top:14px; }
+  .send-btn-quick.show{ display:block; }
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(3px);
+    display:none; align-items:center; justify-content:center; z-index:100; padding:20px;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .modal{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.14);
+    border-radius:20px; padding:26px; max-width:420px; width:100%;
+  }
+  .modal h3{ font-size:18px; color:var(--moss-light); margin-bottom:6px; }
+  .modal p{ font-size:13px; color:var(--chalk-dim); line-height:1.5; margin:0 0 16px; }
+  .modal-table{ width:100%; border-collapse:collapse; font-size:13px; margin-bottom:18px; }
+  .modal-table td{ padding:6px 0; border-top:1px solid rgba(242,237,225,0.08); }
+  .modal-table td:first-child{ color:var(--chalk-faint); }
+  .modal-table td:last-child{ text-align:right; font-weight:700; color:var(--chalk); font-variant-numeric:tabular-nums; }
+  .modal-close{
+    width:100%; background:transparent; border:1px solid rgba(242,237,225,0.2); color:var(--chalk);
+    padding:12px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .modal-close:hover{ border-color:var(--moss); color:var(--moss-light); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="eyebrow">Kaska.Climb</div>
+    </div>
+    <a class="back-btn" href="#">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Semana
+    </a>
+  </div>
+  <div class="progress-track" id="progressTrack">
+    <div class="seg" data-block="blockCalentamiento"></div>
+    <div class="seg" data-block="blockAnalitico"></div>
+    <div class="seg" data-block="blockIntegrado"></div>
+    <div class="seg" data-block="blockCierre"></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="top-error-banner" id="topError">Faltan campos por rellenar. Si no has hecho ese ejercicio hoy, pon 0.</div>
+
+  <div class="session-head">
+    <div class="eyebrow">Mikel García · Mesociclo Reox · Semana 3</div>
+    <h2 class="session-title">REOX <span>(ROCO)</span></h2>
+    <div class="meta">
+      <span><b>Fecha:</b> Miércoles, 16 sept.</span>
+    </div>
+  </div>
+
+  <!-- ===================== CALENTAMIENTO ===================== -->
+  <div class="block" id="blockCalentamiento">
+    <div class="block-head">
+      <h2>Calentamiento</h2>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Movilizaciones articulares</div>
+      <div class="step-note" style="font-style:italic; margin-bottom:8px;">Cuello, hombros, codos, muñecas, dedos, cintura, caderas, rodillas y tobillos.</div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-1" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-name">Giros articulares</span><span class="ex-arrow">→</span><span class="ex-series">1x15" por zona</span></div>
+      </div>
+      <div class="step-note">Movimientos suaves y controlados.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Incremento del ROM</div>
+      <div class="step-note" style="font-style:italic; margin-bottom:8px;">Gemelos, isquios, glúteos y espalda.</div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-2" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-name">Masaje con Foam Roller</span><span class="ex-arrow">→</span><span class="ex-series">1x30" por zona</span></div>
+      </div>
+      <div class="step-note">Pasadas de 2", sin llegar a sentir dolor.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Activación muscular general</div>
+      <div class="step-note" style="font-style:italic; margin-bottom:8px;">Hombros, escápulas y flexores codos.</div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-3" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-name">Circuito con gomas</span><span class="ex-arrow">→</span><span class="ex-series">1x10(15) y 1x10(12)</span></div>
+      </div>
+      <div class="step-note">Dos vueltas al circuito, subiendo la intensidad en la segunda vuelta.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Activación muscular analítica (dedos)</div>
+      <div class="step-note" style="font-style:italic; margin-bottom:10px;">Calentar y activar los dedos y la musculatura del antebrazo. Usa estas referencias de tu última sesión para calcular los %:</div>
+      <div class="ref-row">
+        <span class="k">Fmax 5" mano izq. <span class="unit">(última sesión)</span></span>
+        <span class="v">467 N</span>
+      </div>
+      <div class="ref-row" style="margin-top:8px;">
+        <span class="k">Fmax 5" mano der. <span class="unit">(última sesión)</span></span>
+        <span class="v">471 N</span>
+      </div>
+
+      <div class="ex-box" style="margin-top:14px;"><input type="checkbox" class="ex-check" id="exchk-4" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-name">SuspInt al 40%</span><span class="ex-arrow">→</span><span class="ex-series">1 x 40% x 6(7":3")</span></div>
+        <div class="ex-row"><span class="ex-name">SuspInt al 55%</span><span class="ex-arrow">→</span><span class="ex-series">1 x 55% x 5(7":5")</span></div>
+        <div class="ex-row"><span class="ex-name">SuspInt al 70%</span><span class="ex-arrow">→</span><span class="ex-series">1 x 70% x 4(5":5")</span></div>
+        <div class="ex-subnote">1' de descanso antes del PAP.</div>
+        <div class="ex-row"><span class="ex-name">PAP (Potenciación Post Activación)</span><span class="ex-arrow">→</span><span class="ex-series">3 x 90-95% x 3"</span></div>
+        <div class="ex-subnote">Cambio de manos entre cada tirón (configurar 5" en Tindeq).</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Test PFinicial <span style="font-weight:400; color:var(--chalk-faint); text-transform:none; letter-spacing:0;">(mano no dominante)</span></div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-5" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-series full">1 tirón máximo en regleta de test</span></div>
+      </div>
+      <div class="ref-row">
+        <span class="k">Tu PFinicial <span class="unit" id="refFechaTxt">(última sesión entrenada)</span></span>
+        <span class="v" id="refPfValor">— N</span>
+      </div>
+      <div class="field">
+        <label>Resultado Test PFinicial <span class="unit">(N)</span></label>
+        <input type="number" step="0.1" id="pf-inicial" placeholder="Introduce el valor conseguido">
+      <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+      </div>
+      <div class="recovery-status" id="recoveryStatus"></div>
+      <button class="send-btn send-btn-quick" id="btnSendQuick">Enviar sesión</button>
+    </div>
+  </div>
+
+  <!-- ===================== BLOQUE ANALÍTICO ===================== -->
+  <div class="block" id="blockAnalitico">
+    <div class="block-head">
+      <h2>Bloque analítico</h2>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Test Fmax 5"</div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-6" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-series full">1 tirón de 5" por mano en regleta de entrenamiento, a todo lo que des — anota la media</span></div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label>Mano izq. — media <span class="unit">(N)</span></label>
+          <input type="number" step="0.1" id="fmax-izq" placeholder="0">
+        <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+        </div>
+        <div class="field">
+          <label>Mano der. — media <span class="unit">(N)</span></label>
+          <input type="number" step="0.1" id="fmax-der" placeholder="0">
+        <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">SuspInt a umbral de oclusión <span style="font-weight:400; color:var(--chalk-faint); text-transform:none; letter-spacing:0;">(OT)</span></div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-7" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-series full">Hasta 8 series x 20mm x 55% x 5(8":4") x 1' recup</span></div>
+      </div>
+      <div class="step-note">Acabaremos cuando no respetemos el RIR 16" en cualquier repetición de cualquier serie.</div>
+      <div class="field">
+        <label>Series completadas</label>
+        <input type="number" step="1" id="susp-int" placeholder="0">
+      <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Hangboard Moving Hands <span style="font-weight:400; color:var(--chalk-faint); text-transform:none; letter-spacing:0;">(Campus Board)</span></div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-8" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-series full">Hasta 3 series x 5"/mano x 2' x 2' recup</span></div>
+      </div>
+      <div class="step-note">Elegiremos un listón en el que estemos ocluyendo (también podemos regular la intensidad con los listones de los pies). Acabaremos cuando no seamos capaces de aguantar los tiempos establecidos.</div>
+      <div class="field">
+        <label>Series completadas</label>
+        <input type="number" step="1" id="campus-hmh" placeholder="0">
+      <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== BLOQUE INTEGRADO ===================== -->
+  <div class="block" id="blockIntegrado">
+    <div class="block-head">
+      <h2>Bloque integrado</h2>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Traves con sueltas</div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-9" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-series full">25 movs &gt;OT RIR 2</span></div>
+      </div>
+      <div class="step-note">Haremos la primera serie, y cuando queden 30" para la siguiente, haremos el test PFfinal. Cuando bajemos del valor establecido que te indico abajo, acabaremos la sesión.</div>
+      <div class="field">
+        <label>Nº de pegues totales</label>
+        <input type="number" step="1" id="travesias" placeholder="0">
+      <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Test PFfinal <span style="font-weight:400; color:var(--chalk-faint); text-transform:none; letter-spacing:0;">(mano no dominante)</span></div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-10" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-series full">1 tirón máximo en regleta de test</span></div>
+      </div>
+      <div class="ref-row">
+        <span class="k">Para cuando bajes de <span class="unit">(<span id="umbralIntegradoTxt">15</span>% de hoy)</span></span>
+        <span class="v" id="refPfFinalUmbral">— N</span>
+      </div>
+      <div class="field">
+        <label>Último Test PFfinal realizado <span class="unit">(N)</span></label>
+        <input type="number" step="0.1" id="pf-final" placeholder="Introduce el valor conseguido">
+      <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== CIERRE SESIÓN ===================== -->
+  <div class="block" id="blockCierre">
+    <div class="block-head">
+      <h2>Cierre sesión</h2>
+    </div>
+    <div class="step">
+      <div class="step-title">Fmax antagonistas</div>
+      <div class="step-note" style="font-style:italic; margin-bottom:10px;">Circuito de Fmax de la musculatura antagonista — los 3 ejercicios seguidos, 3 vueltas.</div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-11" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-name">Enrollar cuerda</span><span class="ex-arrow">→</span><span class="ex-series">4(5) reps</span></div>
+        <div class="ex-subnote">Poco peso.</div>
+        <div class="ex-row"><span class="ex-name">FacePull</span><span class="ex-arrow">→</span><span class="ex-series">10(12) reps</span></div>
+        <div class="ex-subnote">Goma.</div>
+        <div class="ex-row"><span class="ex-name">Plancha</span><span class="ex-arrow">→</span><span class="ex-series">10" máxima elongación</span></div>
+        <div class="ex-subnote">Énfasis en "intentar medir más".</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="send-bar">
+    <button class="send-btn" id="btnSend">Enviar sesión</button>
+  </div>
+
+</div>
+
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Enviando...</h3>
+    <p id="modalDesc">Guardando tu sesión en el Sheet.</p>
+    <table class="modal-table" id="modalTable"></table>
+    <button class="modal-close" id="modalClose">Cerrar</button>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.ex-check').forEach(cb=>{
+  cb.addEventListener('change', ()=>{
+    cb.closest('.ex-box').classList.toggle('ex-done', cb.checked);
+  });
+});
+
+/* ---------- Barra de progreso (fija arriba, según el scroll) ---------- */
+(function(){
+  const segs = Array.from(document.querySelectorAll('#progressTrack .seg'));
+  const blocks = segs.map(s => document.getElementById(s.dataset.block)).filter(Boolean);
+  const topbar = document.querySelector('.topbar');
+
+  function updateProgress(){
+    const threshold = topbar.offsetHeight + 40; // justo debajo de la barra fija
+    let activeIndex = 0;
+    blocks.forEach((block, i) => {
+      if(block.getBoundingClientRect().top - threshold <= 0) activeIndex = i;
+    });
+    // si ya se ha pasado el último bloque del todo, márcalo como completado también
+    const lastBlock = blocks[blocks.length - 1];
+    const pastEverything = lastBlock && (lastBlock.getBoundingClientRect().bottom < threshold);
+
+    segs.forEach((seg, i) => {
+      seg.classList.remove('done', 'current');
+      if(pastEverything || i < activeIndex) seg.classList.add('done');
+      else if(i === activeIndex) seg.classList.add('current');
+    });
+  }
+
+  window.addEventListener('scroll', updateProgress, { passive:true });
+  window.addEventListener('resize', updateProgress);
+  updateProgress();
+})();
+
+document.querySelectorAll('input[type=number]').forEach(inp=>{
+  inp.addEventListener('input', ()=>{
+    if(inp.value.trim() !== ''){
+      inp.classList.remove('field-error');
+      inp.closest('.field').classList.remove('has-error');
+    }
+  });
+});
+
+/* ---------- Parámetros del mesociclo (cambian según el ciclo) ---------- */
+const MESOCICLO = {
+  nombre: 'REOX',
+  umbralControl: 7,    // % de pérdida máxima permitida en el Test PFinicial vs. la última sesión ENTRENADA
+  umbralIntegrado: 15  // % de pérdida en el Test PFfinal, sobre el PFinicial de HOY, para acabar el bloque integrado
+};
+
+/* Historial simulado — en la versión conectada vendría del Sheet real del cliente.
+   Incluye un día NO entrenado a propósito, para demostrar que la referencia
+   salta al último día que sí se entrenó, tal y como marca el diagrama. */
+const SESSION_HISTORY = [
+  { fecha: '9 sept.',  entrenada: true,  pfInicial: 445 },
+  { fecha: '11 sept.', entrenada: true,  pfInicial: 453 },
+  { fecha: '13 sept.', entrenada: false, pfInicial: 411 }, // no recuperado ese día — no cuenta como referencia
+];
+const ultimaValida = [...SESSION_HISTORY].reverse().find(s => s.entrenada);
+const REF_PF = ultimaValida.pfInicial;
+const REF_FECHA = ultimaValida.fecha;
+
+document.getElementById('umbralIntegradoTxt').textContent = MESOCICLO.umbralIntegrado;
+document.getElementById('refPfValor').textContent = REF_PF + ' N';
+document.getElementById('refFechaTxt').textContent = `(última sesión entrenada — ${REF_FECHA})`;
+
+let sesionBloqueada = false;
+
+const pfInicialInput = document.getElementById('pf-inicial');
+const recoveryBox = document.getElementById('recoveryStatus');
+const laterBlocks = ['blockAnalitico','blockIntegrado','blockCierre'].map(id=>document.getElementById(id));
+const refPfFinalUmbral = document.getElementById('refPfFinalUmbral');
+const btnSendQuick = document.getElementById('btnSendQuick');
+
+pfInicialInput.addEventListener('input', ()=>{
+  const v = parseFloat(pfInicialInput.value);
+  if(isNaN(v) || pfInicialInput.value.trim()===''){
+    recoveryBox.classList.remove('show','ok','warn');
+    sesionBloqueada = false;
+    laterBlocks.forEach(b=>b.classList.remove('blocked'));
+    refPfFinalUmbral.textContent = '— N';
+    btnSendQuick.classList.remove('show');
+    return;
+  }
+  // Umbral de parada del bloque integrado: se calcula sobre el PFinicial de HOY, no el de la referencia
+  const umbralParada = v * (1 - MESOCICLO.umbralIntegrado/100);
+  refPfFinalUmbral.textContent = umbralParada.toFixed(0) + ' N';
+
+  const perdida = ((REF_PF - v) / REF_PF) * 100;
+  sesionBloqueada = perdida > MESOCICLO.umbralControl;
+  recoveryBox.classList.remove('ok','warn');
+  recoveryBox.classList.add('show', sesionBloqueada ? 'warn' : 'ok');
+  if(sesionBloqueada){
+    recoveryBox.innerHTML = `<span class="dot"></span><span>Pérdida del <b>${perdida.toFixed(1)}%</b> respecto a tu última sesión entrenada (${REF_FECHA}) — por encima del ${MESOCICLO.umbralControl}%. <b>No estás recuperado, hoy no entrenamos.</b> Envía este resultado y descansa; retómalo en la próxima sesión.</span>`;
+  }else if(perdida <= 0){
+    recoveryBox.innerHTML = `<span class="dot"></span><span>Ganancia del <b>${Math.abs(perdida).toFixed(1)}%</b> respecto a tu última sesión entrenada. <b>Estás recuperado</b>, continúa con la sesión.</span>`;
+  }else{
+    recoveryBox.innerHTML = `<span class="dot"></span><span>Pérdida del <b>${perdida.toFixed(1)}%</b> — dentro del margen. <b>Estás recuperado</b>, continúa con la sesión.</span>`;
+  }
+  laterBlocks.forEach(b=>b.classList.toggle('blocked', sesionBloqueada));
+  btnSendQuick.classList.toggle('show', sesionBloqueada);
+});
+
+async function enviarSesion(){
+  const requiredIds = sesionBloqueada
+    ? ['pf-inicial']
+    : ['pf-inicial','fmax-izq','fmax-der','susp-int','campus-hmh','travesias','pf-final'];
+  let firstInvalid = null;
+  requiredIds.forEach(id=>{
+    const input = document.getElementById(id);
+    const isEmpty = input.value.trim() === '';
+    input.classList.toggle('field-error', isEmpty);
+    input.closest('.field').classList.toggle('has-error', isEmpty);
+    if(isEmpty && !firstInvalid) firstInvalid = input;
+  });
+
+  const topError = document.getElementById('topError');
+  if(firstInvalid){
+    topError.classList.add('show');
+    firstInvalid.scrollIntoView({behavior:'smooth', block:'center'});
+    firstInvalid.focus();
+    return;
+  }
+  topError.classList.remove('show');
+
+  const val = id => { const el = document.getElementById(id); return el && el.value !== '' ? el.value : undefined; };
+
+  const payload = {
+    nombre: 'Mikel García',
+    fecha: '16/09/2026',
+    mesociclo: 'REOX',
+    pfInicial: val('pf-inicial'),
+  };
+  if(!sesionBloqueada){
+    payload.fmaxDer = val('fmax-der');
+    payload.fmaxIzq = val('fmax-izq');
+    payload.campo1 = val('susp-int');
+    payload.campo2 = val('campus-hmh');
+    payload.campo3 = val('travesias');
+    payload.pfFinal = val('pf-final');
+  }
+
+  const rows = sesionBloqueada ? [
+    ['Test PFinicial (N)', payload.pfInicial ?? '—'],
+    ['Sesión', 'No entrenada — no recuperado'],
+  ] : [
+    ['Test PFinicial (N)', payload.pfInicial ?? '—'],
+    ['Fmax 5" mano izq. (N)', payload.fmaxIzq ?? '—'],
+    ['Fmax 5" mano der. (N)', payload.fmaxDer ?? '—'],
+    ['SuspInt OT (series)', payload.campo1 ?? '—'],
+    ['Campus-HMH (series)', payload.campo2 ?? '—'],
+    ['Traves con sueltas (pegues)', payload.campo3 ?? '—'],
+    ['Test PFfinal (N)', payload.pfFinal ?? '—'],
+  ];
+  document.getElementById('modalTable').innerHTML = rows.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+
+  document.getElementById('modalTitle').textContent = 'Enviando...';
+  document.getElementById('modalDesc').textContent = 'Guardando tu sesión en el Sheet.';
+  document.getElementById('modal').classList.add('open');
+
+  try{
+    const res = await fetch('/api/enviar-sesion', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if(data.success){
+      document.getElementById('modalTitle').textContent = '✓ Sesión guardada';
+      document.getElementById('modalDesc').textContent = 'Se ha escrito correctamente en tu Google Sheet.';
+    }else{
+      document.getElementById('modalTitle').textContent = '✗ Error al guardar';
+      document.getElementById('modalDesc').textContent = data.error || 'Ha ocurrido un error inesperado.';
+    }
+  }catch(err){
+    document.getElementById('modalTitle').textContent = '✗ Error de red';
+    document.getElementById('modalDesc').textContent = err.message;
+  }
+}
+document.getElementById('btnSend').addEventListener('click', enviarSesion);
+document.getElementById('btnSendQuick').addEventListener('click', enviarSesion);
+document.getElementById('modalClose').addEventListener('click', ()=>{
+  document.getElementById('modal').classList.remove('open');
+});
+</script>
+</body>
+</html>
