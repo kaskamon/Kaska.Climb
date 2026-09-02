@@ -551,7 +551,7 @@ async function enviarSesion(){
 
   // El Sheet guarda el % de pérdida/ganancia, no el valor bruto en N (más fácil de leer de un vistazo).
   const pfInicialN = parseFloat(val('pf-inicial'));
-  const pctInicial = !isNaN(pfInicialN) ? (((REF_PF - pfInicialN) / REF_PF) * 100).toFixed(1) : undefined;
+  const pctInicial = !isNaN(pfInicialN) ? Number((((REF_PF - pfInicialN) / REF_PF) * 100).toFixed(1)) : undefined;
 
   const payload = {
     nombre: 'Mikel García',
@@ -563,7 +563,7 @@ async function enviarSesion(){
     const pfFinalN = parseFloat(val('pf-final'));
     // % respecto al PFinicial de HOY (mismo criterio que el umbral de parada del 15%)
     const pctFinal = (!isNaN(pfInicialN) && !isNaN(pfFinalN) && pfInicialN)
-      ? (((pfInicialN - pfFinalN) / pfInicialN) * 100).toFixed(1)
+      ? Number((((pfInicialN - pfFinalN) / pfInicialN) * 100).toFixed(1))
       : undefined;
 
     payload.fmaxDer = val('fmax-der');
