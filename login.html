@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Acceso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  :root{
+    --stone-900:#1c211e;
+    --stone-800:#262d28;
+    --stone-700:#333b34;
+    --chalk:#f2ede1;
+    --chalk-dim:#c9c3b4;
+    --chalk-faint:#8d9187;
+    --moss:#7c9070;
+    --moss-light:#a7bd98;
+    --danger:#c9705b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; color:var(--chalk);
+    font-family:'Work Sans', sans-serif;
+    background: radial-gradient(120% 90% at 15% 0%, #262d28 0%, var(--stone-900) 55%, #121614 100%);
+    display:flex; align-items:center; justify-content:center; padding:24px;
+    position:relative;
+  }
+  .fondo-logo{
+    position:fixed; top:0; left:0; width:100vw; height:100vh;
+    background-image:url('/logo.png');
+    background-repeat:no-repeat; background-position:center; background-size:100%;
+    opacity:1; z-index:0;
+  }
+  h1{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.5px; margin:0; }
+
+  .card{
+    position:relative; z-index:1;
+    background:rgba(38,45,40,0.6); border:1px solid rgba(242,237,225,0.12);
+    border-radius:22px; padding:40px 32px; max-width:380px; width:100%;
+    text-align:center; backdrop-filter:blur(8px);
+    box-shadow:0 20px 60px rgba(0,0,0,0.35);
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px;
+    font-weight:700; color:var(--moss-light); text-transform:uppercase; margin-bottom:6px;
+  }
+  .eyebrow::before, .eyebrow::after{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  h1{ font-size:26px; margin-bottom:10px; }
+  h1 span{ color:var(--moss); }
+  .sub{ font-size:13.5px; color:var(--chalk-dim); line-height:1.55; margin-bottom:30px; }
+
+  #gBtn{ display:flex; justify-content:center; margin-bottom:10px; }
+
+  .status{
+    display:none; margin-top:20px; font-size:12.5px; color:var(--chalk-faint);
+  }
+  .status.show{ display:block; }
+
+  .welcome{ display:none; }
+  .welcome.show{ display:block; }
+  .welcome img{ width:64px; height:64px; border-radius:50%; border:2px solid var(--moss); margin-bottom:14px; }
+  .welcome .name{ font-size:18px; font-weight:800; color:var(--chalk); margin-bottom:2px; }
+  .welcome .email{ font-size:12.5px; color:var(--chalk-faint); margin-bottom:20px; }
+  .welcome .note{
+    background:rgba(201,154,91,0.14); border:1px solid rgba(201,154,91,0.35);
+    border-radius:12px; padding:12px 14px; font-size:12px; color:var(--chalk-dim); line-height:1.5; text-align:left;
+  }
+  .welcome .note strong{ color:#c99a5b; }
+
+  #loginBox.hide{ display:none; }
+</style>
+</head>
+<body>
+<div class="fondo-logo"></div>
+
+<div class="card">
+  <div id="loginBox">
+    <div class="eyebrow">Kaska.Climb</div>
+    <h1>Área de <span>Cliente</span></h1>
+    <div class="sub">Inicia sesión con la cuenta de Google que usas con tu entrenador para acceder a tu semana y tus sesiones.</div>
+    <div id="gBtn"></div>
+    <div class="status" id="status">Cargando...</div>
+  </div>
+
+  <div class="welcome" id="welcome">
+    <img id="wPhoto" src="" alt="">
+    <div class="name" id="wName"></div>
+    <div class="email" id="wEmail"></div>
+    <div class="note"><strong>Fase 1 — prueba de login.</strong> El acceso con Google funciona de verdad. Lo que falta por conectar: comprobar tu email contra la base de clientes y llevarte directo a tu semana — eso llega en la Fase 2.</div>
+  </div>
+</div>
+
+<script>
+  const CLIENT_ID = '750960934789-afud0r9hmq7fe700okgu0o0cer0cih1q.apps.googleusercontent.com';
+
+  function decodeJwt(token){
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(atob(base64).split('').map(c =>
+      '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+    ).join(''));
+    return JSON.parse(json);
+  }
+
+  function handleCredentialResponse(response){
+    const payload = decodeJwt(response.credential);
+    document.getElementById('wPhoto').src = payload.picture;
+    document.getElementById('wName').textContent = payload.name;
+    document.getElementById('wEmail').textContent = payload.email;
+    document.getElementById('loginBox').classList.add('hide');
+    document.getElementById('welcome').classList.add('show');
+  }
+
+  window.onload = function(){
+    google.accounts.id.initialize({
+      client_id: CLIENT_ID,
+      callback: handleCredentialResponse
+    });
+    google.accounts.id.renderButton(
+      document.getElementById('gBtn'),
+      { theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with', width: 280 }
+    );
+  };
+</script>
+</body>
+</html>
