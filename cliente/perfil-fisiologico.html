@@ -208,7 +208,16 @@ function dibujarRadar(svg, capacidades, valoresA, valoresB, etiquetaA, etiquetaB
     svg.appendChild(crear('line', { x1:CENTRO, y1:CENTRO, x2:p.x, y2:p.y, stroke:'rgba(242,237,225,0.14)', 'stroke-width':1 }));
     const lp = puntoEnEje(i, 1.18);
     const t = crear('text', { x:lp.x, y:lp.y, class:'axis-label', 'text-anchor': Math.abs(lp.x-CENTRO)<5 ? 'middle' : (lp.x>CENTRO?'start':'end'), 'dominant-baseline': lp.y<CENTRO-5?'auto':(lp.y>CENTRO+5?'hanging':'middle') });
-    t.textContent = capacidades[i].corto;
+    const texto = capacidades[i].corto;
+    if(texto === 'RFD 200ms'){
+      const lineHeight = 13;
+      const t1 = crear('tspan', { x: lp.x, dy: -lineHeight/2 }); t1.textContent = 'RFD';
+      const t2 = crear('tspan', { x: lp.x, dy: lineHeight }); t2.textContent = '200ms';
+      t.appendChild(t1);
+      t.appendChild(t2);
+    } else {
+      t.textContent = texto;
+    }
     svg.appendChild(t);
   });
 
