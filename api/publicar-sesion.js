@@ -40,6 +40,28 @@ module.exports = async (req, res) => {
     const authClient = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: authClient });
 
+    // Antes de escribir la versión nueva, borramos cualquier fila que ya
+    // hubiera para este mismo cliente+fecha+mesociclo — así solo queda
+    // guardada la última versión, sin ir acumulando duplicados obsoletos.
+    const [meta, resp] = await Promise.all([
+      sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID }),
+      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NAME}'!A:G` }),
+    ]);
+    const hoja = meta.data.sheets.find(s => s.properties.title === SHEET_NAME);
+    const filas = resp.data.values || [];
+    const indicesABorrar = [];
+    filas.forEach((f, i) => {
+      if (f[1] === cliente && f[2] === fecha && f[3] === mesociclo) indicesABorrar.push(i);
+    });
+
+    if (hoja && indicesABorrar.length) {
+      const sheetId = hoja.properties.sheetId;
+      const requests = indicesABorrar
+        .sort((a, b) => b - a) // de la fila más abajo hacia arriba, para no desplazar los índices que faltan por borrar
+        .map(i => ({ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: i, endIndex: i + 1 } } }));
+      await sheets.spreadsheets.batchUpdate({ spreadsheetId: SPREADSHEET_ID, requestBody: { requests } });
+    }
+
     const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
 
     await sheets.spreadsheets.values.append({
