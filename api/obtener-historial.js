@@ -3,6 +3,7 @@ const { COLUMNS } = require('../libs/mesociclos-config.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Respuestas de formulario 1';
+const COL_CORREO = 34; // AI — mismo campo que escribe api/enviar-sesion.js
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET') {
@@ -10,6 +11,8 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // "cliente" aquí es el email del cliente — es el identificador real en toda
+    // la app (el nombre en columna B es solo para leer el Sheet a simple vista).
     const { cliente, mesociclo, limite } = req.query || {};
 
     if (!cliente || !mesociclo) {
@@ -41,13 +44,13 @@ module.exports = async (req, res) => {
 
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `'${SHEET_NAME}'!A:AH`,
+      range: `'${SHEET_NAME}'!A:AI`,
     });
     const filas = resp.data.values || [];
     const max = Number(limite) || 10;
 
     const historial = filas
-      .filter(f => f[1] === cliente && f[3] === mesociclo && f[cfg.pfInicial] !== undefined && f[cfg.pfInicial] !== '')
+      .filter(f => f[COL_CORREO] === cliente && f[3] === mesociclo && f[cfg.pfInicial] !== undefined && f[cfg.pfInicial] !== '')
       .map(f => {
         // Si ese día se registró algo más allá del PFinicial (p.ej. la Fmax), la
         // sesión se entrenó de verdad. Si no, fue un día bloqueado por no estar

@@ -258,7 +258,9 @@
    ===================================================================== */
 
 const params = new URLSearchParams(window.location.search);
-const CLIENTE = params.get('cliente');
+const CLIENTE = params.get('cliente');     // email — identificador real en toda la app
+const NOMBRE_PARAM = params.get('nombre'); // solo para mostrar en pantalla y en el Sheet
+const NOMBRE_DISPLAY = NOMBRE_PARAM || CLIENTE;
 const FECHA_PARAM = params.get('fecha');   // dd/mm/aaaa
 const MESOCICLO = params.get('mesociclo');
 const SEMANA_PARAM = params.get('semana');
@@ -497,7 +499,7 @@ function renderSesion(sesion, ultimaValida){
 
   // Cabecera
   document.getElementById('eyebrowTxt').textContent =
-    `${CLIENTE} · Mesociclo ${MESOCICLO}${SEMANA_PARAM ? ' · Semana ' + SEMANA_PARAM : ''}`;
+    `${NOMBRE_DISPLAY} · Mesociclo ${MESOCICLO}${SEMANA_PARAM ? ' · Semana ' + SEMANA_PARAM : ''}`;
   const titulo = (TITULOS && TITULOS[MESOCICLO]) || MESOCICLO;
   document.getElementById('sessionTitleTxt').innerHTML =
     titulo.replace(/\s*\(([^)]+)\)\s*$/, ' <span>($1)</span>');
@@ -639,7 +641,10 @@ function wireInteractividad(ultimaValida){
     if(!CFG.pfInicial) return [];
     if(sesionBloqueada) return ['pf-inicial'];
     const ids = ['pf-inicial'];
-    if(CFG.fmaxTest) ids.push('fmax-izq', 'fmax-der');
+    // Cada campo solo se exige si de verdad se pintó en pantalla — el JSON
+    // publicado puede no incluir todos los bloques que el mesociclo admite
+    // (p.ej. si al entrenador se le olvidó un bloque, o lo quitó a propósito).
+    if(CFG.fmaxTest && document.getElementById('fmax-izq')) ids.push('fmax-izq', 'fmax-der');
     (CFG.campos || []).forEach(c => {
       if(c.tipo === 'tiempo'){
         if(document.getElementById(c.id + '-min')) ids.push(c.id + '-min', c.id + '-seg');
@@ -647,7 +652,7 @@ function wireInteractividad(ultimaValida){
         ids.push(c.id);
       }
     });
-    if(CFG.pfFinal) ids.push('pf-final');
+    if(CFG.pfFinal && document.getElementById('pf-final')) ids.push('pf-final');
     return ids;
   }
 
@@ -655,15 +660,15 @@ function wireInteractividad(ultimaValida){
     const val = id => { const el = document.getElementById(id); return el && el.value !== '' ? el.value : undefined; };
 
     if(CFG.unico){
-      return { nombre: CLIENTE, fecha: FECHA_PAYLOAD, mesociclo: MESOCICLO, unico: val(CFG.unico.id) };
+      return { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: FECHA_PAYLOAD, mesociclo: MESOCICLO, unico: val(CFG.unico.id) };
     }
     if(!CFG.pfInicial){
-      return { nombre: CLIENTE, fecha: FECHA_PAYLOAD, mesociclo: MESOCICLO };
+      return { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: FECHA_PAYLOAD, mesociclo: MESOCICLO };
     }
 
     const pfInicialN = parseFloat(val('pf-inicial'));
     const payload = {
-      nombre: CLIENTE, fecha: FECHA_PAYLOAD, mesociclo: MESOCICLO,
+      nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: FECHA_PAYLOAD, mesociclo: MESOCICLO,
       pfInicial: !isNaN(pfInicialN) ? pfInicialN : undefined,
     };
     if(!sesionBloqueada){

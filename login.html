@@ -134,7 +134,8 @@
 
       if(data.success){
         nota.innerHTML = `<strong>¡Cuenta encontrada!</strong> Te llevamos a tu semana...`;
-        const url = '/cliente/semana.html?cliente=' + encodeURIComponent(data.cliente.nombreCompleto);
+        const qs = new URLSearchParams({ cliente: data.cliente.email, nombre: data.cliente.nombreCompleto });
+        const url = '/cliente/semana.html?' + qs.toString();
         setTimeout(() => { window.location.href = url; }, 1200);
       }else{
         nota.classList.add('error');

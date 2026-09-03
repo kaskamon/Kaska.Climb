@@ -613,9 +613,9 @@ body {
 
     <div class="panel-publicar-semana no-print">
       <h4>Publicar semana</h4>
-      <input type="text" id="publicarClienteSemana" placeholder="Cliente (nombre y apellidos)">
+      <input type="email" id="publicarClienteSemana" placeholder="Email del cliente">
       <div style="font-size:10.5px; color:var(--chalk-dim); line-height:1.4;">
-        Copia, para cada día con sesión asignada, la última versión publicada de ese mesociclo para este cliente, con la fecha real de ese día de la semana (a partir del lunes indicado arriba en "Fecha").
+        Este email lo usan también los botones "Link" de cada caja para generar el enlace real del cliente. "Publicar semana completa" copia, para cada día con sesión asignada, la última versión publicada de ese mesociclo para este cliente, con la fecha real de ese día de la semana (a partir del lunes indicado arriba en "Fecha").
       </div>
       <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
       <div class="estado-publicar-semana" id="estadoPublicarSemana"></div>
@@ -741,20 +741,26 @@ function addLink(el) {
   const caja = el.closest('.sesion');
   const dataFile = caja ? caja.dataset.file : null;
 
-  // Si la caja tiene sesión real (Sesion_X.html), montamos el enlace solos con la
-  // fecha real de su columna del día y la semana ya planificadas arriba.
+  // Si la caja tiene sesión real, el enlace va al motor genérico de verdad
+  // (cliente/sesion.html), con el email del cliente + fecha real de ese día +
+  // mesociclo + semana. El motor lee de ahí lo que se haya publicado.
   if (dataFile) {
+    const cliente = document.getElementById('publicarClienteSemana').value.trim();
+    if (!cliente) {
+      alert('Indica primero el email del cliente (panel "Publicar semana" a la derecha) para generar el enlace.');
+      return;
+    }
+    const mesociclo = mesocicloDesdeDataFile(dataFile);
     const semana = document.getElementById('h1').innerText.trim();
     const diaColumna = caja.closest('.dia-columna');
     const dias = Array.from(document.querySelectorAll('.dia-columna'));
     const indiceDia = diaColumna ? dias.indexOf(diaColumna) : -1;
     const fechaDia = indiceDia >= 0 ? fechaParaDiaIndice(indiceDia) : null;
     const fecha = fechaDia || document.getElementById('displayDate').innerText.trim();
-    const params = new URLSearchParams();
+    const params = new URLSearchParams({ cliente, mesociclo });
     if (semana) params.set('semana', semana);
     if (fecha && fecha !== 'DD/MM/AAAA') params.set('fecha', fecha);
-    const qs = params.toString();
-    const url = dataFile + (qs ? ('?' + qs) : '');
+    const url = 'cliente/sesion.html?' + params.toString();
     el.outerHTML = `<a href="${url}" target="_blank" rel="noopener" class="link-btn">▶ Ver</a>`;
     return;
   }

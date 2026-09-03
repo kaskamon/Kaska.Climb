@@ -3,7 +3,8 @@ const { COLUMNS: MESOCICLOS } = require('../libs/mesociclos-config.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Respuestas de formulario 1';
-const TOTAL_COLUMNAS = 34; // A hasta AH
+const TOTAL_COLUMNAS = 35; // A hasta AI (AI = correo, columna añadida al final para no mover nada de A-AH)
+const COL_CORREO = 34; // AI — identificador real del cliente (el nombre en B es solo para leer a simple vista)
 
 // El mapeo de columnas por mesociclo vive ahora en libs/mesociclos-config.js
 // (fuente única, la reutilizan también los endpoints de lectura de sesión).
@@ -26,7 +27,7 @@ module.exports = async (req, res) => {
     }
 
     const body = req.body || {};
-    const { nombre, fecha, mesociclo, pfInicial, fmaxDer, fmaxIzq, campos, pfFinal, unico } = body;
+    const { nombre, correo, fecha, mesociclo, pfInicial, fmaxDer, fmaxIzq, campos, pfFinal, unico } = body;
 
     if (!nombre || !fecha || !mesociclo) {
       return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (nombre, fecha o mesociclo).' });
@@ -52,9 +53,10 @@ module.exports = async (req, res) => {
 
     const fila = new Array(TOTAL_COLUMNAS).fill('');
     fila[0] = marcaTemporal; // A
-    fila[1] = nombre;        // B
+    fila[1] = nombre;        // B — nombre legible, para leer el Sheet a simple vista
     fila[2] = fecha;         // C
     fila[3] = mesociclo;     // D
+    if (correo) fila[COL_CORREO] = correo; // AI — identificador real, usado por obtener-historial.js
 
     // Los valores de fuerza (N) viajan tal cual — es tu Sheet quien calcula el %
     // comparando con el historial real, no lo calculamos aquí.
@@ -85,7 +87,7 @@ module.exports = async (req, res) => {
     try {
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
-        range: `'${SHEET_NAME}'!A:AH`,
+        range: `'${SHEET_NAME}'!A:AI`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [fila] },
       });
