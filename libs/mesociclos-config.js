@@ -108,19 +108,20 @@
     'GYM-ANTAGONISTAS': 'GYM-ANTAGONISTAS',
   };
 
-  // Categoría visual de cada mesociclo — Semanas.html ya no elige por caja
-  // entre los 6 mesociclos, solo entre 4 categorías (Sesión Roco / Gym-
-  // Antagonistas / Roca-Roco / Descanso). Estos 2 colores son los que
-  // corresponden a los mesociclos reales que SÍ se publican al cliente;
-  // Roca/roco y Descanso no tienen mesociclo (se pintan aparte, en la propia
-  // página que los usa).
+  // Color de cada mesociclo para diferenciarlos de un vistazo en el
+  // historial del cliente (el punto de color junto al código). Son los
+  // mismos 6 colores que tenía el banco de sesiones de Semanas.html antes
+  // de simplificarse a 4 categorías — Semanas.html ya no los usa (ahí ahora
+  // solo importa Sesión Roco / Gym-Antagonistas / Roca-Roco / Descanso),
+  // pero el historial del cliente sí necesita distinguir REOX de AERO de
+  // DESOX de FMAX, así que se conservan aquí.
   var CATEGORIA_VISUAL = {
-    FMAX: { tipo: 'sesion', color: '#6f8ea6' },
-    REOX: { tipo: 'sesion', color: '#6f8ea6' },
-    DESOX: { tipo: 'sesion', color: '#6f8ea6' },
-    AERO: { tipo: 'sesion', color: '#6f8ea6' },
-    'GYM-FMAX': { tipo: 'gym', color: '#8d9187' },
-    'GYM-ANTAGONISTAS': { tipo: 'gym', color: '#8d9187' },
+    FMAX: { tipo: 'sesion', color: '#c17c74' },
+    REOX: { tipo: 'sesion', color: '#7c9070' },
+    DESOX: { tipo: 'sesion', color: '#70908c' },
+    AERO: { tipo: 'sesion', color: '#93859e' },
+    'GYM-FMAX': { tipo: 'gym', color: '#d4b26f' },
+    'GYM-ANTAGONISTAS': { tipo: 'gym', color: '#d4b26f' },
   };
 
   return { COLUMNS: COLUMNS, FIELD_MAP: FIELD_MAP, TITULOS: TITULOS, CATEGORIA_VISUAL: CATEGORIA_VISUAL };
