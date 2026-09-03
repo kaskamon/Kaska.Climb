@@ -9,6 +9,20 @@ const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 // G semanaMesociclo (p.ej. "3/6" — "Sem. Meso." de Semanas.html).
 const SHEET_NAME = 'Sesiones_Programadas';
 
+function parseFechaDDMMYYYY(s) {
+  const [d, m, y] = (s || '').split('/').map(Number);
+  if (!d || !m || !y) return null;
+  return new Date(y, m - 1, d);
+}
+function lunesDe(date) {
+  const diaSemana = date.getDay(); // 0=domingo .. 6=sábado
+  const offsetALunes = diaSemana === 0 ? -6 : 1 - diaSemana;
+  const lunes = new Date(date);
+  lunes.setDate(lunes.getDate() + offsetALunes);
+  lunes.setHours(0, 0, 0, 0);
+  return lunes;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Método no permitido, usa POST.' });
@@ -40,9 +54,18 @@ module.exports = async (req, res) => {
     const authClient = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: authClient });
 
-    // Antes de escribir la versión nueva, borramos cualquier fila que ya
-    // hubiera para este mismo cliente+fecha+mesociclo — así solo queda
-    // guardada la última versión, sin ir acumulando duplicados obsoletos.
+    // Antes de escribir la versión nueva: (1) borramos cualquier fila que ya
+    // hubiera para este mismo cliente+fecha+mesociclo, para no duplicar; y
+    // (2) de paso aprovechamos para podar cualquier fila de este cliente más
+    // vieja que las 2 últimas semanas — así solo queda esa semana en curso y
+    // la anterior (suficiente para que un cliente pueda completar tarde algo
+    // de la semana pasada), sin acumular datos sin límite. La ventana de "2
+    // semanas" se cuenta desde HOY (no desde la fecha que se está
+    // publicando), para que corregir algo antiguo nunca borre la semana
+    // actual por error.
+    const cortePorAntiguedad = lunesDe(new Date());
+    cortePorAntiguedad.setDate(cortePorAntiguedad.getDate() - 7);
+
     const [meta, resp] = await Promise.all([
       sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID }),
       sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NAME}'!A:G` }),
@@ -51,7 +74,11 @@ module.exports = async (req, res) => {
     const filas = resp.data.values || [];
     const indicesABorrar = [];
     filas.forEach((f, i) => {
-      if (f[1] === cliente && f[2] === fecha && f[3] === mesociclo) indicesABorrar.push(i);
+      if (f[1] !== cliente) return;
+      const esMismoDiaYMeso = f[2] === fecha && f[3] === mesociclo;
+      const fechaFila = parseFechaDDMMYYYY(f[2]);
+      const esAntigua = fechaFila ? lunesDe(fechaFila) < cortePorAntiguedad : false;
+      if (esMismoDiaYMeso || esAntigua) indicesABorrar.push(i);
     });
 
     if (hoja && indicesABorrar.length) {
