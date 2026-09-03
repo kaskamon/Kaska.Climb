@@ -88,15 +88,15 @@
 
   .sesiones-dia{ display:flex; flex-wrap:wrap; gap:8px; flex:1; justify-content:flex-end; }
   .chip-sesion{
-    display:inline-flex; align-items:center; gap:8px;
+    display:inline-flex; align-items:center; justify-content:center; gap:6px;
     background:var(--moss); color:var(--stone-900); border:none;
-    padding:10px 16px; border-radius:10px; font-weight:800; font-size:12.5px;
-    letter-spacing:0.3px; text-transform:uppercase; text-decoration:none;
-    box-shadow:0 6px 18px rgba(0,0,0,0.25); transition:transform .15s ease, background .2s ease;
+    width:150px; min-height:44px; padding:8px 10px; border-radius:10px; font-weight:800; font-size:11.5px;
+    letter-spacing:0.3px; text-transform:uppercase; text-decoration:none; text-align:center; line-height:1.25;
+    box-shadow:0 6px 18px rgba(0,0,0,0.25); transition:transform .15s ease, filter .2s ease;
   }
-  .chip-sesion:hover{ background:var(--moss-light); transform:translateY(-1px); }
+  .chip-sesion:hover{ filter:brightness(1.12); transform:translateY(-1px); }
   .chip-sesion .flecha{ font-size:14px; }
-  .chip-sesion.chip-estatica{ cursor:default; box-shadow:none; color:var(--chalk); }
+  .chip-sesion.chip-estatica{ cursor:default; box-shadow:none; }
   .chip-sesion.chip-estatica:hover{ transform:none; }
 
   .sin-sesion{ font-size:12px; color:var(--chalk-faint); font-style:italic; }
@@ -255,14 +255,14 @@ async function cargar(){
       let contenidoDerecha;
       if(sesiones.length > 0){
         contenidoDerecha = `<div class="sesiones-dia">` + sesiones.map(mesociclo => {
+          const cat = CATEGORIA_VISUAL && CATEGORIA_VISUAL[mesociclo];
+          const color = (cat && cat.color) || 'var(--moss)';
           if(SIN_ENLACE.includes(mesociclo)){
-            const cat = CATEGORIA_VISUAL && CATEGORIA_VISUAL[mesociclo];
-            const color = (cat && cat.color) || 'var(--moss)';
             return `<span class="chip-sesion chip-estatica" style="background:${color};">${escapeHtml(tituloMesociclo(mesociclo))}</span>`;
           }
           const qsSesion = new URLSearchParams({ cliente: CLIENTE, fecha, mesociclo });
           if(NOMBRE_PARAM) qsSesion.set('nombre', NOMBRE_PARAM);
-          return `<a class="chip-sesion" href="sesion.html?${qsSesion.toString()}">${escapeHtml(tituloMesociclo(mesociclo))}<span class="flecha">→</span></a>`;
+          return `<a class="chip-sesion" href="sesion.html?${qsSesion.toString()}" style="background:${color};">${escapeHtml(tituloMesociclo(mesociclo))}<span class="flecha">→</span></a>`;
         }).join('') + `</div>`;
       } else {
         contenidoDerecha = `<div class="sin-sesion">Sin sesión programada</div>`;
