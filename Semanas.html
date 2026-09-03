@@ -226,7 +226,7 @@ body {
 
 .sesion-contenido {
   display: grid;
-  grid-template-columns: 20px 1fr 40px;
+  grid-template-columns: 20px 1fr;
   align-items: center;
   width: 100%;
   gap: 5px;
@@ -254,29 +254,6 @@ body {
   opacity: 1;
 }
 
-.btn-link {
-  grid-column: 3;
-  color: inherit;
-  cursor: pointer;
-  font-size: 10px;
-  text-decoration: underline;
-  justify-self: end;
-  font-weight: 700;
-  opacity: 0.85;
-}
-.btn-link:hover {
-  opacity: 1;
-}
-
-.link-btn {
-  grid-column: 3;
-  color: inherit;
-  font-size: 10px;
-  text-decoration: none;
-  justify-self: end;
-  font-weight: 800;
-  cursor: pointer;
-}
 
 .btn-action {
   background: var(--stone-800);
@@ -553,7 +530,6 @@ body {
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
           <span class="sesion-text" contenteditable="true">FMAX (ROCO)</span>
-          <span class="btn-link" onclick="addLink(this)">Link</span>
         </div>
       </div>
 
@@ -561,7 +537,6 @@ body {
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
           <span class="sesion-text" contenteditable="true">REOX (ROCO)</span>
-          <span class="btn-link" onclick="addLink(this)">Link</span>
         </div>
       </div>
 
@@ -569,7 +544,6 @@ body {
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
           <span class="sesion-text" contenteditable="true">DESOX/ANAE (ROCO)</span>
-          <span class="btn-link" onclick="addLink(this)">Link</span>
         </div>
       </div>
 
@@ -577,7 +551,6 @@ body {
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
           <span class="sesion-text" contenteditable="true">AERO (ROCO)</span>
-          <span class="btn-link" onclick="addLink(this)">Link</span>
         </div>
       </div>
 
@@ -585,7 +558,6 @@ body {
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
           <span class="sesion-text" contenteditable="true">GYM-FMAX</span>
-          <span class="btn-link" onclick="addLink(this)">Link</span>
         </div>
       </div>
 
@@ -593,7 +565,6 @@ body {
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
           <span class="sesion-text" contenteditable="true">GYM-ANTAGONISTAS</span>
-          <span class="btn-link" onclick="addLink(this)">Link</span>
         </div>
       </div>
 
@@ -616,7 +587,7 @@ body {
       <h4>Publicar semana</h4>
       <select id="publicarClienteSemana"><option value="">Cargando clientes...</option></select>
       <div style="font-size:10.5px; color:var(--chalk-dim); line-height:1.4;">
-        Este email lo usan también los botones "Link" de cada caja para generar el enlace real del cliente. "Publicar semana completa" copia, para cada día con sesión asignada, la última versión publicada de ese mesociclo para este cliente, con la fecha real de ese día de la semana (a partir del lunes indicado arriba en "Fecha").
+        "Publicar semana completa" copia, para cada día con sesión asignada, la última versión publicada de ese mesociclo para este cliente, con la fecha real de ese día de la semana (a partir del lunes indicado arriba en "Fecha").
       </div>
       <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
       <div class="estado-publicar-semana" id="estadoPublicarSemana"></div>
@@ -625,7 +596,6 @@ body {
     <div class="no-print grid-botones-abajo">
       <button class="btn-action" onclick="guardar()">Guardar</button>
       <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
-      <button class="btn-action" onclick="restablecerLinks()">Limpiar Links</button>
       <button class="btn-action" onclick="exportarPDFReal(event)">Exportar PDF</button>
     </div>
 
@@ -691,32 +661,12 @@ document.addEventListener('click', e => {
 
   if (e.target.classList.contains('sesion-text')) return;
   if (e.target.classList.contains('btn-del-sesion')) return;
-  if (e.target.classList.contains('btn-link')) return;
-  if (e.target.classList.contains('link-btn')) return;
 
   if (s && s.parentElement && !s.parentElement.id.includes('banco')) {
     e.preventDefault();
     s.after(s.cloneNode(true));
   }
 });
-
-function normalizarUrl(url) {
-  const limpia = url.trim();
-
-  if (!limpia) return "";
-
-  if (
-    limpia.startsWith("http://") ||
-    limpia.startsWith("https://") ||
-    limpia.startsWith("mailto:") ||
-    limpia.startsWith("tel:") ||
-    limpia.startsWith("file:")
-  ) {
-    return limpia;
-  }
-
-  return "https://" + limpia;
-}
 
 // Convierte el dataset.file de una caja de sesión ("Sesion_REOX.html") en su
 // clave de mesociclo real ("REOX") — misma clave que usan libs/mesociclos-config.js
@@ -736,43 +686,6 @@ function fechaParaDiaIndice(indiceDia) {
   const dd = String(base.getDate()).padStart(2, '0');
   const mm = String(base.getMonth() + 1).padStart(2, '0');
   return `${dd}/${mm}/${base.getFullYear()}`;
-}
-
-function addLink(el) {
-  const caja = el.closest('.sesion');
-  const dataFile = caja ? caja.dataset.file : null;
-
-  // Si la caja tiene sesión real, el enlace va al motor genérico de verdad
-  // (cliente/sesion.html), con el email del cliente + fecha real de ese día +
-  // mesociclo + semana. El motor lee de ahí lo que se haya publicado.
-  if (dataFile) {
-    const cliente = document.getElementById('publicarClienteSemana').value.trim();
-    if (!cliente) {
-      alert('Indica primero el email del cliente (panel "Publicar semana" a la derecha) para generar el enlace.');
-      return;
-    }
-    const mesociclo = mesocicloDesdeDataFile(dataFile);
-    const semana = document.getElementById('h1').innerText.trim();
-    const diaColumna = caja.closest('.dia-columna');
-    const dias = Array.from(document.querySelectorAll('.dia-columna'));
-    const indiceDia = diaColumna ? dias.indexOf(diaColumna) : -1;
-    const fechaDia = indiceDia >= 0 ? fechaParaDiaIndice(indiceDia) : null;
-    const fecha = fechaDia || document.getElementById('displayDate').innerText.trim();
-    const params = new URLSearchParams({ cliente, mesociclo });
-    if (semana) params.set('semana', semana);
-    if (fecha && fecha !== 'DD/MM/AAAA') params.set('fecha', fecha);
-    const url = 'cliente/sesion.html?' + params.toString();
-    el.outerHTML = `<a href="${url}" target="_blank" rel="noopener" class="link-btn">▶ Ver</a>`;
-    return;
-  }
-
-  // Sesiones libres (Roca/roco, Descanso) no tienen página fija — se pide la URL a mano.
-  const u = prompt("Enlace:");
-
-  if (u) {
-    const url = normalizarUrl(u);
-    el.outerHTML = `<a href="${url}" target="_blank" rel="noopener" class="link-btn">▶ Ver</a>`;
-  }
 }
 
 /* ================= PUBLICAR SEMANA COMPLETA ================= */
@@ -834,12 +747,6 @@ document.getElementById('btnPublicarSemana').addEventListener('click', async () 
     ? resultados.map(r => `<div class="${r.clase}">${r.texto}</div>`).join('')
     : 'No hay ninguna sesión asignada esta semana.';
 });
-
-function restablecerLinks() {
-  document.querySelectorAll('.link-btn').forEach(el => {
-    el.outerHTML = '<span class="btn-link" onclick="addLink(this)">Link</span>';
-  });
-}
 
 function guardar() {
   const grid = document.getElementById('grid');
@@ -941,22 +848,6 @@ async function exportarPDFReal(evento) {
     });
 
     pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-    const panelRect = panel.getBoundingClientRect();
-    const enlaces = panel.querySelectorAll('a.link-btn[href]');
-
-    enlaces.forEach(enlace => {
-      const enlaceRect = enlace.getBoundingClientRect();
-
-      const x = (enlaceRect.left - panelRect.left) * pxToMm;
-      const y = (enlaceRect.top - panelRect.top) * pxToMm;
-      const w = enlaceRect.width * pxToMm;
-      const h = enlaceRect.height * pxToMm;
-
-      pdf.link(x, y, w, h, {
-        url: enlace.href
-      });
-    });
 
     await guardarPDF(pdf, 'kaska-climb-semana.pdf');
   } catch (error) {
