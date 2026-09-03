@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kaska.Climb | Sesión — REOX</title>
+<title>Kaska.Climb | Sesión — FMAX</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -211,8 +211,8 @@
   <div class="top-error-banner" id="topError">Faltan campos por rellenar. Si no has hecho ese ejercicio hoy, pon 0.</div>
 
   <div class="session-head">
-    <div class="eyebrow">Mikel García · Mesociclo Reox · Semana <span id="semanaTxt">3</span></div>
-    <h2 class="session-title">REOX <span>(ROCO)</span></h2>
+    <div class="eyebrow">Mikel García · Mesociclo Fmax · Semana <span id="semanaTxt">1</span></div>
+    <h2 class="session-title">FMAX <span>(ROCO)</span></h2>
     <div class="meta">
       <span><b>Fecha:</b> <span id="fechaDisplay">—</span></span>
     </div>
@@ -256,11 +256,11 @@
       <div class="step-note" style="font-style:italic; margin-bottom:10px;">Calentar y activar los dedos y la musculatura del antebrazo. Usa estas referencias de tu última sesión para calcular los %:</div>
       <div class="ref-row">
         <span class="k">Fmax 5" mano izq. <span class="unit">(última sesión)</span></span>
-        <span class="v">467 N</span>
+        <span class="v">475 N</span>
       </div>
       <div class="ref-row" style="margin-top:8px;">
         <span class="k">Fmax 5" mano der. <span class="unit">(última sesión)</span></span>
-        <span class="v">471 N</span>
+        <span class="v">480 N</span>
       </div>
 
       <div class="ex-box" style="margin-top:14px;"><input type="checkbox" class="ex-check" id="exchk-4" aria-label="Marcar como hecho">
@@ -318,27 +318,27 @@
     </div>
 
     <div class="step">
-      <div class="step-title">SuspInt a umbral de oclusión <span style="font-weight:400; color:var(--chalk-faint); text-transform:none; letter-spacing:0;">(OT)</span></div>
+      <div class="step-title">SuspMax al 80%</div>
       <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-7" aria-label="Marcar como hecho">
-        <div class="ex-row"><span class="ex-series full">Hasta 8 series x 20mm x 55% x 5(8":4") x 1' recup</span></div>
+        <div class="ex-row"><span class="ex-series full">2-8 series x 20mm x 80% x 6(25) x 3' recup</span></div>
       </div>
-      <div class="step-note">Acabaremos cuando no respetemos el RIR 16" en cualquier repetición de cualquier serie.</div>
+      <div class="step-note">Acabaremos cuando no respetemos el RIR 19" o RPE 1/4.</div>
       <div class="field">
         <label>Series completadas</label>
-        <input type="number" step="1" id="susp-int" placeholder="0">
+        <input type="number" step="1" id="susp-max" placeholder="0">
       <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
       </div>
     </div>
 
     <div class="step">
-      <div class="step-title">Hangboard Moving Hands <span style="font-weight:400; color:var(--chalk-faint); text-transform:none; letter-spacing:0;">(Campus Board)</span></div>
+      <div class="step-title">Saltos a regleta <span style="font-weight:400; color:var(--chalk-faint); text-transform:none; letter-spacing:0;">(Campus Board)</span></div>
       <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-8" aria-label="Marcar como hecho">
-        <div class="ex-row"><span class="ex-series full">Hasta 3 series x 5"/mano x 2' x 2' recup</span></div>
+        <div class="ex-row"><span class="ex-series full">2-3 series x 3-5 saltos x 85-100% x 3' recup</span></div>
       </div>
-      <div class="step-note">Elegiremos un listón en el que estemos ocluyendo (también podemos regular la intensidad con los listones de los pies). Acabaremos cuando no seamos capaces de aguantar los tiempos establecidos.</div>
+      <div class="step-note">Elegiremos un listón en el que lleguemos al fallo entre 3 y 5 contactos. Acabaremos cuando no seamos capaces de aguantar 3 saltos.</div>
       <div class="field">
         <label>Series completadas</label>
-        <input type="number" step="1" id="campus-hmh" placeholder="0">
+        <input type="number" step="1" id="saltos-regleta" placeholder="0">
       <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
       </div>
     </div>
@@ -351,14 +351,14 @@
     </div>
 
     <div class="step">
-      <div class="step-title">Traves con sueltas</div>
+      <div class="step-title">Boulder Max</div>
       <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-9" aria-label="Marcar como hecho">
-        <div class="ex-row"><span class="ex-series full">25 movs &gt;OT RIR 2</span></div>
+        <div class="ex-row"><span class="ex-series full">3-6 pegues x 4-6 movs &gt;85% x 3' recup</span></div>
       </div>
-      <div class="step-note">Haremos la primera serie, y cuando queden 30" para la siguiente, haremos el test PFfinal. Cuando bajemos del valor establecido que te indico abajo, acabaremos la sesión.</div>
+      <div class="step-note">Daremos el primer pegue, y cuando queden 30" para el siguiente, haremos el test PFfinal. Cuando bajemos del valor establecido que te indico abajo, acabaremos la sesión.</div>
       <div class="field">
         <label>Nº de pegues totales</label>
-        <input type="number" step="1" id="travesias" placeholder="0">
+        <input type="number" step="1" id="boulder-max" placeholder="0">
       <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
       </div>
     </div>
@@ -476,7 +476,7 @@ document.querySelectorAll('input[type=number]').forEach(inp=>{
 
 /* ---------- Parámetros del mesociclo (cambian según el ciclo) ---------- */
 const MESOCICLO = {
-  nombre: 'REOX',
+  nombre: 'FMAX',
   umbralControl: 7,    // % de pérdida máxima permitida en el Test PFinicial vs. la última sesión ENTRENADA
   umbralIntegrado: 15  // % de pérdida en el Test PFfinal, sobre el PFinicial de HOY, para acabar el bloque integrado
 };
@@ -485,9 +485,9 @@ const MESOCICLO = {
    Incluye un día NO entrenado a propósito, para demostrar que la referencia
    salta al último día que sí se entrenó, tal y como marca el diagrama. */
 const SESSION_HISTORY = [
-  { fecha: '9 sept.',  entrenada: true,  pfInicial: 445 },
-  { fecha: '11 sept.', entrenada: true,  pfInicial: 453 },
-  { fecha: '13 sept.', entrenada: false, pfInicial: 411 }, // no recuperado ese día — no cuenta como referencia
+  { fecha: '1 sept.', entrenada: true,  pfInicial: 460 },
+  { fecha: '3 sept.', entrenada: true,  pfInicial: 468 },
+  { fecha: '5 sept.', entrenada: false, pfInicial: 421 }, // no recuperado ese día — no cuenta como referencia
 ];
 const ultimaValida = [...SESSION_HISTORY].reverse().find(s => s.entrenada);
 const REF_PF = ultimaValida.pfInicial;
@@ -498,15 +498,13 @@ document.getElementById('refPfValor').textContent = REF_PF + ' N';
 document.getElementById('refFechaTxt').textContent = `(última sesión entrenada — ${REF_FECHA})`;
 
 let sesionBloqueada = false;
-let pctPFinicial = null;
-let valorPFinicialHoy = null;
+let umbralParadaActual = null;
 
 const pfInicialInput = document.getElementById('pf-inicial');
 const recoveryBox = document.getElementById('recoveryStatus');
 const laterBlocks = ['blockAnalitico','blockIntegrado','blockCierre'].map(id=>document.getElementById(id));
 const refPfFinalUmbral = document.getElementById('refPfFinalUmbral');
 const btnSendQuick = document.getElementById('btnSendQuick');
-let umbralParadaActual = null;
 
 pfInicialInput.addEventListener('input', ()=>{
   const v = parseFloat(pfInicialInput.value);
@@ -560,7 +558,7 @@ pfFinalInput.addEventListener('input', ()=>{
 async function enviarSesion(){
   const requiredIds = sesionBloqueada
     ? ['pf-inicial']
-    : ['pf-inicial','fmax-izq','fmax-der','susp-int','campus-hmh','travesias','pf-final'];
+    : ['pf-inicial','fmax-izq','fmax-der','susp-max','saltos-regleta','boulder-max','pf-final'];
   let firstInvalid = null;
   requiredIds.forEach(id=>{
     const input = document.getElementById(id);
@@ -589,7 +587,7 @@ async function enviarSesion(){
   const payload = {
     nombre: 'Mikel García',
     fecha: FECHA_PAYLOAD,
-    mesociclo: 'REOX',
+    mesociclo: 'FMAX',
     pfInicial: !isNaN(pfInicialN) ? pfInicialN : undefined,
   };
   if(!sesionBloqueada){
@@ -597,7 +595,8 @@ async function enviarSesion(){
 
     payload.fmaxDer = val('fmax-der');
     payload.fmaxIzq = val('fmax-izq');
-    payload.campos = [val('susp-int'), val('campus-hmh'), val('travesias')];
+    // Orden fijo de columnas en el Sheet para FMAX: SuspMax, Saltos a regleta, Boulder max
+    payload.campos = [val('susp-max'), val('saltos-regleta'), val('boulder-max')];
     payload.pfFinal = !isNaN(pfFinalN) ? pfFinalN : undefined;
   }
 
@@ -608,9 +607,9 @@ async function enviarSesion(){
     ['Test PFinicial (N)', val('pf-inicial') ?? '—'],
     ['Fmax 5" mano izq. (N)', val('fmax-izq') ?? '—'],
     ['Fmax 5" mano der. (N)', val('fmax-der') ?? '—'],
-    ['SuspInt OT (series)', val('susp-int') ?? '—'],
-    ['Campus-HMH (series)', val('campus-hmh') ?? '—'],
-    ['Traves con sueltas (pegues)', val('travesias') ?? '—'],
+    ['SuspMax (series)', val('susp-max') ?? '—'],
+    ['Saltos a regleta (series)', val('saltos-regleta') ?? '—'],
+    ['Boulder Max (pegues)', val('boulder-max') ?? '—'],
     ['Test PFfinal (N)', val('pf-final') ?? '—'],
   ];
   document.getElementById('modalTable').innerHTML = rows.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');

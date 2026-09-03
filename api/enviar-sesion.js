@@ -1,20 +1,12 @@
 const { google } = require('googleapis');
+const { COLUMNS: MESOCICLOS } = require('../libs/mesociclos-config.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Respuestas de formulario 1';
 const TOTAL_COLUMNAS = 34; // A hasta AH
 
-// Cada mesociclo apunta a su bloque fijo de columnas real en el Sheet (A=0, B=1, ...).
-// "campos" son los datos intermedios propios de cada ciclo, en el mismo orden
-// en que los manda cada página de sesión.
-const MESOCICLOS = {
-  FMAX:  { pfInicial: 6,  fmaxDer: 7,  fmaxIzq: 8,  campos: [9, 10, 11],      pfFinal: 12 }, // SuspMax, Saltos a regleta, Boulder max
-  REOX:  { pfInicial: 13, fmaxDer: 14, fmaxIzq: 15, campos: [16, 17, 18],     pfFinal: 19 }, // SuspInt OT, Campus HMH, Travesías con sueltas
-  DESOX: { pfInicial: 20, fmaxDer: 21, fmaxIzq: 22, campos: [23, 24, 25, 26], pfFinal: 27 }, // SuspSub, Campus McClure, Travesías sin sueltas, Multibloque
-  AERO:  { pfInicial: 28, fmaxDer: 29, fmaxIzq: 30, campos: [31, 32] },                      // SuspInt CF, Escalada continua — sin PFfinal
-  'GYM-FMAX':         { unico: 4 },  // E - Dominadas con lastre
-  'GYM-ANTAGONISTAS': {},            // sin columnas de datos, solo queda registrada la fila
-};
+// El mapeo de columnas por mesociclo vive ahora en libs/mesociclos-config.js
+// (fuente única, la reutilizan también los endpoints de lectura de sesión).
 
 // Backup crudo: guardamos también el JSON completo de lo que envía el cliente en
 // la pestaña "Backups", independiente de si el volcado a columnas de arriba falla.

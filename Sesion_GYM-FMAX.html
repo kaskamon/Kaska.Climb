@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Sesión — GYM-FMAX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e;
+    --stone-800:#262d28;
+    --stone-700:#333b34;
+    --stone-650:#3c453d;
+    --chalk:#f2ede1;
+    --chalk-dim:#c9c3b4;
+    --chalk-faint:#8d9187;
+    --moss:#7c9070;
+    --moss-light:#a7bd98;
+    --moss-deep:#4d5c46;
+    --amber:#c99a5b;
+    --danger:#c9705b;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; min-height:100vh; background:#494d4b; color:var(--chalk);
+    font-family:'Work Sans', sans-serif;
+  }
+  h1,h2,h3{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.5px; margin:0; }
+
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:rgba(28,33,30,0.92); backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(242,237,225,0.1);
+  }
+  .topbar-inner{ max-width:760px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px; font-weight:700; color:var(--moss-light); text-transform:uppercase; }
+  .eyebrow::before{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .brand h1{ font-size:20px; margin-top:2px; }
+  .brand h1 span{ color:var(--moss); }
+  .back-btn{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.16); color:var(--chalk);
+    padding:9px 14px; border-radius:10px; font-size:12px; font-weight:700; letter-spacing:0.5px;
+    text-transform:uppercase; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    text-decoration:none; transition:all .2s ease;
+  }
+  .back-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+
+  .wrap{ max-width:760px; margin:0 auto; padding:24px 24px 90px; }
+
+  .session-head{ margin-bottom:24px; }
+  .session-head .meta{ display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:10px; font-size:13px; color:var(--chalk-faint); }
+  .session-head .meta b{ color:var(--chalk-dim); font-weight:700; }
+  .session-title{ font-size:30px; }
+  .session-title span{ color:var(--moss); }
+
+  .progress-track{ display:flex; gap:4px; padding:0 24px 12px; max-width:760px; margin:0 auto; }
+  .progress-track .seg{ flex:1; height:4px; border-radius:999px; background:rgba(242,237,225,0.14); overflow:hidden; transition:background .25s ease; }
+  .progress-track .seg.done{ background:var(--moss); }
+  .progress-track .seg.current{ background:linear-gradient(90deg, var(--moss) 50%, rgba(242,237,225,0.14) 50%); }
+
+  .block{
+    background:rgba(38,45,40,0.55); border:1px solid rgba(242,237,225,0.12);
+    border-radius:20px; padding:24px; margin-bottom:20px; backdrop-filter:blur(8px);
+  }
+  .block-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:18px; }
+  .block-head h2{ font-size:20px; color:var(--moss-light); }
+
+  .step{ padding:16px 0; border-top:1px dashed rgba(242,237,225,0.1); }
+  .step:first-child{ border-top:none; padding-top:0; }
+  .step-title{ font-size:15px; font-weight:700; color:var(--chalk); margin-bottom:6px; }
+  .step-note{ font-size:13px; color:var(--chalk-dim); line-height:1.55; }
+  .ex-box{
+    position:relative;
+    background:rgba(38,45,40,0.5); border:1px solid rgba(242,237,225,0.1);
+    border-radius:12px; padding:12px 46px 12px 16px; margin:6px 0 10px;
+    display:grid; grid-template-columns:max-content max-content 1fr;
+    row-gap:6px; column-gap:9px; align-items:baseline;
+    transition:opacity .2s ease;
+  }
+  .ex-box.ex-done{ opacity:0.45; }
+  .ex-check{
+    position:absolute; top:50%; right:14px; transform:translateY(-50%);
+    width:21px; height:21px; accent-color:var(--moss); cursor:pointer; flex:0 0 auto;
+  }
+  .ex-row{ display:contents; }
+  .ex-row .ex-name{ font-weight:700; color:var(--moss-light); font-size:13.5px; }
+  .ex-row .ex-arrow{ color:var(--chalk-faint); font-size:12px; }
+  .ex-row .ex-series{ font-weight:700; color:var(--chalk); font-size:13.5px; font-variant-numeric:tabular-nums; }
+  .ex-row .ex-series.full{ grid-column:1/-1; color:var(--moss-light); }
+  .ex-box .ex-subnote{ grid-column:1/-1; font-size:12px; color:var(--chalk-faint); font-style:italic; margin:-3px 0 9px 2px; }
+  @media (max-width:640px){
+    .ex-box{ grid-template-columns:1fr; row-gap:2px; }
+    .ex-row{ display:block; margin-bottom:8px; }
+    .ex-row:last-child{ margin-bottom:0; }
+    .ex-row .ex-arrow{ display:none; }
+    .ex-row .ex-name{ display:block; }
+    .ex-row .ex-series{ display:block; }
+    .ex-row .ex-series.full{ grid-column:auto; }
+  }
+
+  .field{ display:flex; flex-direction:column; gap:6px; margin-top:14px; }
+  .field label{ font-size:12.5px; color:var(--chalk-dim); font-weight:700; }
+  .field label .unit{ color:var(--chalk-faint); font-weight:400; }
+  input[type=number]{
+    background:var(--stone-700); border:1px solid rgba(242,237,225,0.18);
+    color:var(--chalk); border-radius:10px; padding:12px 14px; font-size:16px;
+    font-family:'Work Sans',sans-serif; width:100%; font-weight:700;
+  }
+  input[type=number]::placeholder{ color:var(--chalk-faint); font-weight:400; }
+  input[type=number]:focus{ outline:2px solid var(--moss); outline-offset:1px; border-color:var(--moss); }
+  input[type=number].field-error{ border-color:var(--danger); background:rgba(201,112,91,0.12); }
+  .field-error-msg{ font-size:12px; color:var(--danger); font-weight:600; display:none; margin-top:-2px; }
+  .field.has-error .field-error-msg{ display:block; }
+  .top-error-banner{
+    display:none; background:rgba(201,112,91,0.16); border:1px solid rgba(201,112,91,0.4);
+    color:var(--chalk); border-radius:12px; padding:12px 16px; margin-bottom:16px; font-size:13px; font-weight:600;
+  }
+  .top-error-banner.show{ display:block; }
+
+  .send-bar{ margin-top:28px; padding:0; }
+  .send-btn{
+    width:100%; background:var(--moss); color:var(--stone-900); border:none;
+    padding:16px; border-radius:14px; font-family:'Work Sans',sans-serif; font-weight:800;
+    font-size:14px; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35); transition:transform .15s ease, background .2s ease;
+  }
+  .send-btn:hover{ background:var(--moss-light); transform:translateY(-1px); }
+  .send-btn:active{ transform:translateY(0); }
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(3px);
+    display:none; align-items:center; justify-content:center; z-index:100; padding:20px;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .modal{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.14);
+    border-radius:20px; padding:26px; max-width:420px; width:100%;
+  }
+  .modal h3{ font-size:18px; color:var(--moss-light); margin-bottom:6px; }
+  .modal p{ font-size:13px; color:var(--chalk-dim); line-height:1.5; margin:0 0 16px; }
+  .modal-table{ width:100%; border-collapse:collapse; font-size:13px; margin-bottom:18px; }
+  .modal-table td{ padding:6px 0; border-top:1px solid rgba(242,237,225,0.08); }
+  .modal-table td:first-child{ color:var(--chalk-faint); }
+  .modal-table td:last-child{ text-align:right; font-weight:700; color:var(--chalk); font-variant-numeric:tabular-nums; }
+  .modal-close{
+    width:100%; background:transparent; border:1px solid rgba(242,237,225,0.2); color:var(--chalk);
+    padding:12px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .modal-close:hover{ border-color:var(--moss); color:var(--moss-light); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="eyebrow">Kaska.Climb</div>
+    </div>
+    <a class="back-btn" href="#">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Semana
+    </a>
+  </div>
+  <div class="progress-track" id="progressTrack">
+    <div class="seg" data-block="blockCalentamiento"></div>
+    <div class="seg" data-block="blockTraccion"></div>
+    <div class="seg" data-block="blockFuerza"></div>
+    <div class="seg" data-block="blockAntagonistas"></div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="top-error-banner" id="topError">Faltan campos por rellenar. Si no has hecho ese ejercicio hoy, pon 0.</div>
+
+  <div class="session-head">
+    <div class="eyebrow">Mikel García · Gimnasio · Semana <span id="semanaTxt">1</span></div>
+    <h2 class="session-title">GYM-FMAX</h2>
+    <div class="meta">
+      <span><b>Fecha:</b> <span id="fechaDisplay">—</span></span>
+    </div>
+  </div>
+
+  <!-- ===================== CALENTAMIENTO ===================== -->
+  <div class="block" id="blockCalentamiento">
+    <div class="block-head">
+      <h2>Calentamiento</h2>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Movilizaciones articulares</div>
+      <div class="step-note" style="font-style:italic; margin-bottom:8px;">Cuello, hombros, codos, muñecas, dedos, cintura, caderas, rodillas y tobillos.</div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-1" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-name">Giros articulares</span><span class="ex-arrow">→</span><span class="ex-series">1x15" por zona</span></div>
+      </div>
+      <div class="step-note">Movimientos suaves y controlados.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Incremento del ROM</div>
+      <div class="step-note" style="font-style:italic; margin-bottom:8px;">Gemelos, isquios, glúteos y espalda.</div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-2" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-name">Masaje con Foam Roller</span><span class="ex-arrow">→</span><span class="ex-series">1x30" por zona</span></div>
+      </div>
+      <div class="step-note">Pasadas de 2", sin llegar a sentir dolor.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Activación muscular general</div>
+      <div class="step-note" style="font-style:italic; margin-bottom:8px;">Hombros, escápulas y flexores codos.</div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-3" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-name">Circuito con gomas</span><span class="ex-arrow">→</span><span class="ex-series">1x10(15) y 1x10(12)</span></div>
+      </div>
+      <div class="step-note">Dos vueltas al circuito, subiendo la intensidad en la segunda vuelta.</div>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Series de aproximación Fuerza</div>
+      <div class="step-note" style="font-style:italic; margin-bottom:8px;">Series de aproximación de los ejercicios de fuerza que vayamos a meter — 1 serie por ejercicio en cada vuelta.</div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-4" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-name">Press Banca, Press Militar y Sentadilla</span><span class="ex-arrow">→</span><span class="ex-series">1 x 5 x 40% RM</span></div>
+        <div class="ex-row"><span class="ex-name">Press Banca, Press Militar y Sentadilla</span><span class="ex-arrow">→</span><span class="ex-series">1 x 5 x 60% RM</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== FUERZA MÁXIMA DE TRACCIÓN ===================== -->
+  <div class="block" id="blockTraccion">
+    <div class="block-head">
+      <h2>Fuerza máxima de tracción</h2>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Fmax tracción</div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-5" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-name">Dominadas con lastre</span><span class="ex-arrow">→</span><span class="ex-series">Hasta 5 series x 3(5) x 85% x 3' recup</span></div>
+        <div class="ex-subnote">Acabaremos la sesión cuando no respetemos el CE 3(5).</div>
+        <div class="ex-row"><span class="ex-name">Bloqueos</span><span class="ex-arrow">→</span><span class="ex-series">2 x 5" x 3' recup (los 3 ángulos)</span></div>
+        <div class="ex-subnote">0º, 90º y 180º.</div>
+      </div>
+      <div class="field">
+        <label>Series completadas <span class="unit">(Dominadas con lastre)</span></label>
+        <input type="number" step="1" id="dominadas" placeholder="0">
+      <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== FUERZA (GYM) ===================== -->
+  <div class="block" id="blockFuerza">
+    <div class="block-head">
+      <h2>Fuerza (gym)</h2>
+    </div>
+
+    <div class="step">
+      <div class="step-title">Entrenamiento Fuerza</div>
+      <div class="step-note" style="font-style:italic; margin-bottom:8px;">Ganancia de fuerza general y prevención de lesiones.</div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-6" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-name">Press Banca</span><span class="ex-arrow">→</span><span class="ex-series">Hasta 5 series x 5(8) x 80% x 3' recup</span></div>
+        <div class="ex-subnote">Cuando no seamos capaces de dejar 3 repeticiones de reserva, cambiamos de ejercicio.</div>
+        <div class="ex-row"><span class="ex-name">Press Militar</span><span class="ex-arrow">→</span><span class="ex-series">Hasta 5 series x 5(8) x 80% x 3' recup</span></div>
+        <div class="ex-subnote">Cuando no seamos capaces de dejar 3 repeticiones de reserva, cambiamos de ejercicio.</div>
+        <div class="ex-row"><span class="ex-name">Sentadilla</span><span class="ex-arrow">→</span><span class="ex-series">Hasta 5 series x 5(8) x 80% x 3' recup</span></div>
+        <div class="ex-subnote">Cuando no seamos capaces de dejar 3 repeticiones de reserva, cambiamos de ejercicio.</div>
+        <div class="ex-row"><span class="ex-name">Peso Muerto</span><span class="ex-arrow">→</span><span class="ex-series">Hasta 5 series x 3(5) x 85% x 3' recup</span></div>
+        <div class="ex-subnote">Cuando no seamos capaces de dejar 2 repeticiones de reserva, acabamos la sesión.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ANTAGONISTAS ===================== -->
+  <div class="block" id="blockAntagonistas">
+    <div class="block-head">
+      <h2>Antagonistas</h2>
+    </div>
+    <div class="step">
+      <div class="step-title">Circuito antagonistas</div>
+      <div class="step-note" style="font-style:italic; margin-bottom:10px;">Prevención de lesiones e higiene postural. Hacemos todos los ejercicios seguidos y descansamos 1'30" — 3 vueltas al circuito.</div>
+      <div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-7" aria-label="Marcar como hecho">
+        <div class="ex-row"><span class="ex-name">Extensión dedos con goma</span><span class="ex-arrow">→</span><span class="ex-series">6 reps</span></div>
+        <div class="ex-row"><span class="ex-name">FacePull</span><span class="ex-arrow">→</span><span class="ex-series">10(12) reps</span></div>
+        <div class="ex-row"><span class="ex-name">Planchas</span><span class="ex-arrow">→</span><span class="ex-series">10"</span></div>
+        <div class="ex-subnote">Máxima elongación ("medir" lo máximo posible).</div>
+        <div class="ex-row"><span class="ex-name">Roll Over</span><span class="ex-arrow">→</span><span class="ex-series">6 reps</span></div>
+        <div class="ex-row"><span class="ex-name">Extensiones tobillo</span><span class="ex-arrow">→</span><span class="ex-series">8 reps</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="send-bar">
+    <button class="send-btn" id="btnSend">Enviar sesión</button>
+  </div>
+
+</div>
+
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Enviando...</h3>
+    <p id="modalDesc">Guardando tu sesión en el Sheet.</p>
+    <table class="modal-table" id="modalTable"></table>
+    <button class="modal-close" id="modalClose">Cerrar</button>
+  </div>
+</div>
+
+<script>
+/* ---------- Datos que llegan desde Semanas.html (fecha y semana planificadas) ---------- */
+const urlParams = new URLSearchParams(window.location.search);
+const fechaParam = urlParams.get('fecha');   // dd/mm/aaaa, tal y como lo guarda Semanas.html
+const semanaParam = urlParams.get('semana');
+
+let HOY = new Date();
+if(fechaParam){
+  const [d, m, y] = fechaParam.split('/').map(Number);
+  if(d && m && y) HOY = new Date(y, m - 1, d);
+}
+const FECHA_DISPLAY = HOY.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'short' });
+const FECHA_PAYLOAD = HOY.toLocaleDateString('es-ES'); // dd/mm/aaaa, formato del Sheet
+document.getElementById('fechaDisplay').textContent = FECHA_DISPLAY.charAt(0).toUpperCase() + FECHA_DISPLAY.slice(1);
+if(semanaParam) document.getElementById('semanaTxt').textContent = semanaParam;
+
+document.querySelectorAll('.ex-check').forEach(cb=>{
+  cb.addEventListener('change', ()=>{
+    cb.closest('.ex-box').classList.toggle('ex-done', cb.checked);
+  });
+});
+
+/* ---------- Barra de progreso (fija arriba, según el scroll) ---------- */
+(function(){
+  const segs = Array.from(document.querySelectorAll('#progressTrack .seg'));
+  const blocks = segs.map(s => document.getElementById(s.dataset.block)).filter(Boolean);
+  const topbar = document.querySelector('.topbar');
+
+  function updateProgress(){
+    const threshold = topbar.offsetHeight + 40; // justo debajo de la barra fija
+    let activeIndex = 0;
+    blocks.forEach((block, i) => {
+      if(block.getBoundingClientRect().top - threshold <= 0) activeIndex = i;
+    });
+    const lastBlock = blocks[blocks.length - 1];
+    const pastEverything = lastBlock && (lastBlock.getBoundingClientRect().bottom < threshold);
+
+    segs.forEach((seg, i) => {
+      seg.classList.remove('done', 'current');
+      if(pastEverything || i < activeIndex) seg.classList.add('done');
+      else if(i === activeIndex) seg.classList.add('current');
+    });
+  }
+
+  window.addEventListener('scroll', updateProgress, { passive:true });
+  window.addEventListener('resize', updateProgress);
+  updateProgress();
+})();
+
+document.querySelectorAll('input[type=number]').forEach(inp=>{
+  inp.addEventListener('input', ()=>{
+    if(inp.value.trim() !== ''){
+      inp.classList.remove('field-error');
+      inp.closest('.field').classList.remove('has-error');
+    }
+  });
+});
+
+// GYM-FMAX no mide PFinicial/PFfinal ni bloquea por recuperación — es sesión de gimnasio,
+// no de dedos. El único dato real que vuelve al Sheet son las series de Dominadas con lastre.
+async function enviarSesion(){
+  const input = document.getElementById('dominadas');
+  const isEmpty = input.value.trim() === '';
+  input.classList.toggle('field-error', isEmpty);
+  input.closest('.field').classList.toggle('has-error', isEmpty);
+
+  const topError = document.getElementById('topError');
+  if(isEmpty){
+    topError.classList.add('show');
+    input.scrollIntoView({behavior:'smooth', block:'center'});
+    input.focus();
+    return;
+  }
+  topError.classList.remove('show');
+
+  const payload = {
+    nombre: 'Mikel García',
+    fecha: FECHA_PAYLOAD,
+    mesociclo: 'GYM-FMAX',
+    unico: input.value,
+  };
+
+  const rows = [
+    ['Dominadas con lastre (series)', input.value],
+  ];
+  document.getElementById('modalTable').innerHTML = rows.map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+
+  document.getElementById('modalTitle').textContent = 'Enviando...';
+  document.getElementById('modalDesc').textContent = 'Guardando tu sesión en el Sheet.';
+  document.getElementById('modal').classList.add('open');
+
+  try{
+    const res = await fetch('/api/enviar-sesion', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if(data.success){
+      document.getElementById('modalTitle').textContent = '✓ Sesión guardada';
+      document.getElementById('modalDesc').textContent = 'Se ha escrito correctamente en tu Google Sheet. Te llevamos a tu página en unos segundos...';
+      setTimeout(() => { window.location.href = '/cliente/semana.html'; }, 2500);
+    }else{
+      document.getElementById('modalTitle').textContent = '✗ Error al guardar';
+      document.getElementById('modalDesc').textContent = data.error || 'Ha ocurrido un error inesperado.';
+    }
+  }catch(err){
+    document.getElementById('modalTitle').textContent = '✗ Error de red';
+    document.getElementById('modalDesc').textContent = err.message;
+  }
+}
+document.getElementById('btnSend').addEventListener('click', enviarSesion);
+document.getElementById('modalClose').addEventListener('click', ()=>{
+  document.getElementById('modal').classList.remove('open');
+});
+</script>
+</body>
+</html>

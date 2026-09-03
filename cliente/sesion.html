@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Sesión</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e;
+    --stone-800:#262d28;
+    --stone-700:#333b34;
+    --stone-650:#3c453d;
+    --chalk:#f2ede1;
+    --chalk-dim:#c9c3b4;
+    --chalk-faint:#8d9187;
+    --moss:#7c9070;
+    --moss-light:#a7bd98;
+    --moss-deep:#4d5c46;
+    --amber:#c99a5b;
+    --danger:#c9705b;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; min-height:100vh; background:#494d4b; color:var(--chalk);
+    font-family:'Work Sans', sans-serif;
+  }
+  h1,h2,h3{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.5px; margin:0; }
+
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:rgba(28,33,30,0.92); backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(242,237,225,0.1);
+  }
+  .topbar-inner{ max-width:760px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px; font-weight:700; color:var(--moss-light); text-transform:uppercase; }
+  .eyebrow::before{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .brand h1{ font-size:20px; margin-top:2px; }
+  .brand h1 span{ color:var(--moss); }
+  .back-btn{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.16); color:var(--chalk);
+    padding:9px 14px; border-radius:10px; font-size:12px; font-weight:700; letter-spacing:0.5px;
+    text-transform:uppercase; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    text-decoration:none; transition:all .2s ease;
+  }
+  .back-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+
+  .wrap{ max-width:760px; margin:0 auto; padding:24px 24px 90px; }
+
+  .estado-carga, .estado-error{
+    max-width:760px; margin:60px auto; padding:0 24px; text-align:center; color:var(--chalk-dim);
+  }
+  .estado-error{ color:var(--chalk); }
+  .estado-error h2{ font-size:22px; color:var(--danger); margin-bottom:10px; }
+  .estado-error p{ font-size:14px; line-height:1.6; }
+
+  .session-head{ margin-bottom:24px; }
+  .session-head .meta{ display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:10px; font-size:13px; color:var(--chalk-faint); }
+  .session-head .meta b{ color:var(--chalk-dim); font-weight:700; }
+  .session-title{ font-size:30px; }
+  .session-title span{ color:var(--moss); }
+
+  .progress-track{ display:flex; gap:4px; padding:0 24px 12px; max-width:760px; margin:0 auto; }
+  .progress-track .seg{ flex:1; height:4px; border-radius:999px; background:rgba(242,237,225,0.14); overflow:hidden; transition:background .25s ease; }
+  .progress-track .seg.done{ background:var(--moss); }
+  .progress-track .seg.current{ background:linear-gradient(90deg, var(--moss) 50%, rgba(242,237,225,0.14) 50%); }
+
+  .block{
+    background:rgba(38,45,40,0.55); border:1px solid rgba(242,237,225,0.12);
+    border-radius:20px; padding:24px; margin-bottom:20px; backdrop-filter:blur(8px);
+  }
+  .block-head{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom:18px; }
+  .block-head h2{ font-size:20px; color:var(--moss-light); }
+
+  .step{ padding:16px 0; border-top:1px dashed rgba(242,237,225,0.1); }
+  .step:first-child{ border-top:none; padding-top:0; }
+  .step-title{ font-size:15px; font-weight:700; color:var(--chalk); margin-bottom:6px; }
+  .step-note{ font-size:13px; color:var(--chalk-dim); line-height:1.55; }
+  .ex-box{
+    position:relative;
+    background:rgba(38,45,40,0.5); border:1px solid rgba(242,237,225,0.1);
+    border-radius:12px; padding:12px 46px 12px 16px; margin:6px 0 10px;
+    display:grid; grid-template-columns:max-content max-content 1fr;
+    row-gap:6px; column-gap:9px; align-items:baseline;
+    transition:opacity .2s ease;
+  }
+  .ex-box.ex-done{ opacity:0.45; }
+  .ex-check{
+    position:absolute; top:50%; right:14px; transform:translateY(-50%);
+    width:21px; height:21px; accent-color:var(--moss); cursor:pointer; flex:0 0 auto;
+  }
+  .ex-row{ display:contents; }
+  .ex-row .ex-name{ font-weight:700; color:var(--moss-light); font-size:13.5px; }
+  .ex-row .ex-arrow{ color:var(--chalk-faint); font-size:12px; }
+  .ex-row .ex-series{ font-weight:700; color:var(--chalk); font-size:13.5px; font-variant-numeric:tabular-nums; }
+  .ex-row .ex-series.full{ grid-column:1/-1; color:var(--moss-light); }
+  .ex-box .ex-subnote{ grid-column:1/-1; font-size:12px; color:var(--chalk-faint); font-style:italic; margin:-3px 0 9px 2px; }
+  @media (max-width:640px){
+    .ex-box{ grid-template-columns:1fr; row-gap:2px; }
+    .ex-row{ display:block; margin-bottom:8px; }
+    .ex-row:last-child{ margin-bottom:0; }
+    .ex-row .ex-arrow{ display:none; }
+    .ex-row .ex-name{ display:block; }
+    .ex-row .ex-series{ display:block; }
+    .ex-row .ex-series.full{ grid-column:auto; }
+  }
+
+  .ref-row{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.08);
+    border-radius:12px; padding:12px 16px; margin-top:12px;
+  }
+  .ref-row .k{ font-size:12.5px; color:var(--chalk-dim); }
+  .ref-row .k .unit{ color:var(--chalk-faint); font-weight:400; }
+  .ref-row .v{ font-size:16px; font-weight:700; color:var(--moss-light); font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  .field{ display:flex; flex-direction:column; gap:6px; margin-top:14px; }
+  .field label{ font-size:12.5px; color:var(--chalk-dim); font-weight:700; }
+  .field label .unit{ color:var(--chalk-faint); font-weight:400; }
+  input[type=number]{
+    background:var(--stone-700); border:1px solid rgba(242,237,225,0.18);
+    color:var(--chalk); border-radius:10px; padding:12px 14px; font-size:16px;
+    font-family:'Work Sans',sans-serif; width:100%; font-weight:700;
+  }
+  input[type=number]::placeholder{ color:var(--chalk-faint); font-weight:400; }
+  input[type=number]:focus{ outline:2px solid var(--moss); outline-offset:1px; border-color:var(--moss); }
+  input[type=number].field-error{ border-color:var(--danger); background:rgba(201,112,91,0.12); }
+  .field-error-msg{ font-size:12px; color:var(--danger); font-weight:600; display:none; margin-top:-2px; }
+  .field.has-error .field-error-msg{ display:block; }
+  .top-error-banner{
+    display:none; background:rgba(201,112,91,0.16); border:1px solid rgba(201,112,91,0.4);
+    color:var(--chalk); border-radius:12px; padding:12px 16px; margin-bottom:16px; font-size:13px; font-weight:600;
+  }
+  .top-error-banner.show{ display:block; }
+
+  .recovery-status{
+    display:none; align-items:center; gap:12px; margin-top:12px;
+    padding:14px 16px; border-radius:12px; font-size:13.5px; line-height:1.5;
+  }
+  .recovery-status.show{ display:flex; }
+  .recovery-status .dot{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
+  .recovery-status.ok{ background:rgba(124,144,112,0.16); border:1px solid rgba(124,144,112,0.4); color:var(--chalk); }
+  .recovery-status.ok .dot{ background:var(--moss-light); }
+  .recovery-status.warn{ background:rgba(201,112,91,0.16); border:1px solid rgba(201,112,91,0.45); color:var(--chalk); }
+  .recovery-status.warn .dot{ background:var(--danger); }
+  .recovery-status.info{ background:rgba(201,154,91,0.14); border:1px solid rgba(201,154,91,0.4); color:var(--chalk); }
+  .recovery-status.info .dot{ background:var(--amber); }
+  .recovery-status b{ font-weight:800; }
+
+  .block.blocked{ opacity:0.35; pointer-events:none; position:relative; filter:grayscale(0.4); transition:opacity .25s ease, filter .25s ease; }
+  .block.blocked::after{
+    content:"No aplica hoy"; position:absolute; top:24px; right:24px;
+    font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase; font-weight:800;
+    color:var(--danger); background:rgba(201,112,91,0.15); border:1px solid rgba(201,112,91,0.4);
+    padding:4px 10px; border-radius:999px;
+  }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width:560px){ .grid2{ grid-template-columns:1fr; } }
+
+  .send-bar{ margin-top:28px; padding:0; }
+  .send-btn{
+    width:100%; background:var(--moss); color:var(--stone-900); border:none;
+    padding:16px; border-radius:14px; font-family:'Work Sans',sans-serif; font-weight:800;
+    font-size:14px; letter-spacing:0.5px; text-transform:uppercase; cursor:pointer;
+    box-shadow:0 10px 30px rgba(0,0,0,0.35); transition:transform .15s ease, background .2s ease;
+  }
+  .send-btn:hover{ background:var(--moss-light); transform:translateY(-1px); }
+  .send-btn:active{ transform:translateY(0); }
+  .send-btn-quick{ display:none; margin-top:14px; }
+  .send-btn-quick.show{ display:block; }
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(0,0,0,0.6); backdrop-filter:blur(3px);
+    display:none; align-items:center; justify-content:center; z-index:100; padding:20px;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .modal{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.14);
+    border-radius:20px; padding:26px; max-width:420px; width:100%;
+  }
+  .modal h3{ font-size:18px; color:var(--moss-light); margin-bottom:6px; }
+  .modal p{ font-size:13px; color:var(--chalk-dim); line-height:1.5; margin:0 0 16px; }
+  .modal-table{ width:100%; border-collapse:collapse; font-size:13px; margin-bottom:18px; }
+  .modal-table td{ padding:6px 0; border-top:1px solid rgba(242,237,225,0.08); }
+  .modal-table td:first-child{ color:var(--chalk-faint); }
+  .modal-table td:last-child{ text-align:right; font-weight:700; color:var(--chalk); font-variant-numeric:tabular-nums; }
+  .modal-close{
+    width:100%; background:transparent; border:1px solid rgba(242,237,225,0.2); color:var(--chalk);
+    padding:12px; border-radius:10px; font-weight:700; font-size:13px; cursor:pointer; text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .modal-close:hover{ border-color:var(--moss); color:var(--moss-light); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="eyebrow">Kaska.Climb</div>
+    </div>
+    <a class="back-btn" href="semana.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Semana
+    </a>
+  </div>
+  <div class="progress-track" id="progressTrack"></div>
+</div>
+
+<div class="wrap" id="wrap" hidden>
+
+  <div class="top-error-banner" id="topError">Faltan campos por rellenar. Si no has hecho ese ejercicio hoy, pon 0.</div>
+
+  <div class="session-head">
+    <div class="eyebrow" id="eyebrowTxt">—</div>
+    <h2 class="session-title" id="sessionTitleTxt">—</h2>
+    <div class="meta">
+      <span><b>Fecha:</b> <span id="fechaDisplay">—</span></span>
+    </div>
+  </div>
+
+  <div id="contenedorBloques"></div>
+
+  <div class="send-bar">
+    <button class="send-btn" id="btnSend">Enviar sesión</button>
+  </div>
+
+</div>
+
+<div class="estado-carga" id="estadoCarga">Cargando sesión…</div>
+
+<div class="estado-error" id="estadoError" hidden>
+  <h2>No se pudo cargar la sesión</h2>
+  <p id="estadoErrorTexto"></p>
+</div>
+
+<div class="modal-backdrop" id="modal">
+  <div class="modal">
+    <h3 id="modalTitle">Enviando...</h3>
+    <p id="modalDesc">Guardando tu sesión en el Sheet.</p>
+    <table class="modal-table" id="modalTable"></table>
+    <button class="modal-close" id="modalClose">Cerrar</button>
+  </div>
+</div>
+
+<script src="../libs/mesociclos-config.js"></script>
+<script>
+/* =====================================================================
+   MOTOR GENÉRICO DE SESIÓN
+   Lee ?cliente=&fecha=&mesociclo=&semana= de la URL, pide al backend el
+   JSON de esa sesión (mismo formato que exporta Sesiones.html: partes ->
+   bloque_ejercicios / cabecera_separadora) y su historial de PFinicial,
+   y construye la página entera. No lleva NINGÚN contenido de ejercicios
+   escrito a mano — todo sale del JSON.
+   ===================================================================== */
+
+const params = new URLSearchParams(window.location.search);
+const CLIENTE = params.get('cliente');
+const FECHA_PARAM = params.get('fecha');   // dd/mm/aaaa
+const MESOCICLO = params.get('mesociclo');
+const SEMANA_PARAM = params.get('semana');
+
+const { COLUMNS, FIELD_MAP, TITULOS } = window.MESOCICLOS_CONFIG || {};
+
+function escapeHtml(str){
+  return (str == null ? '' : String(str))
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function normalizar(s){ return (s || '').toString().trim().toLowerCase(); }
+
+function limpiarNota(nota){
+  if(!nota) return '';
+  const lineas = nota.split('\n').map(l => l.trim().replace(/^-\s*/, '')).filter(Boolean);
+  let t = lineas.join(' ');
+  if(t && !/[.!?…]$/.test(t)) t += '.';
+  return t;
+}
+
+function mostrarError(mensaje){
+  document.getElementById('estadoCarga').hidden = true;
+  document.getElementById('wrap').hidden = true;
+  document.getElementById('estadoError').hidden = false;
+  document.getElementById('estadoErrorTexto').textContent = mensaje;
+}
+
+/* ---------- Validación de parámetros de entrada ---------- */
+if(!CLIENTE || !FECHA_PARAM || !MESOCICLO){
+  mostrarError('Falta identificar cliente, fecha o mesociclo en el enlace. Vuelve a Semanas.html y genera el enlace de nuevo.');
+  throw new Error('Parámetros incompletos');
+}
+if(!FIELD_MAP || !FIELD_MAP[MESOCICLO]){
+  mostrarError(`El mesociclo "${MESOCICLO}" no existe todavía.`);
+  throw new Error('Mesociclo desconocido');
+}
+
+const CFG = FIELD_MAP[MESOCICLO];
+
+/* ---------- Fecha a mostrar / a enviar (dd/mm/aaaa desde la URL) ---------- */
+let HOY = new Date();
+{
+  const [d, m, y] = FECHA_PARAM.split('/').map(Number);
+  if(d && m && y) HOY = new Date(y, m - 1, d);
+}
+const FECHA_DISPLAY = HOY.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'short' });
+const FECHA_PAYLOAD = FECHA_PARAM;
+
+/* ---------- Buscar dentro de un array de "partes" el que casa con un `titulo` ---------- */
+function encontrarCampo(titulo){
+  const t = normalizar(titulo);
+  if(CFG.pfInicial && normalizar(CFG.pfInicial.match) === t) return { tipo: 'pfInicial' };
+  if(CFG.pfFinal && normalizar(CFG.pfFinal.match) === t) return { tipo: 'pfFinal' };
+  if(CFG.fmaxTest && normalizar(CFG.fmaxTest.match) === t) return { tipo: 'fmaxTest' };
+  if(CFG.unico && normalizar(CFG.unico.match) === t) return { tipo: 'unico', cfg: CFG.unico };
+  if(CFG.campos){
+    for(const c of CFG.campos){
+      if(normalizar(c.match) === t) return { tipo: 'campo', cfg: c };
+    }
+  }
+  return null;
+}
+
+function esBloqueRefFmax(titulo){
+  return CFG.fmaxReferenceBlock && normalizar(CFG.fmaxReferenceBlock.match) === normalizar(titulo);
+}
+
+/* ---------- Render de una "parte" (bloque_ejercicios) como .step ---------- */
+let exchkContador = 0;
+
+function renderRefFmax(ultimaValida){
+  const izq = ultimaValida && ultimaValida.fmaxIzq !== undefined ? ultimaValida.fmaxIzq + ' N' : '— N';
+  const der = ultimaValida && ultimaValida.fmaxDer !== undefined ? ultimaValida.fmaxDer + ' N' : '— N';
+  return `
+    <div class="ref-row">
+      <span class="k">Fmax 5" mano izq. <span class="unit">(última sesión)</span></span>
+      <span class="v">${izq}</span>
+    </div>
+    <div class="ref-row" style="margin-top:8px;">
+      <span class="k">Fmax 5" mano der. <span class="unit">(última sesión)</span></span>
+      <span class="v">${der}</span>
+    </div>`;
+}
+
+function renderCampoInput(campo, ultimaValida){
+  if(campo.tipo === 'pfInicial'){
+    const refFecha = ultimaValida ? ultimaValida.fecha : null;
+    const refPf = ultimaValida ? ultimaValida.pfInicial : null;
+    return `
+      <div class="ref-row">
+        <span class="k">Tu PFinicial <span class="unit" id="refFechaTxt">${refFecha ? '(última sesión entrenada — ' + escapeHtml(refFecha) + ')' : '(sin sesiones previas)'}</span></span>
+        <span class="v" id="refPfValor">${refPf !== null ? refPf + ' N' : '— N'}</span>
+      </div>
+      <div class="field">
+        <label>Resultado Test PFinicial <span class="unit">(N)</span></label>
+        <input type="number" step="0.1" id="pf-inicial" placeholder="Introduce el valor conseguido">
+        <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+      </div>
+      <div class="recovery-status" id="recoveryStatus"></div>
+      <button class="send-btn send-btn-quick" id="btnSendQuick">Enviar sesión</button>`;
+  }
+  if(campo.tipo === 'pfFinal'){
+    return `
+      <div class="ref-row">
+        <span class="k">Para cuando bajes de <span class="unit">(<span id="umbralIntegradoTxt">${CFG.umbralIntegrado}</span>% de hoy)</span></span>
+        <span class="v" id="refPfFinalUmbral">— N</span>
+      </div>
+      <div class="field">
+        <label>Último Test PFfinal realizado <span class="unit">(N)</span></label>
+        <input type="number" step="0.1" id="pf-final" placeholder="Introduce el valor conseguido">
+        <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+      </div>
+      <div class="recovery-status" id="pfFinalWarning"></div>`;
+  }
+  if(campo.tipo === 'fmaxTest'){
+    return `
+      <div class="grid2">
+        <div class="field">
+          <label>Mano izq. — media <span class="unit">(N)</span></label>
+          <input type="number" step="0.1" id="fmax-izq" placeholder="0">
+          <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+        </div>
+        <div class="field">
+          <label>Mano der. — media <span class="unit">(N)</span></label>
+          <input type="number" step="0.1" id="fmax-der" placeholder="0">
+          <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+        </div>
+      </div>`;
+  }
+  if(campo.tipo === 'unico'){
+    return `
+      <div class="field">
+        <label>${escapeHtml(campo.cfg.label)}</label>
+        <input type="number" step="1" id="${campo.cfg.id}" placeholder="0">
+        <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+      </div>`;
+  }
+  // 'campo' normal (o de tipo 'tiempo', dos inputs min/seg)
+  const c = campo.cfg;
+  if(c.tipo === 'tiempo'){
+    return `
+      <div class="grid2">
+        <div class="field">
+          <label>Minutos escalados</label>
+          <input type="number" step="1" id="${c.id}-min" placeholder="0">
+          <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+        </div>
+        <div class="field">
+          <label>Segundos <span class="unit">(0-59)</span></label>
+          <input type="number" step="1" id="${c.id}-seg" placeholder="0">
+          <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="field">
+      <label>${escapeHtml(c.label)}</label>
+      <input type="number" step="1" id="${c.id}" placeholder="0">
+      <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
+    </div>`;
+}
+
+function renderParte(parte, ultimaValida){
+  const campo = encontrarCampo(parte.titulo);
+  const esRefFmax = esBloqueRefFmax(parte.titulo);
+  const ejercicios = parte.ejercicios || [];
+
+  let html = `<div class="step">`;
+  html += `<div class="step-title">${escapeHtml(parte.titulo)}</div>`;
+
+  if(parte.descripcion && parte.descripcion.trim()){
+    html += `<div class="step-note" style="font-style:italic; margin-bottom:8px;">${escapeHtml(parte.descripcion.trim())}</div>`;
+  }
+
+  if(esRefFmax){
+    html += renderRefFmax(ultimaValida);
+  }
+
+  exchkContador++;
+  html += `<div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-${exchkContador}" aria-label="Marcar como hecho">`;
+  if(ejercicios.length === 1){
+    html += `<div class="ex-row"><span class="ex-series full">${escapeHtml(ejercicios[0].series || '')}</span></div>`;
+  } else {
+    ejercicios.forEach(ej => {
+      html += `<div class="ex-row"><span class="ex-name">${escapeHtml(ej.nombre || '')}</span><span class="ex-arrow">→</span><span class="ex-series">${escapeHtml(ej.series || '')}</span></div>`;
+      const nota = limpiarNota(ej.notas);
+      if(nota) html += `<div class="ex-subnote">${escapeHtml(nota)}</div>`;
+    });
+  }
+  html += `</div>`;
+
+  if(ejercicios.length === 1){
+    const nota = limpiarNota(ejercicios[0].notas);
+    if(nota) html += `<div class="step-note">${escapeHtml(nota)}</div>`;
+  }
+
+  if(campo){
+    html += renderCampoInput(campo, ultimaValida);
+  }
+
+  html += `</div>`;
+  return html;
+}
+
+/* ---------- Render de toda la sesión ---------- */
+function renderSesion(sesion, ultimaValida){
+  const partes = sesion.partes || [];
+
+  const bloques = [];
+  let actual = { id: 'block-0', titulo: sesion.tituloPrincipal || 'Sesión', pasos: [] };
+  bloques.push(actual);
+  partes.forEach(p => {
+    if(p.tipo === 'cabecera_separadora'){
+      actual = { id: 'block-' + bloques.length, titulo: p.tituloPrincipal, pasos: [] };
+      bloques.push(actual);
+    } else if(p.tipo === 'bloque_ejercicios'){
+      actual.pasos.push(p);
+    }
+  });
+
+  document.getElementById('progressTrack').innerHTML =
+    bloques.map(b => `<div class="seg" data-block="${b.id}"></div>`).join('');
+
+  let bloquesHtml = '';
+  bloques.forEach(bloque => {
+    let pasosHtml = '';
+    bloque.pasos.forEach(parte => { pasosHtml += renderParte(parte, ultimaValida); });
+    bloquesHtml += `
+      <div class="block" id="${bloque.id}">
+        <div class="block-head"><h2>${escapeHtml(bloque.titulo)}</h2></div>
+        ${pasosHtml}
+      </div>`;
+  });
+  document.getElementById('contenedorBloques').innerHTML = bloquesHtml;
+
+  // Cabecera
+  document.getElementById('eyebrowTxt').textContent =
+    `${CLIENTE} · Mesociclo ${MESOCICLO}${SEMANA_PARAM ? ' · Semana ' + SEMANA_PARAM : ''}`;
+  const titulo = (TITULOS && TITULOS[MESOCICLO]) || MESOCICLO;
+  document.getElementById('sessionTitleTxt').innerHTML =
+    titulo.replace(/\s*\(([^)]+)\)\s*$/, ' <span>($1)</span>');
+  document.title = `Kaska.Climb | Sesión — ${MESOCICLO}`;
+  document.getElementById('fechaDisplay').textContent =
+    FECHA_DISPLAY.charAt(0).toUpperCase() + FECHA_DISPLAY.slice(1);
+}
+
+/* ---------- Interactividad (checkboxes, recuperación, envío) ---------- */
+function wireInteractividad(ultimaValida){
+  document.querySelectorAll('.ex-check').forEach(cb => {
+    cb.addEventListener('change', () => cb.closest('.ex-box').classList.toggle('ex-done', cb.checked));
+  });
+
+  (function(){
+    const segs = Array.from(document.querySelectorAll('#progressTrack .seg'));
+    const blocks = segs.map(s => document.getElementById(s.dataset.block)).filter(Boolean);
+    const topbar = document.querySelector('.topbar');
+    function updateProgress(){
+      const threshold = topbar.offsetHeight + 40;
+      let activeIndex = 0;
+      blocks.forEach((block, i) => { if(block.getBoundingClientRect().top - threshold <= 0) activeIndex = i; });
+      const lastBlock = blocks[blocks.length - 1];
+      const pastEverything = lastBlock && (lastBlock.getBoundingClientRect().bottom < threshold);
+      segs.forEach((seg, i) => {
+        seg.classList.remove('done', 'current');
+        if(pastEverything || i < activeIndex) seg.classList.add('done');
+        else if(i === activeIndex) seg.classList.add('current');
+      });
+    }
+    window.addEventListener('scroll', updateProgress, { passive:true });
+    window.addEventListener('resize', updateProgress);
+    updateProgress();
+  })();
+
+  document.querySelectorAll('input[type=number]').forEach(inp => {
+    inp.addEventListener('input', () => {
+      if(inp.value.trim() !== ''){
+        inp.classList.remove('field-error');
+        inp.closest('.field').classList.remove('has-error');
+      }
+    });
+  });
+
+  let sesionBloqueada = false;
+  let umbralParadaActual = null;
+
+  const pfInicialInput = document.getElementById('pf-inicial');
+  if(pfInicialInput && CFG.pfInicial){
+    const recoveryBox = document.getElementById('recoveryStatus');
+    const btnSendQuick = document.getElementById('btnSendQuick');
+    const refPfFinalUmbral = document.getElementById('refPfFinalUmbral');
+    const bloqueDelPfInicial = pfInicialInput.closest('.block');
+    const todosLosBloques = Array.from(document.querySelectorAll('.block'));
+    const idx = todosLosBloques.indexOf(bloqueDelPfInicial);
+    const laterBlocks = todosLosBloques.slice(idx + 1);
+
+    if(!ultimaValida){
+      // Sin historial previo (primera vez que se le manda este mesociclo a este
+      // cliente) no hay referencia con la que calcular la recuperación — no se
+      // bloquea nunca, solo se avisa.
+      if(recoveryBox){
+        pfInicialInput.addEventListener('input', () => {
+          const v = parseFloat(pfInicialInput.value);
+          if(isNaN(v) || pfInicialInput.value.trim() === ''){
+            recoveryBox.classList.remove('show', 'info');
+            if(refPfFinalUmbral) refPfFinalUmbral.textContent = '— N';
+            umbralParadaActual = null;
+            return;
+          }
+          recoveryBox.classList.add('show', 'info');
+          recoveryBox.innerHTML = '<span class="dot"></span><span>Primera vez que registras este mesociclo — sin referencia previa para calcular recuperación. <b>Continúa con la sesión.</b></span>';
+          if(CFG.pfFinal && refPfFinalUmbral){
+            const umbralParada = v * (1 - CFG.umbralIntegrado / 100);
+            umbralParadaActual = umbralParada;
+            refPfFinalUmbral.textContent = umbralParada.toFixed(0) + ' N';
+          }
+        });
+      }
+    } else {
+      const REF_PF = ultimaValida.pfInicial;
+      const REF_FECHA = ultimaValida.fecha;
+      pfInicialInput.addEventListener('input', () => {
+        const v = parseFloat(pfInicialInput.value);
+        if(isNaN(v) || pfInicialInput.value.trim() === ''){
+          recoveryBox.classList.remove('show', 'ok', 'warn', 'info');
+          sesionBloqueada = false;
+          laterBlocks.forEach(b => b.classList.remove('blocked'));
+          if(refPfFinalUmbral) refPfFinalUmbral.textContent = '— N';
+          umbralParadaActual = null;
+          if(btnSendQuick) btnSendQuick.classList.remove('show');
+          return;
+        }
+        if(CFG.pfFinal && refPfFinalUmbral){
+          const umbralParada = v * (1 - CFG.umbralIntegrado / 100);
+          umbralParadaActual = umbralParada;
+          refPfFinalUmbral.textContent = umbralParada.toFixed(0) + ' N';
+        }
+        const perdida = ((REF_PF - v) / REF_PF) * 100;
+        sesionBloqueada = perdida > CFG.umbralControl;
+        recoveryBox.classList.remove('ok', 'warn', 'info');
+        recoveryBox.classList.add('show', sesionBloqueada ? 'warn' : 'ok');
+        if(sesionBloqueada){
+          recoveryBox.innerHTML = `<span class="dot"></span><span>Pérdida del <b>${perdida.toFixed(1)}%</b> respecto a tu última sesión entrenada (${escapeHtml(REF_FECHA)}) — por encima del ${CFG.umbralControl}%. <b>No estás recuperado, hoy no entrenamos.</b> Envía este resultado y descansa; retómalo en la próxima sesión.</span>`;
+        }else if(perdida <= 0){
+          recoveryBox.innerHTML = `<span class="dot"></span><span>Ganancia del <b>${Math.abs(perdida).toFixed(1)}%</b> respecto a tu última sesión entrenada. <b>Estás recuperado</b>, continúa con la sesión.</span>`;
+        }else{
+          recoveryBox.innerHTML = `<span class="dot"></span><span>Pérdida del <b>${perdida.toFixed(1)}%</b> — dentro del margen. <b>Estás recuperado</b>, continúa con la sesión.</span>`;
+        }
+        laterBlocks.forEach(b => b.classList.toggle('blocked', sesionBloqueada));
+        if(btnSendQuick) btnSendQuick.classList.toggle('show', sesionBloqueada);
+      });
+    }
+  }
+
+  const pfFinalInput = document.getElementById('pf-final');
+  const pfFinalWarning = document.getElementById('pfFinalWarning');
+  if(pfFinalInput && pfFinalWarning){
+    pfFinalInput.addEventListener('input', () => {
+      const v = parseFloat(pfFinalInput.value);
+      if(isNaN(v) || pfFinalInput.value.trim() === '' || umbralParadaActual === null){
+        pfFinalWarning.classList.remove('show', 'ok', 'warn');
+        return;
+      }
+      pfFinalWarning.classList.remove('ok', 'warn');
+      if(v > umbralParadaActual){
+        pfFinalWarning.classList.add('show', 'warn');
+        pfFinalWarning.innerHTML = `<span class="dot"></span><span>Este valor (${v} N) todavía está <b>por encima del umbral de parada</b> (${umbralParadaActual.toFixed(0)} N). Si de verdad es tu último test, revísalo — no debería haberse acabado la sesión todavía con esta cifra.</span>`;
+      }else{
+        pfFinalWarning.classList.add('show', 'ok');
+        pfFinalWarning.innerHTML = `<span class="dot"></span><span>Correcto — por debajo del umbral de parada (${umbralParadaActual.toFixed(0)} N).</span>`;
+      }
+    });
+  }
+
+  /* ---------- Envío ---------- */
+  function calcularRequiredIds(){
+    if(CFG.unico) return [CFG.unico.id];
+    if(!CFG.pfInicial) return [];
+    if(sesionBloqueada) return ['pf-inicial'];
+    const ids = ['pf-inicial'];
+    if(CFG.fmaxTest) ids.push('fmax-izq', 'fmax-der');
+    (CFG.campos || []).forEach(c => {
+      if(c.tipo === 'tiempo'){
+        if(document.getElementById(c.id + '-min')) ids.push(c.id + '-min', c.id + '-seg');
+      } else if(document.getElementById(c.id)){
+        ids.push(c.id);
+      }
+    });
+    if(CFG.pfFinal) ids.push('pf-final');
+    return ids;
+  }
+
+  function construirPayload(){
+    const val = id => { const el = document.getElementById(id); return el && el.value !== '' ? el.value : undefined; };
+
+    if(CFG.unico){
+      return { nombre: CLIENTE, fecha: FECHA_PAYLOAD, mesociclo: MESOCICLO, unico: val(CFG.unico.id) };
+    }
+    if(!CFG.pfInicial){
+      return { nombre: CLIENTE, fecha: FECHA_PAYLOAD, mesociclo: MESOCICLO };
+    }
+
+    const pfInicialN = parseFloat(val('pf-inicial'));
+    const payload = {
+      nombre: CLIENTE, fecha: FECHA_PAYLOAD, mesociclo: MESOCICLO,
+      pfInicial: !isNaN(pfInicialN) ? pfInicialN : undefined,
+    };
+    if(!sesionBloqueada){
+      if(CFG.fmaxTest){ payload.fmaxIzq = val('fmax-izq'); payload.fmaxDer = val('fmax-der'); }
+      if(CFG.campos){
+        payload.campos = CFG.campos.map(c => {
+          if(c.tipo === 'tiempo'){
+            if(!document.getElementById(c.id + '-min')) return undefined;
+            const min = parseFloat(val(c.id + '-min')) || 0;
+            const seg = parseFloat(val(c.id + '-seg')) || 0;
+            return (min * 60) + seg;
+          }
+          return val(c.id);
+        });
+      }
+      if(CFG.pfFinal){
+        const pfFinalN = parseFloat(val('pf-final'));
+        payload.pfFinal = !isNaN(pfFinalN) ? pfFinalN : undefined;
+      }
+    }
+    return payload;
+  }
+
+  function construirFilasModal(payload){
+    if(CFG.unico){
+      return [[CFG.unico.label, payload.unico ?? '—']];
+    }
+    if(!CFG.pfInicial){
+      return [['Sesión', 'Completada']];
+    }
+    if(sesionBloqueada){
+      return [
+        ['Test PFinicial (N)', payload.pfInicial ?? '—'],
+        ['Sesión', 'No entrenada — no recuperado'],
+      ];
+    }
+    const filas = [['Test PFinicial (N)', payload.pfInicial ?? '—']];
+    if(CFG.fmaxTest){
+      filas.push(['Fmax 5" mano izq. (N)', payload.fmaxIzq ?? '—']);
+      filas.push(['Fmax 5" mano der. (N)', payload.fmaxDer ?? '—']);
+    }
+    (CFG.campos || []).forEach((c, i) => {
+      const v = payload.campos ? payload.campos[i] : undefined;
+      if(v === undefined) return; // alternativa no presente esta semana
+      filas.push([c.label + (c.tipo === 'tiempo' ? '' : ''), v]);
+    });
+    if(CFG.pfFinal) filas.push(['Test PFfinal (N)', payload.pfFinal ?? '—']);
+    return filas;
+  }
+
+  async function enviarSesion(){
+    const requiredIds = calcularRequiredIds();
+    let firstInvalid = null;
+    requiredIds.forEach(id => {
+      const input = document.getElementById(id);
+      const isEmpty = input.value.trim() === '';
+      input.classList.toggle('field-error', isEmpty);
+      input.closest('.field').classList.toggle('has-error', isEmpty);
+      if(isEmpty && !firstInvalid) firstInvalid = input;
+    });
+
+    const topError = document.getElementById('topError');
+    if(firstInvalid){
+      topError.classList.add('show');
+      firstInvalid.scrollIntoView({ behavior:'smooth', block:'center' });
+      firstInvalid.focus();
+      return;
+    }
+    topError.classList.remove('show');
+
+    const payload = construirPayload();
+    const rows = construirFilasModal(payload);
+    document.getElementById('modalTable').innerHTML =
+      rows.map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`).join('');
+
+    document.getElementById('modalTitle').textContent = 'Enviando...';
+    document.getElementById('modalDesc').textContent = 'Guardando tu sesión en el Sheet.';
+    document.getElementById('modal').classList.add('open');
+
+    try{
+      const res = await fetch('/api/enviar-sesion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if(data.success){
+        document.getElementById('modalTitle').textContent = '✓ Sesión guardada';
+        document.getElementById('modalDesc').textContent = 'Se ha escrito correctamente en tu Google Sheet. Te llevamos a tu página en unos segundos...';
+        setTimeout(() => { window.location.href = 'semana.html'; }, 2500);
+      }else{
+        document.getElementById('modalTitle').textContent = '✗ Error al guardar';
+        document.getElementById('modalDesc').textContent = data.error || 'Ha ocurrido un error inesperado.';
+      }
+    }catch(err){
+      document.getElementById('modalTitle').textContent = '✗ Error de red';
+      document.getElementById('modalDesc').textContent = err.message;
+    }
+  }
+
+  document.getElementById('btnSend').addEventListener('click', enviarSesion);
+  const btnSendQuick = document.getElementById('btnSendQuick');
+  if(btnSendQuick) btnSendQuick.addEventListener('click', enviarSesion);
+  document.getElementById('modalClose').addEventListener('click', () => {
+    document.getElementById('modal').classList.remove('open');
+  });
+}
+
+/* ---------- Carga de datos y arranque ---------- */
+async function cargar(){
+  try{
+    const qsSesion = new URLSearchParams({ cliente: CLIENTE, fecha: FECHA_PARAM, mesociclo: MESOCICLO });
+    const necesitaHistorial = !!CFG.pfInicial;
+    const peticiones = [ fetch('/api/obtener-sesion?' + qsSesion.toString()) ];
+    if(necesitaHistorial){
+      const qsHist = new URLSearchParams({ cliente: CLIENTE, mesociclo: MESOCICLO, limite: '10' });
+      peticiones.push(fetch('/api/obtener-historial?' + qsHist.toString()));
+    }
+
+    const respuestas = await Promise.all(peticiones);
+    const dataSesion = await respuestas[0].json();
+    if(!dataSesion.success){
+      mostrarError(dataSesion.error || 'No se encontró ninguna sesión programada para hoy.');
+      return;
+    }
+
+    let ultimaValida = null;
+    if(necesitaHistorial){
+      const dataHist = await respuestas[1].json();
+      if(dataHist.success && Array.isArray(dataHist.historial)){
+        ultimaValida = [...dataHist.historial].reverse().find(h => h.entrenada) || null;
+      }
+    }
+
+    renderSesion(dataSesion.sesion, ultimaValida);
+    wireInteractividad(ultimaValida);
+
+    document.getElementById('estadoCarga').hidden = true;
+    document.getElementById('wrap').hidden = false;
+  }catch(err){
+    mostrarError('Error de red al cargar la sesión: ' + err.message);
+  }
+}
+
+cargar();
+</script>
+</body>
+</html>
