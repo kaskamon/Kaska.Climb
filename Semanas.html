@@ -791,6 +791,11 @@ document.getElementById('btnPublicarSemana').addEventListener('click', async () 
     return;
   }
 
+  // Los mismos valores que ya rellenas a mano en la cabecera de arriba —
+  // se publican tal cual, sin recalcular nada.
+  const semana = document.getElementById('h1').innerText.trim();
+  const semanaMesociclo = document.getElementById('h4').innerText.trim();
+
   const dias = Array.from(document.querySelectorAll('.dia-columna'));
   const resultados = [];
   estadoDiv.innerHTML = 'Publicando...';
@@ -815,7 +820,7 @@ document.getElementById('btnPublicarSemana').addEventListener('click', async () 
       const resPub = await fetch('/api/publicar-sesion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cliente, fecha, mesociclo, sesion: dataUltimo.sesion }),
+        body: JSON.stringify({ cliente, fecha, mesociclo, sesion: dataUltimo.sesion, semana, semanaMesociclo }),
       });
       const dataPub = await resPub.json();
 

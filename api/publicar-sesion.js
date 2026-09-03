@@ -3,8 +3,10 @@ const { COLUMNS } = require('../libs/mesociclos-config.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 // Misma pestaña que lee api/obtener-sesion.js. Columnas: A marcaTemporal,
-// B cliente, C fecha (dd/mm/aaaa), D mesociclo, E semana (sin usar por ahora),
-// F json (el objeto {tituloPrincipal, partes} tal cual lo exporta Sesiones.html).
+// B cliente, C fecha (dd/mm/aaaa), D mesociclo, E semana (la del macrociclo
+// completo, tal cual la escribe el entrenador en Semanas.html), F json (el
+// objeto {tituloPrincipal, partes} tal cual lo exporta Sesiones.html),
+// G semanaMesociclo (p.ej. "3/6" — "Sem. Meso." de Semanas.html).
 const SHEET_NAME = 'Sesiones_Programadas';
 
 module.exports = async (req, res) => {
@@ -13,7 +15,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { cliente, fecha, mesociclo, sesion } = req.body || {};
+    const { cliente, fecha, mesociclo, sesion, semana, semanaMesociclo } = req.body || {};
 
     if (!cliente || !fecha || !mesociclo || !sesion) {
       return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (cliente, fecha, mesociclo o sesion).' });
@@ -42,9 +44,9 @@ module.exports = async (req, res) => {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: `'${SHEET_NAME}'!A:F`,
+      range: `'${SHEET_NAME}'!A:G`,
       valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [[marcaTemporal, cliente, fecha, mesociclo, '', JSON.stringify(sesion)]] },
+      requestBody: { values: [[marcaTemporal, cliente, fecha, mesociclo, semana || '', JSON.stringify(sesion), semanaMesociclo || '']] },
     });
 
     res.status(200).json({ success: true, message: 'Sesión publicada correctamente.' });

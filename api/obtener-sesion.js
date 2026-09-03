@@ -43,7 +43,7 @@ module.exports = async (req, res) => {
     try {
       const resp = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `'${SHEET_NAME}'!A:F`,
+        range: `'${SHEET_NAME}'!A:G`,
       });
       filas = resp.data.values || [];
     } catch (e) {
@@ -55,16 +55,16 @@ module.exports = async (req, res) => {
 
     // De abajo a arriba: si se ha publicado más de una vez para el mismo
     // cliente/fecha/mesociclo, nos quedamos con la más reciente.
-    let jsonCrudo = null;
+    let filaEncontrada = null;
     for (let i = filas.length - 1; i >= 0; i--) {
       const fila = filas[i];
       if (fila[1] === cliente && fila[2] === fecha && fila[3] === mesociclo) {
-        jsonCrudo = fila[5];
+        filaEncontrada = fila;
         break;
       }
     }
 
-    if (!jsonCrudo) {
+    if (!filaEncontrada) {
       return res.status(404).json({
         success: false,
         error: 'No hay ninguna sesión publicada para ese cliente, fecha y mesociclo.',
@@ -73,12 +73,17 @@ module.exports = async (req, res) => {
 
     let sesion;
     try {
-      sesion = JSON.parse(jsonCrudo);
+      sesion = JSON.parse(filaEncontrada[5]);
     } catch (e) {
       return res.status(500).json({ success: false, error: 'La sesión publicada tiene un JSON inválido.' });
     }
 
-    res.status(200).json({ success: true, sesion });
+    res.status(200).json({
+      success: true,
+      sesion,
+      semana: filaEncontrada[4] || null,
+      semanaMesociclo: filaEncontrada[6] || null,
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

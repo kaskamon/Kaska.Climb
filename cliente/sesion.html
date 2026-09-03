@@ -236,6 +236,7 @@
     <h2 class="session-title" id="sessionTitleTxt">—</h2>
     <div class="meta">
       <span><b>Fecha:</b> <span id="fechaDisplay">—</span></span>
+      <span id="semanaMesocicloWrap" hidden><b>Semana del mesociclo:</b> <span id="semanaMesocicloTxt">—</span></span>
     </div>
   </div>
 
@@ -495,7 +496,7 @@ function renderParte(parte, ultimaValida){
 }
 
 /* ---------- Render de toda la sesión ---------- */
-function renderSesion(sesion, ultimaValida){
+function renderSesion(sesion, ultimaValida, semanaFinal, semanaMesocicloFinal){
   const partes = sesion.partes || [];
 
   const bloques = [];
@@ -527,13 +528,17 @@ function renderSesion(sesion, ultimaValida){
 
   // Cabecera
   document.getElementById('eyebrowTxt').textContent =
-    `${NOMBRE_DISPLAY} · Mesociclo ${MESOCICLO}${SEMANA_PARAM ? ' · Semana ' + SEMANA_PARAM : ''}`;
+    `${NOMBRE_DISPLAY} · Mesociclo ${MESOCICLO}${semanaFinal ? ' · Semana ' + semanaFinal : ''}`;
   const titulo = (TITULOS && TITULOS[MESOCICLO]) || MESOCICLO;
   document.getElementById('sessionTitleTxt').innerHTML =
     titulo.replace(/\s*\(([^)]+)\)\s*$/, ' <span>($1)</span>');
   document.title = `Kaska.Climb | Sesión — ${MESOCICLO}`;
   document.getElementById('fechaDisplay').textContent =
     FECHA_DISPLAY.charAt(0).toUpperCase() + FECHA_DISPLAY.slice(1);
+  if(semanaMesocicloFinal){
+    document.getElementById('semanaMesocicloTxt').textContent = semanaMesocicloFinal;
+    document.getElementById('semanaMesocicloWrap').hidden = false;
+  }
 }
 
 /* ---------- Interactividad (checkboxes, recuperación, envío) ---------- */
@@ -831,7 +836,11 @@ async function cargar(){
       }
     }
 
-    renderSesion(dataSesion.sesion, ultimaValida);
+    // "Semana" viene de lo que ya publicó el entrenador (los mismos valores
+    // de la cabecera de Semanas.html) — si por lo que sea no vino, caemos al
+    // ?semana= de la URL como último recurso.
+    const semanaFinal = dataSesion.semana || SEMANA_PARAM;
+    renderSesion(dataSesion.sesion, ultimaValida, semanaFinal, dataSesion.semanaMesociclo);
     wireInteractividad(ultimaValida);
 
     document.getElementById('estadoCarga').hidden = true;
