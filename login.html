@@ -111,6 +111,9 @@
 
 <script>
   const CLIENT_ID = '750960934789-afud0r9hmq7fe700okgu0o0cer0cih1q.apps.googleusercontent.com';
+  // Guardamos aquí el email+nombre ya verificados para no obligar a volver a
+  // iniciar sesión con Google cada vez que se abre la app.
+  const CLAVE_SESION = 'kaska_sesion_cliente';
 
   function decodeJwt(token){
     const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -120,14 +123,17 @@
     return JSON.parse(json);
   }
 
-  async function handleCredentialResponse(response){
-    const payload = decodeJwt(response.credential);
-    document.getElementById('wPhoto').src = payload.picture;
-    document.getElementById('wName').textContent = payload.name;
-    document.getElementById('wEmail').textContent = payload.email;
+  function mostrarBienvenida(nombre, email, foto){
+    const wPhoto = document.getElementById('wPhoto');
+    if(foto){ wPhoto.src = foto; wPhoto.style.display = ''; }
+    else{ wPhoto.style.display = 'none'; }
+    document.getElementById('wName').textContent = nombre || email;
+    document.getElementById('wEmail').textContent = email;
     document.getElementById('loginBox').classList.add('hide');
     document.getElementById('welcome').classList.add('show');
+  }
 
+  async function verificarYRedirigir(email){
     const nota = document.getElementById('wNote');
     const btnReintentar = document.getElementById('btnReintentar');
     nota.classList.remove('error');
@@ -135,15 +141,22 @@
     btnReintentar.style.display = 'none';
 
     try{
-      const res = await fetch('/api/verificar-cliente?email=' + encodeURIComponent(payload.email));
+      const res = await fetch('/api/verificar-cliente?email=' + encodeURIComponent(email));
       const data = await res.json();
 
       if(data.success){
+        localStorage.setItem(CLAVE_SESION, JSON.stringify({
+          email: data.cliente.email,
+          nombreCompleto: data.cliente.nombreCompleto,
+        }));
         nota.innerHTML = `<strong>¡Cuenta encontrada!</strong> Te llevamos a tu semana...`;
         const qs = new URLSearchParams({ cliente: data.cliente.email, nombre: data.cliente.nombreCompleto });
         const url = '/cliente/semana.html?' + qs.toString();
         setTimeout(() => { window.location.href = url; }, 1200);
       }else{
+        // Si la sesión guardada ya no vale (p.ej. el entrenador desactivó al
+        // cliente), la borramos para no quedarnos en bucle en la próxima visita.
+        localStorage.removeItem(CLAVE_SESION);
         nota.classList.add('error');
         nota.innerHTML = `<strong>No hemos podido darte acceso.</strong> ${data.error || 'Ha ocurrido un error inesperado.'}`;
         btnReintentar.style.display = 'inline-block';
@@ -155,7 +168,32 @@
     }
   }
 
+  function handleCredentialResponse(response){
+    const payload = decodeJwt(response.credential);
+    mostrarBienvenida(payload.name, payload.email, payload.picture);
+    verificarYRedirigir(payload.email);
+  }
+
   window.onload = function(){
+    document.getElementById('btnReintentar').addEventListener('click', () => {
+      document.getElementById('welcome').classList.remove('show');
+      document.getElementById('loginBox').classList.remove('hide');
+    });
+
+    // Si ya nos habíamos identificado antes en este dispositivo, nos saltamos
+    // el botón de Google y verificamos directamente.
+    const guardado = localStorage.getItem(CLAVE_SESION);
+    if(guardado){
+      try{
+        const datos = JSON.parse(guardado);
+        if(datos && datos.email){
+          mostrarBienvenida(datos.nombreCompleto, datos.email, null);
+          verificarYRedirigir(datos.email);
+          return;
+        }
+      }catch(e){ /* si está corrupto, seguimos con el login normal */ }
+    }
+
     google.accounts.id.initialize({
       client_id: CLIENT_ID,
       callback: handleCredentialResponse
@@ -164,11 +202,6 @@
       document.getElementById('gBtn'),
       { theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with', width: 280 }
     );
-
-    document.getElementById('btnReintentar').addEventListener('click', () => {
-      document.getElementById('welcome').classList.remove('show');
-      document.getElementById('loginBox').classList.remove('hide');
-    });
   };
 
   if('serviceWorker' in navigator){

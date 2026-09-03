@@ -29,8 +29,17 @@
   }
   *{box-sizing:border-box;}
   body{
-    margin:0; min-height:100vh; background:#494d4b; color:var(--chalk);
+    margin:0; min-height:100vh;
+    background: radial-gradient(120% 90% at 15% 0%, #262d28 0%, var(--stone-900) 55%, #121614 100%);
+    color:var(--chalk);
     font-family:'Work Sans', sans-serif;
+    position:relative;
+  }
+  .fondo-logo{
+    position:fixed; top:0; left:0; width:100vw; height:100vh; height:100dvh;
+    background-image:url('/logo.png');
+    background-repeat:no-repeat; background-position:center; background-size:cover;
+    opacity:0.2; z-index:-10;
   }
   h1,h2,h3{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.5px; margin:0; }
 
@@ -108,6 +117,8 @@
 </head>
 <body>
 
+<div class="fondo-logo"></div>
+
 <div class="topbar">
   <div class="topbar-inner">
     <div class="eyebrow">Kaska.Climb</div>
@@ -164,6 +175,10 @@ if(!CLIENTE){
 
 // El botón "Salir" y cualquier vuelta atrás mantienen la identidad del cliente.
 document.getElementById('btnSalir').href = '../login.html';
+document.getElementById('btnSalir').addEventListener('click', () => {
+  // Borramos la sesión recordada para que el próximo login pida Google de nuevo.
+  try{ localStorage.removeItem('kaska_sesion_cliente'); }catch(e){}
+});
 
 function fechaHoyDDMMYYYY(){
   const hoy = new Date();
