@@ -7,7 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.min.js"></script>
 <script src="libs/clientes-selector.js"></script>
 <style>
   :root{
@@ -72,7 +71,11 @@
   .chart-shell .leyenda{ display:flex; gap:18px; margin-bottom:6px; flex-wrap:wrap; }
   .leyenda .item{ display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--chalk-dim); font-weight:600; }
   .leyenda .sw{ width:14px; height:3px; border-radius:2px; }
-  .chart-holder{ position:relative; height:280px; }
+  .chart-holder{ position:relative; }
+  .chart-holder svg{ display:block; width:100%; height:auto; overflow:visible; }
+  .grafica .eje-label{ font-size:10.5px; fill:var(--chalk-faint); font-family:'Work Sans',sans-serif; }
+  .grafica .grid-linea{ stroke:rgba(242,237,225,0.08); stroke-width:1; }
+  .grafica .punto-final{ stroke:var(--stone-800); stroke-width:2; }
 
   .tabla-datos-wrap{ overflow-x:auto; }
   table.tabla-datos{ width:100%; border-collapse:collapse; }
@@ -126,10 +129,71 @@
 const MESO_COLORS = { REOX:'#7c9070', AERO:'#93859e', DESOX:'#70908c', FMAX:'#c17c74', TAPERING:'#c99a5b' };
 let PORMESOCICLO = null;
 let MESO_ACTIVO = 'REOX';
-let chartInstance = null;
 
 function escapeHtml(str){
   return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Gráfica de líneas dibujada a mano en SVG (mismo criterio que los radares de
+// Batería test.html / cliente/perfil-fisiologico.html) — sin depender de
+// ninguna librería externa.
+function dibujarGrafica(svg, historial, colorPrincipal){
+  const M = { left:44, right:14, top:16, bottom:30 };
+  const W = 640, H = 260;
+  const plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
+
+  const valoresPFinicial = historial.map(h => h.pfInicial).filter(v => v !== undefined && v !== null);
+  const valoresPFfinal = historial.map(h => h.pfFinal).filter(v => v !== undefined && v !== null);
+  const todos = valoresPFinicial.concat(valoresPFfinal);
+  const rawMin = Math.min(...todos), rawMax = Math.max(...todos);
+  const margen = Math.max(6, (rawMax - rawMin) * 0.12);
+  const yMin = Math.floor((rawMin - margen) / 5) * 5;
+  const yMax = Math.ceil((rawMax + margen) / 5) * 5;
+
+  const n = historial.length;
+  const x = i => M.left + (n > 1 ? (i / (n - 1)) * plotW : plotW / 2);
+  const y = v => M.top + plotH - ((v - yMin) / (yMax - yMin || 1)) * plotH;
+
+  let svgStr = '';
+
+  // Rejilla horizontal + etiquetas del eje Y (4 franjas).
+  const pasosY = 4;
+  for(let p = 0; p <= pasosY; p++){
+    const valor = yMin + (yMax - yMin) * (p / pasosY);
+    const yy = y(valor);
+    svgStr += `<line class="grid-linea" x1="${M.left}" y1="${yy.toFixed(1)}" x2="${W - M.right}" y2="${yy.toFixed(1)}"/>`;
+    svgStr += `<text class="eje-label" x="${M.left - 8}" y="${yy.toFixed(1)}" text-anchor="end" dominant-baseline="middle">${Math.round(valor)}N</text>`;
+  }
+
+  // Etiquetas del eje X — si hay muchos puntos, se muestra solo una de cada
+  // varias para que no se amontonen.
+  const salto = Math.max(1, Math.ceil(n / 8));
+  historial.forEach((h, i) => {
+    if(i % salto !== 0 && i !== n - 1) return;
+    svgStr += `<text class="eje-label" x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${escapeHtml(h.fecha)}</text>`;
+  });
+
+  function trazado(valores, color, relleno){
+    const pts = [];
+    valores.forEach((v, i) => { if(v !== undefined && v !== null) pts.push([x(i), y(v)]); });
+    if(pts.length < 2) return '';
+    let s = `<polyline points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if(relleno){
+      const area = `${M.left},${(M.top+plotH).toFixed(1)} ` + pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ') + ` ${pts[pts.length-1][0].toFixed(1)},${(M.top+plotH).toFixed(1)}`;
+      s = `<polygon points="${area}" fill="${color}" fill-opacity="0.14"/>` + s;
+    }
+    pts.forEach(([px,py], idx) => {
+      const esUltimo = idx === pts.length - 1;
+      s += `<circle class="${esUltimo?'punto-final':''}" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${esUltimo?4.5:3}" fill="${color}"/>`;
+    });
+    return s;
+  }
+
+  svgStr += trazado(historial.map(h=>h.pfInicial), colorPrincipal, true);
+  svgStr += trazado(historial.map(h=>h.pfFinal), '#c99a5b', false);
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = svgStr;
 }
 
 document.querySelectorAll('.tab-meso').forEach(tab => {
@@ -194,7 +258,7 @@ function pintarDatos(){
         <span class="item"><span class="sw" style="background:${MESO_COLORS[MESO_ACTIVO]};"></span>PFinicial (test al empezar)</span>
         <span class="item"><span class="sw" style="background:var(--amber);"></span>PFfinal (test al acabar)</span>
       </div>
-      <div class="chart-holder"><canvas id="chartPF"></canvas></div>
+      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
     </div>
     <div class="tabla-datos-wrap">
       <table class="tabla-datos">
@@ -206,31 +270,7 @@ function pintarDatos(){
       </table>
     </div>`;
 
-  const ctx = document.getElementById('chartPF').getContext('2d');
-  if(chartInstance) chartInstance.destroy();
-  const color = MESO_COLORS[MESO_ACTIVO];
-  chartInstance = new Chart(ctx, {
-    type:'line',
-    data:{
-      labels: historial.map(h => h.fecha),
-      datasets:[
-        { label:'PFinicial', data: historial.map(h=>h.pfInicial), borderColor:color, backgroundColor:color+'28', borderWidth:2.5, pointRadius:3.5, pointBackgroundColor:color, pointBorderColor:'#1c211e', pointBorderWidth:1.5, fill:true, tension:0.32 },
-        { label:'PFfinal', data: historial.map(h=>h.pfFinal ?? null), borderColor:'#c99a5b', backgroundColor:'rgba(201,154,91,0.10)', borderWidth:2.5, pointRadius:3.5, pointBackgroundColor:'#c99a5b', pointBorderColor:'#1c211e', pointBorderWidth:1.5, fill:true, tension:0.32, spanGaps:true },
-      ]
-    },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false }, tooltip:{
-        backgroundColor:'#1c211e', titleColor:'#f2ede1', bodyColor:'#c9c3b4',
-        borderColor:'rgba(242,237,225,0.16)', borderWidth:1, padding:10,
-        callbacks:{ label: c => `${c.dataset.label}: ${c.parsed.y} N` }
-      }},
-      scales:{
-        x:{ grid:{ color:'rgba(242,237,225,0.06)' }, ticks:{ color:'#8d9187', font:{ family:'Work Sans', size:11 } } },
-        y:{ grid:{ color:'rgba(242,237,225,0.06)' }, ticks:{ color:'#8d9187', font:{ family:'Work Sans', size:11 }, callback:v=>v+'N' } }
-      }
-    }
-  });
+  dibujarGrafica(document.getElementById('chartPF'), historial, MESO_COLORS[MESO_ACTIVO]);
 }
 
 (async function init(){
