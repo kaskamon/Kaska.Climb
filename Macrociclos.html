@@ -30,10 +30,8 @@
             margin:0;
             min-height:100vh;
             display:flex;
-            flex-direction:column;
             align-items:center;
             justify-content:center;
-            gap:16px;
             padding:20px;
         }
         
@@ -252,39 +250,10 @@
             color: var(--stone-900);
             border-color: var(--moss);
         }
-
-        .panel-publicar-macro{
-            position: relative;
-            display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
-            background: rgba(124,144,112,0.08); border: 1px solid rgba(242,237,225,0.1);
-            border-radius: 14px; padding: 14px 16px; margin-bottom: 20px;
-            width: 100%; max-width: 1000px; box-sizing: border-box;
-        }
-        .campo-publicar-macro{ display:flex; flex-direction:column; gap:4px; }
-        .campo-publicar-macro label{ font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--chalk-dim); }
-        .campo-publicar-macro input{
-            font-family:'Work Sans', sans-serif; font-size:13px;
-            padding:8px 10px; border:1px solid rgba(242,237,225,0.18); border-radius:8px;
-            background:var(--stone-800); color:var(--chalk);
-        }
-        .estado-publicar-macro{ flex-basis:100%; font-size:12px; color:var(--chalk-dim); min-height:16px; text-transform:none; letter-spacing:normal; }
-        .estado-publicar-macro.ok{ color:var(--moss-light); font-weight:700; }
-        .estado-publicar-macro.error{ color:#c1121f; font-weight:700; }
     </style>
 </head>
 <body>
 <div class="fondo-logo"></div>
-
-<div class="panel-publicar-macro">
-    <div class="campo-publicar-macro">
-        <label>Cliente (email)</label>
-        <input type="email" id="publicarClienteMacro" placeholder="email@ejemplo.com">
-    </div>
-    <button onclick="cargarFechaInicioPublicada()">Cargar fecha publicada</button>
-    <button onclick="publicarFechaInicio()">Publicar fecha de inicio</button>
-    <div class="estado-publicar-macro" id="estadoPublicarMacro"></div>
-</div>
-
 <div class="container" id="export-area">
     <div id="header-info">
         <div>
@@ -495,71 +464,6 @@
     }
 
     new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
-
-    /* ================= PUBLICAR FECHA DE INICIO (para calcular la Semana X del cliente) ================= */
-    const inputPublicarClienteMacro = document.getElementById('publicarClienteMacro');
-    inputPublicarClienteMacro.value = localStorage.getItem('kaska_cliente_actual') || '';
-    inputPublicarClienteMacro.addEventListener('input', () => {
-        localStorage.setItem('kaska_cliente_actual', inputPublicarClienteMacro.value);
-    });
-
-    function mostrarEstadoPublicarMacro(texto, clase) {
-        const el = document.getElementById('estadoPublicarMacro');
-        el.textContent = texto;
-        el.classList.remove('ok', 'error');
-        if (clase) el.classList.add(clase);
-    }
-
-    async function publicarFechaInicio() {
-        const cliente = inputPublicarClienteMacro.value.trim();
-        const fechaVal = document.getElementById('fechaInicio').value; // yyyy-mm-dd
-        if (!cliente || !fechaVal) {
-            alert('Indica el email del cliente y la fecha de inicio antes de publicar.');
-            return;
-        }
-        const [y, m, d] = fechaVal.split('-');
-        const fechaInicio = `${d}/${m}/${y}`;
-
-        mostrarEstadoPublicarMacro('Publicando...', null);
-        try {
-            const res = await fetch('/api/guardar-fecha-macrociclo', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ cliente, fechaInicio }),
-            });
-            const data = await res.json();
-            mostrarEstadoPublicarMacro(
-                data.success ? `✓ Publicada para ${cliente} — su semana se calculará desde el ${fechaInicio}.` : ('✗ ' + (data.error || 'Error al publicar.')),
-                data.success ? 'ok' : 'error'
-            );
-        } catch (e) {
-            mostrarEstadoPublicarMacro('✗ Error de red: ' + e.message, 'error');
-        }
-    }
-
-    async function cargarFechaInicioPublicada() {
-        const cliente = inputPublicarClienteMacro.value.trim();
-        if (!cliente) {
-            alert('Indica el email del cliente antes de cargar su fecha publicada.');
-            return;
-        }
-        mostrarEstadoPublicarMacro('Cargando...', null);
-        try {
-            const res = await fetch('/api/obtener-fecha-macrociclo?' + new URLSearchParams({ cliente }).toString());
-            const data = await res.json();
-            if (data.success) {
-                const [d, m, y] = data.fechaInicio.split('/');
-                document.getElementById('fechaInicio').value = `${y}-${m}-${d}`;
-                calcularTotal();
-                autoGuardar();
-                mostrarEstadoPublicarMacro(`✓ Cargada: ${data.fechaInicio}.`, 'ok');
-            } else {
-                mostrarEstadoPublicarMacro(data.error || 'No se encontró ninguna fecha publicada para este cliente.', 'error');
-            }
-        } catch (e) {
-            mostrarEstadoPublicarMacro('✗ Error de red: ' + e.message, 'error');
-        }
-    }
 </script>
 </body>
 </html>
