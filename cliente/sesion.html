@@ -337,7 +337,13 @@ let HOY = new Date();
   if(d && m && y) HOY = new Date(y, m - 1, d);
 }
 const FECHA_DISPLAY = HOY.toLocaleDateString('es-ES', { weekday:'long', day:'numeric', month:'short' });
-const FECHA_PAYLOAD = FECHA_PARAM;
+
+// La fecha que se guarda en el historial es la del día real en que se
+// completa la sesión (no la programada) — para que el seguimiento sea real.
+function fechaRealDeHoy(){
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
 
 /* ---------- Buscar dentro de un array de "partes" el que casa con un `titulo` ---------- */
 function encontrarCampo(titulo){
@@ -691,17 +697,18 @@ function wireInteractividad(ultimaValida){
 
   function construirPayload(){
     const val = id => { const el = document.getElementById(id); return el && el.value !== '' ? el.value : undefined; };
+    const fechaReal = fechaRealDeHoy();
 
     if(CFG.unico){
-      return { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: FECHA_PAYLOAD, mesociclo: MESOCICLO, unico: val(CFG.unico.id) };
+      return { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: fechaReal, mesociclo: MESOCICLO, unico: val(CFG.unico.id) };
     }
     if(!CFG.pfInicial){
-      return { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: FECHA_PAYLOAD, mesociclo: MESOCICLO };
+      return { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: fechaReal, mesociclo: MESOCICLO };
     }
 
     const pfInicialN = parseFloat(val('pf-inicial'));
     const payload = {
-      nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: FECHA_PAYLOAD, mesociclo: MESOCICLO,
+      nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: fechaReal, mesociclo: MESOCICLO,
       pfInicial: !isNaN(pfInicialN) ? pfInicialN : undefined,
     };
     if(!sesionBloqueada){

@@ -399,10 +399,6 @@
                     <select id="publicarCliente"><option value="">Cargando clientes...</option></select>
                 </div>
                 <div class="campo-publicar">
-                    <label>Fecha de la sesión</label>
-                    <input type="date" id="publicarFecha">
-                </div>
-                <div class="campo-publicar">
                     <label>Mesociclo</label>
                     <select id="publicarMesociclo">
                         <option value="">— Elegir —</option>
@@ -702,7 +698,6 @@
 
         /* ================= PUBLICAR EN LA NUBE (para el motor genérico de sesión) ================= */
         const inputPublicarCliente = document.getElementById('publicarCliente');
-        const inputPublicarFecha = document.getElementById('publicarFecha');
         const selectPublicarMesociclo = document.getElementById('publicarMesociclo');
         const panelDesoxAlt = document.getElementById('panelDesoxAlternativa');
         const estadoPublicar = document.getElementById('estadoPublicar');
@@ -745,14 +740,16 @@
 
         document.getElementById('btn-publicar').addEventListener('click', async () => {
             const cliente = inputPublicarCliente.value.trim();
-            const fechaVal = inputPublicarFecha.value; // yyyy-mm-dd
             const mesociclo = selectPublicarMesociclo.value;
-            if (!cliente || !fechaVal || !mesociclo) {
-                alert('Indica cliente, fecha y mesociclo antes de publicar.');
+            if (!cliente || !mesociclo) {
+                alert('Indica cliente y mesociclo antes de publicar.');
                 return;
             }
-            const [y, m, d] = fechaVal.split('-');
-            const fecha = `${d}/${m}/${y}`;
+            // La fecha no se usa para enlazar con Semanas.html (eso va por
+            // cliente+mesociclo, gana siempre la versión más reciente) — se
+            // manda solo porque la columna la exige, con la fecha de hoy.
+            const hoy = new Date();
+            const fecha = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
 
             let datos = obtenerDatosEstructura();
 
