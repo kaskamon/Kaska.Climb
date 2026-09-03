@@ -1,5 +1,5 @@
 const { google } = require('googleapis');
-const { COLUMNS } = require('../libs/mesociclos-config.js');
+const { COLUMNS, CATEGORIA_VISUAL } = require('../libs/mesociclos-config.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 // Misma pestaña que lee api/obtener-sesion.js. Columnas: A marcaTemporal,
@@ -66,6 +66,13 @@ module.exports = async (req, res) => {
     const cortePorAntiguedad = lunesDe(new Date());
     cortePorAntiguedad.setDate(cortePorAntiguedad.getDate() - 7);
 
+    // Nunca puede haber 2 mesociclos reales (REOX/AERO/DESOX/FMAX/TAPERING)
+    // en la misma semana de un cliente — si esta publicación es de uno de
+    // ellos, cualquier fila de otro mesociclo real en la misma semana se
+    // considera obsoleta (el trainer cambió de idea) y se borra también.
+    const esSesionReal = CATEGORIA_VISUAL[mesociclo] && CATEGORIA_VISUAL[mesociclo].tipo === 'sesion';
+    const lunesPublicado = lunesDe(parseFechaDDMMYYYY(fecha) || new Date()).getTime();
+
     const [meta, resp] = await Promise.all([
       sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID }),
       sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NAME}'!A:G` }),
@@ -78,7 +85,10 @@ module.exports = async (req, res) => {
       const esMismoDiaYMeso = f[2] === fecha && f[3] === mesociclo;
       const fechaFila = parseFechaDDMMYYYY(f[2]);
       const esAntigua = fechaFila ? lunesDe(fechaFila) < cortePorAntiguedad : false;
-      if (esMismoDiaYMeso || esAntigua) indicesABorrar.push(i);
+      const esOtroMesocicloRealMismaSemana = esSesionReal && f[3] !== mesociclo
+        && CATEGORIA_VISUAL[f[3]] && CATEGORIA_VISUAL[f[3]].tipo === 'sesion'
+        && fechaFila && lunesDe(fechaFila).getTime() === lunesPublicado;
+      if (esMismoDiaYMeso || esAntigua || esOtroMesocicloRealMismaSemana) indicesABorrar.push(i);
     });
 
     if (hoja && indicesABorrar.length) {
