@@ -495,7 +495,7 @@ function renderParte(parte, ultimaValida){
 }
 
 /* ---------- Render de toda la sesión ---------- */
-function renderSesion(sesion, ultimaValida){
+function renderSesion(sesion, ultimaValida, semanaFinal){
   const partes = sesion.partes || [];
 
   const bloques = [];
@@ -527,7 +527,7 @@ function renderSesion(sesion, ultimaValida){
 
   // Cabecera
   document.getElementById('eyebrowTxt').textContent =
-    `${NOMBRE_DISPLAY} · Mesociclo ${MESOCICLO}${SEMANA_PARAM ? ' · Semana ' + SEMANA_PARAM : ''}`;
+    `${NOMBRE_DISPLAY} · Mesociclo ${MESOCICLO}${semanaFinal ? ' · Semana ' + semanaFinal : ''}`;
   const titulo = (TITULOS && TITULOS[MESOCICLO]) || MESOCICLO;
   document.getElementById('sessionTitleTxt').innerHTML =
     titulo.replace(/\s*\(([^)]+)\)\s*$/, ' <span>($1)</span>');
@@ -805,33 +805,66 @@ function wireInteractividad(ultimaValida){
   });
 }
 
+// Convierte dd/mm/aaaa a Date (medianoche local).
+function parsearFechaDDMMYYYY(s){
+  const [d, m, y] = (s || '').split('/').map(Number);
+  if(!d || !m || !y) return null;
+  return new Date(y, m - 1, d);
+}
+
+// Semana del macrociclo completo (contador desde el inicio de la temporada,
+// no desde el mesociclo actual) — se calcula sola a partir de la fecha de
+// inicio publicada desde Macrociclos.html. Si el cliente todavía no la tiene
+// publicada, usamos ?semana= de la URL como último recurso.
+async function calcularSemanaAutomatica(){
+  try{
+    const res = await fetch('/api/obtener-fecha-macrociclo?' + new URLSearchParams({ cliente: CLIENTE }).toString());
+    const data = await res.json();
+    if(!data.success) return null;
+    const inicio = parsearFechaDDMMYYYY(data.fechaInicio);
+    const sesionFecha = parsearFechaDDMMYYYY(FECHA_PARAM) || HOY;
+    if(!inicio) return null;
+    const diffDias = Math.round((sesionFecha - inicio) / (24 * 60 * 60 * 1000));
+    return Math.max(1, Math.floor(diffDias / 7) + 1);
+  }catch(e){
+    return null;
+  }
+}
+
 /* ---------- Carga de datos y arranque ---------- */
 async function cargar(){
   try{
     const qsSesion = new URLSearchParams({ cliente: CLIENTE, fecha: FECHA_PARAM, mesociclo: MESOCICLO });
     const necesitaHistorial = !!CFG.pfInicial;
-    const peticiones = [ fetch('/api/obtener-sesion?' + qsSesion.toString()) ];
-    if(necesitaHistorial){
-      const qsHist = new URLSearchParams({ cliente: CLIENTE, mesociclo: MESOCICLO, limite: '10' });
-      peticiones.push(fetch('/api/obtener-historial?' + qsHist.toString()));
-    }
+    const peticionSesion = fetch('/api/obtener-sesion?' + qsSesion.toString());
+    const peticionHistorial = necesitaHistorial
+      ? fetch('/api/obtener-historial?' + new URLSearchParams({ cliente: CLIENTE, mesociclo: MESOCICLO, limite: '10' }).toString())
+      : null;
+    const peticionSemana = calcularSemanaAutomatica();
 
-    const respuestas = await Promise.all(peticiones);
-    const dataSesion = await respuestas[0].json();
+    const [resSesion, resHistorial, semanaAutomatica] = await Promise.all([
+      peticionSesion, peticionHistorial, peticionSemana,
+    ]);
+
+    const dataSesion = await resSesion.json();
     if(!dataSesion.success){
       mostrarError(dataSesion.error || 'No se encontró ninguna sesión programada para hoy.');
       return;
     }
 
     let ultimaValida = null;
-    if(necesitaHistorial){
-      const dataHist = await respuestas[1].json();
+    if(resHistorial){
+      const dataHist = await resHistorial.json();
       if(dataHist.success && Array.isArray(dataHist.historial)){
         ultimaValida = [...dataHist.historial].reverse().find(h => h.entrenada) || null;
       }
     }
 
-    renderSesion(dataSesion.sesion, ultimaValida);
+    // Semana automática (desde la fecha de inicio del macrociclo) manda; si el
+    // cliente todavía no la tiene publicada, caemos al ?semana= de la URL.
+    const semanaFinal = semanaAutomatica || SEMANA_PARAM;
+
+    renderSesion(dataSesion.sesion, ultimaValida, semanaFinal);
     wireInteractividad(ultimaValida);
 
     document.getElementById('estadoCarga').hidden = true;

@@ -206,13 +206,21 @@ function renderAccesosRapidos(driveUrl){
   document.getElementById('accesosRapidos').innerHTML = html;
 }
 
+// Convierte dd/mm/aaaa a Date (medianoche local).
+function parsearFechaDDMMYYYY(s){
+  const [d, m, y] = (s || '').split('/').map(Number);
+  if(!d || !m || !y) return null;
+  return new Date(y, m - 1, d);
+}
+
 async function cargar(){
   try{
     const hoyStr = fechaHoyDDMMYYYY();
     const qsSemana = new URLSearchParams({ cliente: CLIENTE, fecha: hoyStr });
-    const [resSemana, resCliente] = await Promise.all([
+    const [resSemana, resCliente, resMacrociclo] = await Promise.all([
       fetch('/api/obtener-semana?' + qsSemana.toString()),
       fetch('/api/verificar-cliente?email=' + encodeURIComponent(CLIENTE)),
+      fetch('/api/obtener-fecha-macrociclo?' + new URLSearchParams({ cliente: CLIENTE }).toString()),
     ]);
     const data = await resSemana.json();
 
@@ -233,7 +241,20 @@ async function cargar(){
       `${escapeHtml(nombrePartes[0] || NOMBRE_DISPLAY)} <span id="apellidoSpan">${escapeHtml(nombrePartes.slice(1).join(' '))}</span>`;
 
     const dias = data.dias; // 7 fechas dd/mm/aaaa, Lun a Dom
-    document.getElementById('rangoTxt').textContent = `Semana del ${dias[0]} al ${dias[6]}`;
+    let rangoTxt = `Semana del ${dias[0]} al ${dias[6]}`;
+    try{
+      const dataMacrociclo = await resMacrociclo.json();
+      if(dataMacrociclo.success){
+        const inicio = parsearFechaDDMMYYYY(dataMacrociclo.fechaInicio);
+        const hoyDate = parsearFechaDDMMYYYY(hoyStr);
+        if(inicio && hoyDate){
+          const diffDias = Math.round((hoyDate - inicio) / (24 * 60 * 60 * 1000));
+          const semanaActual = Math.max(1, Math.floor(diffDias / 7) + 1);
+          rangoTxt = `Semana ${semanaActual} · ${dias[0]} - ${dias[6]}`;
+        }
+      }
+    }catch(e){ /* sin fecha de inicio publicada, nos quedamos con el rango simple */ }
+    document.getElementById('rangoTxt').textContent = rangoTxt;
 
     const hoyStrActual = fechaHoyDDMMYYYY();
     const sesionesPorDia = {};
