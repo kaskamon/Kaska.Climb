@@ -27,6 +27,9 @@
     'GYM-ANTAGONISTAS': {},            // sin columnas de datos, solo queda registrada la fila
     ROCA:               {},            // día libre de roca/roco — sin datos, solo queda registrado el día
     DESCANSO:           {},            // día de descanso — sin datos, solo queda registrado el día
+    TAPERING:           {},            // ciclo de tapering/descarga (2-3 semanas) — cargas muy cerradas y
+                                        // progresivas que no queremos que distorsionen el resto de datos,
+                                        // así que tampoco lleva columnas — solo queda registrada la sesión
   };
 
   // Qué "parte" del JSON de sesión (el mismo formato que exporta Sesiones.html:
@@ -97,6 +100,7 @@
       unico: { match: 'Fmax tracción', id: 'dominadas', label: 'Series completadas (Dominadas con lastre)' },
     },
     'GYM-ANTAGONISTAS': {},
+    TAPERING: {},
   };
 
   // Título visible en la cabecera de la sesión — el mesociclo interno (clave del
@@ -110,6 +114,7 @@
     'GYM-ANTAGONISTAS': 'GYM-ANTAGONISTAS',
     ROCA: 'Roca/roco',
     DESCANSO: 'Descanso',
+    TAPERING: 'Tapering/Descarga',
   };
 
   // Color de cada mesociclo para diferenciarlos de un vistazo en el
@@ -128,6 +133,7 @@
     'GYM-ANTAGONISTAS': { tipo: 'gym', color: '#d4b26f' },
     ROCA: { tipo: 'roca', color: '#7c9070' },
     DESCANSO: { tipo: 'descanso', color: '#a65d53' },
+    TAPERING: { tipo: 'sesion', color: '#c99a5b' },
   };
 
   return { COLUMNS: COLUMNS, FIELD_MAP: FIELD_MAP, TITULOS: TITULOS, CATEGORIA_VISUAL: CATEGORIA_VISUAL };

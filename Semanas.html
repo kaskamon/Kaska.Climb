@@ -456,6 +456,7 @@ select.head-select option {
           <option value="AERO">AERO</option>
           <option value="DESOX">DESOX</option>
           <option value="FMAX">FMAX</option>
+          <option value="TAPERING">TAPERING</option>
         </select>
       </div>
 
@@ -610,7 +611,7 @@ document.addEventListener('click', e => {
 // Roca-Roco / Descanso) — el mesociclo real (REOX/AERO/DESOX/FMAX y cuál de
 // los 2 GYM) se resuelve a partir del "Mesociclo" de la cabecera de esta
 // semana, no se elige por caja.
-const GYM_POR_MESOCICLO = { FMAX: 'GYM-FMAX', REOX: 'GYM-ANTAGONISTAS', AERO: 'GYM-ANTAGONISTAS', DESOX: 'GYM-ANTAGONISTAS' };
+const GYM_POR_MESOCICLO = { FMAX: 'GYM-FMAX', REOX: 'GYM-ANTAGONISTAS', AERO: 'GYM-ANTAGONISTAS', DESOX: 'GYM-ANTAGONISTAS', TAPERING: 'GYM-ANTAGONISTAS' };
 
 function resolverMesocicloCaja(tipo) {
   const mesocicloSemana = document.getElementById('h3').value;
@@ -638,7 +639,7 @@ function fechaParaDiaIndice(indiceDia) {
 const inputPublicarClienteSemana = document.getElementById('publicarClienteSemana');
 cargarSelectorClientes(inputPublicarClienteSemana);
 
-const MESOCICLOS_SEMANA = ['REOX', 'AERO', 'DESOX', 'FMAX'];
+const MESOCICLOS_SEMANA = ['REOX', 'AERO', 'DESOX', 'FMAX', 'TAPERING'];
 
 document.getElementById('btnCargarUltimaSemana').addEventListener('click', async () => {
   const cliente = inputPublicarClienteSemana.value.trim();
