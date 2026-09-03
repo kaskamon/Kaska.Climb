@@ -79,9 +79,8 @@
   .session-title span{ color:var(--moss); }
 
   .progress-track{ display:flex; gap:4px; padding:0 24px 12px; max-width:760px; margin:0 auto; }
-  .progress-track .seg{ flex:1; height:4px; border-radius:999px; background:rgba(242,237,225,0.14); overflow:hidden; transition:background .25s ease; }
-  .progress-track .seg.done{ background:var(--moss); }
-  .progress-track .seg.current{ background:linear-gradient(90deg, var(--moss) 50%, rgba(242,237,225,0.14) 50%); }
+  .progress-track .seg{ flex:1; height:4px; border-radius:999px; background:rgba(242,237,225,0.14); overflow:hidden; }
+  .progress-track .seg .seg-fill{ height:100%; width:0%; border-radius:999px; background:var(--moss); transition:width .12s linear; }
 
   .block{
     background:rgba(38,45,40,0.55); border:1px solid rgba(242,237,225,0.12);
@@ -518,7 +517,7 @@ function renderSesion(sesion, ultimaValida, semanaFinal, semanaMesocicloFinal){
   });
 
   document.getElementById('progressTrack').innerHTML =
-    bloques.map(b => `<div class="seg" data-block="${b.id}"></div>`).join('');
+    bloques.map(b => `<div class="seg" data-block="${b.id}"><div class="seg-fill"></div></div>`).join('');
 
   let bloquesHtml = '';
   bloques.forEach(bloque => {
@@ -555,18 +554,15 @@ function wireInteractividad(ultimaValida){
 
   (function(){
     const segs = Array.from(document.querySelectorAll('#progressTrack .seg'));
+    const fills = segs.map(s => s.querySelector('.seg-fill'));
     const blocks = segs.map(s => document.getElementById(s.dataset.block)).filter(Boolean);
     const topbar = document.querySelector('.topbar');
     function updateProgress(){
       const threshold = topbar.offsetHeight + 40;
-      let activeIndex = 0;
-      blocks.forEach((block, i) => { if(block.getBoundingClientRect().top - threshold <= 0) activeIndex = i; });
-      const lastBlock = blocks[blocks.length - 1];
-      const pastEverything = lastBlock && (lastBlock.getBoundingClientRect().bottom < threshold);
-      segs.forEach((seg, i) => {
-        seg.classList.remove('done', 'current');
-        if(pastEverything || i < activeIndex) seg.classList.add('done');
-        else if(i === activeIndex) seg.classList.add('current');
+      blocks.forEach((block, i) => {
+        const rect = block.getBoundingClientRect();
+        const frac = rect.height > 0 ? Math.min(1, Math.max(0, (threshold - rect.top) / rect.height)) : 0;
+        fills[i].style.width = (frac * 100) + '%';
       });
     }
     window.addEventListener('scroll', updateProgress, { passive:true });
