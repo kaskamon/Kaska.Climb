@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<link rel="manifest" href="/manifest-cliente.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kaska.Climb">
+<link rel="apple-touch-icon" href="/logo-192.png">
+<meta name="theme-color" content="#1c211e">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kaska.Climb | Tu perfil fisiológico</title>
@@ -306,6 +312,10 @@ async function cargar(){
 }
 
 cargar();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
 </script>
 </body>
 </html>

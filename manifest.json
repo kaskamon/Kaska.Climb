@@ -1,10 +1,11 @@
 {
   "name": "Kaska.Climb",
-  "short_name": "kaska.Climb",
+  "short_name": "Kaska.Climb",
   "start_url": "/index.html",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#121212",
+  "background_color": "#1c211e",
+  "theme_color": "#1c211e",
   "icons": [
     {
       "src": "/logo-192.png",
