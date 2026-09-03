@@ -25,6 +25,8 @@
     AERO:  { pfInicial: 28, fmaxDer: 29, fmaxIzq: 30, campos: [31, 32] },                      // SuspInt CF, Escalada continua — sin PFfinal
     'GYM-FMAX':         { unico: 4 },  // E - Dominadas con lastre
     'GYM-ANTAGONISTAS': {},            // sin columnas de datos, solo queda registrada la fila
+    ROCA:               {},            // día libre de roca/roco — sin datos, solo queda registrado el día
+    DESCANSO:           {},            // día de descanso — sin datos, solo queda registrado el día
   };
 
   // Qué "parte" del JSON de sesión (el mismo formato que exporta Sesiones.html:
@@ -106,6 +108,8 @@
     AERO: 'AERO (ROCO)',
     'GYM-FMAX': 'GYM-FMAX',
     'GYM-ANTAGONISTAS': 'GYM-ANTAGONISTAS',
+    ROCA: 'Roca/roco',
+    DESCANSO: 'Descanso',
   };
 
   // Color de cada mesociclo para diferenciarlos de un vistazo en el
@@ -122,6 +126,8 @@
     AERO: { tipo: 'sesion', color: '#93859e' },
     'GYM-FMAX': { tipo: 'gym', color: '#d4b26f' },
     'GYM-ANTAGONISTAS': { tipo: 'gym', color: '#d4b26f' },
+    ROCA: { tipo: 'roca', color: '#7c9070' },
+    DESCANSO: { tipo: 'descanso', color: '#a65d53' },
   };
 
   return { COLUMNS: COLUMNS, FIELD_MAP: FIELD_MAP, TITULOS: TITULOS, CATEGORIA_VISUAL: CATEGORIA_VISUAL };

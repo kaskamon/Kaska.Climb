@@ -616,7 +616,9 @@ function resolverMesocicloCaja(tipo) {
   const mesocicloSemana = document.getElementById('h3').value;
   if (tipo === 'sesion') return mesocicloSemana;
   if (tipo === 'gym') return GYM_POR_MESOCICLO[mesocicloSemana] || 'GYM-ANTAGONISTAS';
-  return null; // roca / descanso no llevan mesociclo — no se publican al cliente
+  if (tipo === 'roca') return 'ROCA';
+  if (tipo === 'descanso') return 'DESCANSO';
+  return null;
 }
 
 // La "Fecha" de la cabecera representa el lunes de esta semana. Cada columna de
@@ -679,6 +681,8 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
         let tipo = null;
         if (MESOCICLOS_SEMANA.includes(s.mesociclo)) tipo = 'sesion';
         else if (s.mesociclo === 'GYM-FMAX' || s.mesociclo === 'GYM-ANTAGONISTAS') tipo = 'gym';
+        else if (s.mesociclo === 'ROCA') tipo = 'roca';
+        else if (s.mesociclo === 'DESCANSO') tipo = 'descanso';
         if (!tipo) return;
         const plantilla = document.querySelector(`#banco .sesion[data-tipo="${tipo}"]`);
         if (plantilla) columna.appendChild(plantilla.cloneNode(true));
@@ -729,24 +733,33 @@ document.getElementById('btnPublicarSemana').addEventListener('click', async () 
     if (!caja) continue;
 
     const mesociclo = resolverMesocicloCaja(caja.dataset.tipo);
-    if (!mesociclo) continue; // Roca/roco y Descanso: no llevan contenido publicable
+    if (!mesociclo) continue;
 
     const fecha = fechaParaDiaIndice(i);
+    const esDiaLibre = mesociclo === 'ROCA' || mesociclo === 'DESCANSO';
 
     try {
-      const qs = new URLSearchParams({ cliente, mesociclo });
-      const resUltimo = await fetch('/api/ultima-sesion-publicada?' + qs.toString());
-      const dataUltimo = await resUltimo.json();
+      let sesionAPublicar;
+      if (esDiaLibre) {
+        // Roca/roco y Descanso no se diseñan en Sesiones.html — no hay
+        // ejercicios ni datos que rastrear, solo queda registrado el día.
+        sesionAPublicar = { tituloPrincipal: mesociclo === 'ROCA' ? 'Roca/roco' : 'Descanso', partes: [] };
+      } else {
+        const qs = new URLSearchParams({ cliente, mesociclo });
+        const resUltimo = await fetch('/api/ultima-sesion-publicada?' + qs.toString());
+        const dataUltimo = await resUltimo.json();
 
-      if (!dataUltimo.success) {
-        resultados.push({ texto: `${mesociclo} (${fecha}): sin versión previa publicada — hazlo primero desde Sesiones.html`, clase: 'error' });
-        continue;
+        if (!dataUltimo.success) {
+          resultados.push({ texto: `${mesociclo} (${fecha}): sin versión previa publicada — hazlo primero desde Sesiones.html`, clase: 'error' });
+          continue;
+        }
+        sesionAPublicar = dataUltimo.sesion;
       }
 
       const resPub = await fetch('/api/publicar-sesion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cliente, fecha, mesociclo, sesion: dataUltimo.sesion, semana, semanaMesociclo }),
+        body: JSON.stringify({ cliente, fecha, mesociclo, sesion: sesionAPublicar, semana, semanaMesociclo }),
       });
       const dataPub = await resPub.json();
 
