@@ -229,7 +229,7 @@ function dibujarRadar(svg, capacidades, valoresA, valoresB, etiquetaA, etiquetaB
   }
 
   // A siempre se pinta (referencia), B (si existe) se superpone
-  poligono(valoresA, '#8d9187', 0.14);
+  poligono(valoresA, '#c99a5b', 0.16);
   if(valoresB) poligono(valoresB, '#7c9070', 0.30);
 }
 
@@ -248,7 +248,7 @@ function renderComparacion(modalidad, perfiles){
   contenido.innerHTML = `
     <div class="selectores">
       <div class="campo-fecha">
-        <label><span class="leyenda-fecha"><span class="dot" style="background:#8d9187;"></span>Fecha A</span></label>
+        <label><span class="leyenda-fecha"><span class="dot" style="background:#c99a5b;"></span>Fecha A</span></label>
         <select id="selFechaA"></select>
       </div>
       <div class="campo-fecha">

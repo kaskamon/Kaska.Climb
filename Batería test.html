@@ -106,31 +106,28 @@
   .section-head .sub{ color:var(--chalk-faint); font-size:13px; }
   .profile-mode{ color:var(--moss); }
   .profile-header{
-    display:flex; flex-direction:column; align-items:center; gap:8px;
-    text-align:center; margin:0 0 18px;
+    display:flex; align-items:flex-start; justify-content:space-between; flex-wrap:wrap;
+    gap:16px; margin:0 0 20px;
   }
-  .profile-header .eyebrow{ margin:0; font-size:15px; letter-spacing:3px; }
-  .profile-header .profile-title{ margin:0; }
+  .profile-header-title{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    text-align:center; flex:1 1 240px;
+  }
+  .profile-header-title .eyebrow{ margin:0; font-size:15px; letter-spacing:3px; }
+  .profile-header-title .profile-title{ margin:0; }
   .profile-title{ font-size:30px !important; font-weight:800; text-align:center; letter-spacing:.4px; }
   .profile-title .profile-main{ color:var(--chalk); }
 
   .profile-toolbar{
-    display:flex; align-items:flex-end; justify-content:center; flex-wrap:wrap;
-    gap:10px; margin:0 0 22px;
-    padding-bottom:18px; border-bottom:1px dashed rgba(242,237,225,0.12);
-  }
-  .tb-field{ display:flex; flex-direction:column; gap:3px; }
-  .tb-field label{
-    font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em;
-    color:var(--chalk-faint); white-space:nowrap;
+    display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px;
   }
   .tb-select{
     background:var(--stone-800); border:1px solid rgba(242,237,225,0.16);
     color:var(--chalk); border-radius:9px; padding:7px 9px; font-size:12.5px;
     font-family:'Work Sans',sans-serif; height:35px; width:180px;
   }
-  .profile-toolbar .estado-publicar{ flex-basis:100%; text-align:center; }
-  @media (max-width:640px){ .tb-select{ width:150px; } }
+  .profile-toolbar .estado-publicar{ flex-basis:100%; text-align:right; }
+  @media (max-width:640px){ .tb-select{ width:150px; } .profile-toolbar{ justify-content:center; } .profile-toolbar .estado-publicar{ text-align:center; } }
 
   .card{
     background:rgba(38,45,40,0.5); border:1px solid rgba(242,237,225,0.1);
@@ -1317,17 +1314,16 @@ function buildPerfil(kind){
 
     <div class="card" id="${kind}-perfil-card">
       <div class="profile-header">
-        <span class="eyebrow">Kaska.Climb</span>
-        <h3 class="profile-title"><span class="profile-main">PERFIL FISIOLÓGICO</span> - <span class="profile-mode">${isDep ? "DEPORTIVA" : "BOULDER"}</span></h3>
-      </div>
-      <div class="profile-toolbar">
-        <div class="tb-field">
-          <label for="${kind}-cliente">Cliente</label>
-          <select id="${kind}-cliente" class="tb-select"><option value="">Cargando clientes...</option></select>
+        <div class="profile-header-title">
+          <span class="eyebrow">Kaska.Climb</span>
+          <h3 class="profile-title"><span class="profile-main">PERFIL FISIOLÓGICO</span> - <span class="profile-mode">${isDep ? "DEPORTIVA" : "BOULDER"}</span></h3>
         </div>
-        <button class="icon-btn" onclick="publicarPerfil('${kind}')">Publicar</button>
-        <button class="icon-btn" onclick="exportarPerfilPNG('${kind}')">Exportar</button>
-        <span class="estado-publicar" id="${kind}-estado-publicar"></span>
+        <div class="profile-toolbar">
+          <select id="${kind}-cliente" class="tb-select" aria-label="Cliente"><option value="">Cargando clientes...</option></select>
+          <button class="icon-btn" onclick="publicarPerfil('${kind}')">Publicar</button>
+          <button class="icon-btn" onclick="exportarPerfilPNG('${kind}')">Exportar</button>
+          <span class="estado-publicar" id="${kind}-estado-publicar"></span>
+        </div>
       </div>
       <div class="radar-wrap">
         <div class="radar-chart"><svg viewBox="-45 -45 390 390" width="507" height="507" id="${kind}-radar"></svg></div>
