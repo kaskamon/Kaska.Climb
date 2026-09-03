@@ -377,6 +377,7 @@
         <input type="number" step="0.1" id="pf-final" placeholder="Introduce el valor conseguido">
       <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
       </div>
+      <div class="recovery-status" id="pfFinalWarning"></div>
     </div>
   </div>
 
@@ -495,6 +496,7 @@ const recoveryBox = document.getElementById('recoveryStatus');
 const laterBlocks = ['blockAnalitico','blockIntegrado','blockCierre'].map(id=>document.getElementById(id));
 const refPfFinalUmbral = document.getElementById('refPfFinalUmbral');
 const btnSendQuick = document.getElementById('btnSendQuick');
+let umbralParadaActual = null;
 
 pfInicialInput.addEventListener('input', ()=>{
   const v = parseFloat(pfInicialInput.value);
@@ -503,11 +505,13 @@ pfInicialInput.addEventListener('input', ()=>{
     sesionBloqueada = false;
     laterBlocks.forEach(b=>b.classList.remove('blocked'));
     refPfFinalUmbral.textContent = '— N';
+    umbralParadaActual = null;
     btnSendQuick.classList.remove('show');
     return;
   }
   // Umbral de parada del bloque integrado: se calcula sobre el PFinicial de HOY, no el de la referencia
   const umbralParada = v * (1 - MESOCICLO.umbralIntegrado/100);
+  umbralParadaActual = umbralParada;
   refPfFinalUmbral.textContent = umbralParada.toFixed(0) + ' N';
 
   const perdida = ((REF_PF - v) / REF_PF) * 100;
@@ -523,6 +527,24 @@ pfInicialInput.addEventListener('input', ()=>{
   }
   laterBlocks.forEach(b=>b.classList.toggle('blocked', sesionBloqueada));
   btnSendQuick.classList.toggle('show', sesionBloqueada);
+});
+
+const pfFinalInput = document.getElementById('pf-final');
+const pfFinalWarning = document.getElementById('pfFinalWarning');
+pfFinalInput.addEventListener('input', ()=>{
+  const v = parseFloat(pfFinalInput.value);
+  if(isNaN(v) || pfFinalInput.value.trim()==='' || umbralParadaActual===null){
+    pfFinalWarning.classList.remove('show','ok','warn');
+    return;
+  }
+  pfFinalWarning.classList.remove('ok','warn');
+  if(v > umbralParadaActual){
+    pfFinalWarning.classList.add('show','warn');
+    pfFinalWarning.innerHTML = `<span class="dot"></span><span>Este valor (${v} N) todavía está <b>por encima del umbral de parada</b> (${umbralParadaActual.toFixed(0)} N). Si de verdad es tu último test, revísalo — no debería haberse acabado la sesión todavía con esta cifra.</span>`;
+  }else{
+    pfFinalWarning.classList.add('show','ok');
+    pfFinalWarning.innerHTML = `<span class="dot"></span><span>Correcto — por debajo del umbral de parada (${umbralParadaActual.toFixed(0)} N).</span>`;
+  }
 });
 
 async function enviarSesion(){
@@ -565,9 +587,7 @@ async function enviarSesion(){
 
     payload.fmaxDer = val('fmax-der');
     payload.fmaxIzq = val('fmax-izq');
-    payload.campo1 = val('susp-int');
-    payload.campo2 = val('campus-hmh');
-    payload.campo3 = val('travesias');
+    payload.campos = [val('susp-int'), val('campus-hmh'), val('travesias')];
     payload.pfFinal = !isNaN(pfFinalN) ? pfFinalN : undefined;
   }
 
@@ -598,7 +618,10 @@ async function enviarSesion(){
     const data = await res.json();
     if(data.success){
       document.getElementById('modalTitle').textContent = '✓ Sesión guardada';
-      document.getElementById('modalDesc').textContent = 'Se ha escrito correctamente en tu Google Sheet.';
+      document.getElementById('modalDesc').textContent = 'Se ha escrito correctamente en tu Google Sheet. Te llevamos a tu página en unos segundos...';
+      // La página personal del cliente todavía no existe (llega en la Fase 2) —
+      // dejamos la redirección ya montada, apuntando a donde vivirá.
+      setTimeout(() => { window.location.href = '/cliente/semana.html'; }, 2500);
     }else{
       document.getElementById('modalTitle').textContent = '✗ Error al guardar';
       document.getElementById('modalDesc').textContent = data.error || 'Ha ocurrido un error inesperado.';
