@@ -12,8 +12,6 @@
 <title>Kaska.Climb | Semanas</title>
 
 <script src="libs/Sortable.min.js"></script>
-<script src="libs/html2canvas.min.js"></script>
-<script src="libs/jspdf.umd.min.js"></script>
 <script src="libs/clientes-selector.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -596,7 +594,6 @@ body {
     <div class="no-print grid-botones-abajo">
       <button class="btn-action" onclick="guardar()">Guardar</button>
       <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
-      <button class="btn-action" onclick="exportarPDFReal(event)">Exportar PDF</button>
     </div>
 
     <button class="btn-action btn-inicio no-print" onclick="window.location.href='index.html'">
@@ -761,104 +758,6 @@ function guardar() {
   });
 
   alert("Guardado");
-}
-
-async function guardarPDF(pdf, nombreSugerido) {
-  // Si el navegador soporta elegir nombre y carpeta al guardar, lo usamos
-  if (window.showSaveFilePicker) {
-    try {
-      const blob = pdf.output('blob');
-      const handle = await window.showSaveFilePicker({
-        suggestedName: nombreSugerido,
-        types: [{
-          description: 'Documento PDF',
-          accept: { 'application/pdf': ['.pdf'] }
-        }]
-      });
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      return;
-    } catch (err) {
-      if (err && err.name === 'AbortError') return; // el usuario canceló el diálogo
-      console.warn('No se pudo usar el selector nativo, se usa la descarga estándar.', err);
-      // seguimos hacia el método clásico si falla por otro motivo
-    }
-  }
-  // Método clásico (descarga directa a Descargas)
-  pdf.save(nombreSugerido);
-}
-
-async function exportarPDFReal(evento) {
-  if (!window.html2canvas) {
-    alert("No se ha cargado html2canvas.min.js. Revisa que esté en la carpeta libs.");
-    return;
-  }
-
-  if (!window.jspdf || !window.jspdf.jsPDF) {
-    alert("No se ha cargado jspdf.umd.min.js. Revisa que esté en la carpeta libs.");
-    return;
-  }
-
-  const panel = document.getElementById('panelExportable');
-
-  if (!panel) {
-    alert("No encuentro el panel exportable.");
-    return;
-  }
-
-  const boton = evento && evento.target ? evento.target : null;
-
-  if (boton) {
-    boton.disabled = true;
-    boton.innerText = "Generando PDF...";
-  }
-
-  try {
-    const rect = panel.getBoundingClientRect();
-
-    const canvas = await html2canvas(panel, {
-      backgroundColor: '#000000',
-      scale: 2,
-      useCORS: true,
-      allowTaint: true,
-      width: Math.ceil(rect.width),
-      height: Math.ceil(panel.scrollHeight),
-      windowWidth: Math.ceil(rect.width),
-      windowHeight: Math.ceil(panel.scrollHeight),
-      scrollX: 0,
-      scrollY: 0
-    });
-
-    const imgData = canvas.toDataURL('image/png');
-
-    const escalaCanvas = 2;
-    const pxToMm = 0.264583;
-
-    const pdfWidth = canvas.width * pxToMm / escalaCanvas;
-    const pdfHeight = canvas.height * pxToMm / escalaCanvas;
-
-    const { jsPDF } = window.jspdf;
-
-    const pdf = new jsPDF({
-      orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
-      unit: 'mm',
-      format: [pdfWidth, pdfHeight],
-      compress: true
-    });
-
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-    await guardarPDF(pdf, 'kaska-climb-semana.pdf');
-  } catch (error) {
-    alert("No se ha podido generar el PDF. Revisa que las librerías estén bien subidas en GitHub.");
-    console.error(error);
-  } finally {
-    if (boton) {
-      boton.disabled = false;
-      boton.innerText = "Exportar PDF";
-    }
-  }
 }
 
 window.onload = () => {
