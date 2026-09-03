@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Tu semana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e;
+    --stone-800:#262d28;
+    --stone-700:#333b34;
+    --chalk:#f2ede1;
+    --chalk-dim:#c9c3b4;
+    --chalk-faint:#8d9187;
+    --moss:#7c9070;
+    --moss-light:#a7bd98;
+    --moss-deep:#4d5c46;
+    --amber:#c99a5b;
+    --danger:#c9705b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; background:#494d4b; color:var(--chalk);
+    font-family:'Work Sans', sans-serif;
+  }
+  h1,h2,h3{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.5px; margin:0; }
+
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:rgba(28,33,30,0.92); backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(242,237,225,0.1);
+  }
+  .topbar-inner{ max-width:760px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px; font-weight:700; color:var(--moss-light); text-transform:uppercase; }
+  .eyebrow::before{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .salir{
+    background:transparent; border:1px solid rgba(242,237,225,0.16); color:var(--chalk-dim);
+    padding:8px 14px; border-radius:10px; font-size:11.5px; font-weight:700; letter-spacing:0.3px;
+    text-transform:uppercase; cursor:pointer; text-decoration:none; transition:all .2s ease;
+  }
+  .salir:hover{ border-color:var(--danger); color:var(--danger); }
+
+  .wrap{ max-width:760px; margin:0 auto; padding:24px 24px 90px; }
+
+  .estado-carga, .estado-error{ max-width:760px; margin:60px auto; padding:0 24px; text-align:center; color:var(--chalk-dim); }
+  .estado-error{ color:var(--chalk); }
+  .estado-error h2{ font-size:22px; color:var(--danger); margin-bottom:10px; }
+  .estado-error p{ font-size:14px; line-height:1.6; }
+
+  .cabecera{ margin-bottom:28px; }
+  .cabecera .hola{ font-size:13px; color:var(--chalk-dim); margin-bottom:4px; }
+  .cabecera h1{ font-size:30px; }
+  .cabecera h1 span{ color:var(--moss); }
+  .cabecera .rango{ font-size:13px; color:var(--chalk-faint); margin-top:8px; }
+
+  .dia{
+    background:rgba(38,45,40,0.55); border:1px solid rgba(242,237,225,0.12);
+    border-radius:16px; padding:16px 18px; margin-bottom:12px; backdrop-filter:blur(8px);
+    display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;
+  }
+  .dia.hoy{ border-color:var(--moss); background:rgba(124,144,112,0.14); }
+  .dia .info-dia{ display:flex; flex-direction:column; gap:2px; min-width:110px; }
+  .dia .nombre-dia{ font-size:11px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--chalk-dim); }
+  .dia.hoy .nombre-dia{ color:var(--moss-light); }
+  .dia .fecha-dia{ font-size:13.5px; color:var(--chalk-faint); font-variant-numeric:tabular-nums; }
+  .dia .etiqueta-hoy{
+    display:inline-block; margin-top:2px; font-size:9.5px; font-weight:800; letter-spacing:0.5px;
+    color:var(--moss-light); text-transform:uppercase;
+  }
+
+  .sesiones-dia{ display:flex; flex-wrap:wrap; gap:8px; flex:1; justify-content:flex-end; }
+  .chip-sesion{
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--moss); color:var(--stone-900); border:none;
+    padding:10px 16px; border-radius:10px; font-weight:800; font-size:12.5px;
+    letter-spacing:0.3px; text-transform:uppercase; text-decoration:none;
+    box-shadow:0 6px 18px rgba(0,0,0,0.25); transition:transform .15s ease, background .2s ease;
+  }
+  .chip-sesion:hover{ background:var(--moss-light); transform:translateY(-1px); }
+  .chip-sesion .flecha{ font-size:14px; }
+
+  .sin-sesion{ font-size:12px; color:var(--chalk-faint); font-style:italic; }
+
+  .vacio{
+    text-align:center; padding:50px 20px; color:var(--chalk-dim);
+    background:rgba(38,45,40,0.4); border:1px dashed rgba(242,237,225,0.15); border-radius:16px;
+  }
+  .vacio strong{ color:var(--chalk); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="eyebrow">Kaska.Climb</div>
+    <a class="salir" id="btnSalir" href="../login.html">Cerrar sesión</a>
+  </div>
+</div>
+
+<div class="wrap" id="wrap" hidden>
+  <div class="cabecera">
+    <div class="hola">Hola de nuevo,</div>
+    <h1 id="nombreTxt">— <span id="apellidoSpan"></span></h1>
+    <div class="rango" id="rangoTxt"></div>
+  </div>
+
+  <div id="contenedorDias"></div>
+</div>
+
+<div class="estado-carga" id="estadoCarga">Cargando tu semana…</div>
+
+<div class="estado-error" id="estadoError" hidden>
+  <h2>No se pudo cargar tu semana</h2>
+  <p id="estadoErrorTexto"></p>
+</div>
+
+<script src="../libs/mesociclos-config.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const CLIENTE = params.get('cliente');     // email — identificador real
+const NOMBRE_PARAM = params.get('nombre'); // solo para mostrar
+const NOMBRE_DISPLAY = NOMBRE_PARAM || CLIENTE;
+
+const { TITULOS } = window.MESOCICLOS_CONFIG || {};
+
+const NOMBRES_DIA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+function escapeHtml(str){
+  return (str == null ? '' : String(str))
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function mostrarError(mensaje){
+  document.getElementById('estadoCarga').hidden = true;
+  document.getElementById('wrap').hidden = true;
+  document.getElementById('estadoError').hidden = false;
+  document.getElementById('estadoErrorTexto').textContent = mensaje;
+}
+
+if(!CLIENTE){
+  mostrarError('No hemos podido identificarte. Vuelve a iniciar sesión desde la pantalla de acceso.');
+  throw new Error('Falta cliente');
+}
+
+// El botón "Salir" y cualquier vuelta atrás mantienen la identidad del cliente.
+document.getElementById('btnSalir').href = '../login.html';
+
+function fechaHoyDDMMYYYY(){
+  const hoy = new Date();
+  const dd = String(hoy.getDate()).padStart(2,'0');
+  const mm = String(hoy.getMonth()+1).padStart(2,'0');
+  return `${dd}/${mm}/${hoy.getFullYear()}`;
+}
+
+function tituloMesociclo(mesociclo){
+  return (TITULOS && TITULOS[mesociclo]) || mesociclo;
+}
+
+async function cargar(){
+  try{
+    const hoyStr = fechaHoyDDMMYYYY();
+    const qs = new URLSearchParams({ cliente: CLIENTE, fecha: hoyStr });
+    const res = await fetch('/api/obtener-semana?' + qs.toString());
+    const data = await res.json();
+
+    if(!data.success){
+      mostrarError(data.error || 'Ha ocurrido un error inesperado.');
+      return;
+    }
+
+    const nombrePartes = NOMBRE_DISPLAY.split(' ');
+    document.getElementById('nombreTxt').innerHTML =
+      `${escapeHtml(nombrePartes[0] || NOMBRE_DISPLAY)} <span id="apellidoSpan">${escapeHtml(nombrePartes.slice(1).join(' '))}</span>`;
+
+    const dias = data.dias; // 7 fechas dd/mm/aaaa, Lun a Dom
+    document.getElementById('rangoTxt').textContent = `Semana del ${dias[0]} al ${dias[6]}`;
+
+    const hoyStrActual = fechaHoyDDMMYYYY();
+    const sesionesPorDia = {};
+    data.sesiones.forEach(s => {
+      if(!sesionesPorDia[s.fecha]) sesionesPorDia[s.fecha] = [];
+      sesionesPorDia[s.fecha].push(s.mesociclo);
+    });
+
+    let html = '';
+    let hayAlgunaSesion = data.sesiones.length > 0;
+
+    dias.forEach((fecha, i) => {
+      const esHoy = fecha === hoyStrActual;
+      const sesiones = sesionesPorDia[fecha] || [];
+
+      let contenidoDerecha;
+      if(sesiones.length > 0){
+        contenidoDerecha = `<div class="sesiones-dia">` + sesiones.map(mesociclo => {
+          const qsSesion = new URLSearchParams({ cliente: CLIENTE, fecha, mesociclo });
+          if(NOMBRE_PARAM) qsSesion.set('nombre', NOMBRE_PARAM);
+          return `<a class="chip-sesion" href="sesion.html?${qsSesion.toString()}">${escapeHtml(tituloMesociclo(mesociclo))}<span class="flecha">→</span></a>`;
+        }).join('') + `</div>`;
+      } else {
+        contenidoDerecha = `<div class="sin-sesion">Sin sesión programada</div>`;
+      }
+
+      html += `
+        <div class="dia${esHoy ? ' hoy' : ''}">
+          <div class="info-dia">
+            <div class="nombre-dia">${NOMBRES_DIA[i]}</div>
+            <div class="fecha-dia">${fecha}</div>
+            ${esHoy ? '<div class="etiqueta-hoy">Hoy</div>' : ''}
+          </div>
+          ${contenidoDerecha}
+        </div>`;
+    });
+
+    document.getElementById('contenedorDias').innerHTML = hayAlgunaSesion
+      ? html
+      : html + `<div class="vacio">Todavía no hay ninguna sesión programada esta semana.<br><strong>Habla con tu entrenador</strong> si crees que debería haber algo aquí.</div>`;
+
+    document.getElementById('estadoCarga').hidden = true;
+    document.getElementById('wrap').hidden = false;
+  }catch(err){
+    mostrarError('Error de red al cargar tu semana: ' + err.message);
+  }
+}
+
+cargar();
+</script>
+</body>
+</html>

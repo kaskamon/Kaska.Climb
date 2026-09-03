@@ -267,6 +267,17 @@ const SEMANA_PARAM = params.get('semana');
 
 const { COLUMNS, FIELD_MAP, TITULOS } = window.MESOCICLOS_CONFIG || {};
 
+// El botón "Semana" y la redirección tras enviar mantienen la identidad del
+// cliente al volver a su semana.
+const QS_VOLVER = (() => {
+  const qs = new URLSearchParams();
+  if(CLIENTE) qs.set('cliente', CLIENTE);
+  if(NOMBRE_PARAM) qs.set('nombre', NOMBRE_PARAM);
+  const s = qs.toString();
+  return s ? ('semana.html?' + s) : 'semana.html';
+})();
+document.querySelector('.back-btn').href = QS_VOLVER;
+
 function escapeHtml(str){
   return (str == null ? '' : String(str))
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -758,7 +769,7 @@ function wireInteractividad(ultimaValida){
       if(data.success){
         document.getElementById('modalTitle').textContent = '✓ Sesión guardada';
         document.getElementById('modalDesc').textContent = 'Se ha escrito correctamente en tu Google Sheet. Te llevamos a tu página en unos segundos...';
-        setTimeout(() => { window.location.href = 'semana.html'; }, 2500);
+        setTimeout(() => { window.location.href = QS_VOLVER; }, 2500);
       }else{
         document.getElementById('modalTitle').textContent = '✗ Error al guardar';
         document.getElementById('modalDesc').textContent = data.error || 'Ha ocurrido un error inesperado.';
