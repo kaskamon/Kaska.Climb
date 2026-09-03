@@ -74,20 +74,7 @@
   nav.tabs button:hover{ border-color:var(--moss); color:var(--chalk); }
   nav.tabs button.active{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
 
-  .toolbar{ display:flex; gap:8px; align-items:flex-end; flex-wrap:wrap; }
-  .tb-field{ display:flex; flex-direction:column; gap:3px; }
-  .tb-field label{
-    font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em;
-    color:var(--chalk-faint); white-space:nowrap;
-  }
-  .tb-select, .tb-date{
-    background:var(--stone-800); border:1px solid rgba(242,237,225,0.16);
-    color:var(--chalk); border-radius:9px; padding:7px 9px; font-size:12.5px;
-    font-family:'Work Sans',sans-serif; height:35px;
-  }
-  .tb-select{ width:180px; }
-  .tb-date{ width:132px; }
-  @media (max-width:640px){ .tb-select{ width:150px; } .tb-date{ width:118px; } }
+  .toolbar{ display:flex; gap:8px; }
   .icon-btn{
     background:var(--stone-800); border:1px solid rgba(242,237,225,0.16); color:var(--chalk);
     padding:9px 14px; border-radius:10px; font-size:12px; font-weight:700; letter-spacing:0.5px;
@@ -119,18 +106,33 @@
   .section-head .sub{ color:var(--chalk-faint); font-size:13px; }
   .profile-mode{ color:var(--moss); }
   .profile-header{
-    display:grid;
-    grid-template-columns:1fr auto 1fr;
-    grid-template-areas:"brand title action";
-    align-items:center;
-    gap:14px;
-    margin:0 0 20px;
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    text-align:center; margin:0 0 18px;
   }
-  .profile-header .eyebrow{ grid-area:brand; margin:0; font-size:15px; letter-spacing:3px; }
-  .profile-header .profile-title{ grid-area:title; margin:0; white-space:nowrap; }
-  .profile-header .icon-btn{ grid-area:action; justify-self:end; }
+  .profile-header .eyebrow{ margin:0; font-size:15px; letter-spacing:3px; }
+  .profile-header .profile-title{ margin:0; }
   .profile-title{ font-size:30px !important; font-weight:800; text-align:center; letter-spacing:.4px; }
   .profile-title .profile-main{ color:var(--chalk); }
+
+  .profile-toolbar{
+    display:flex; align-items:flex-end; justify-content:center; flex-wrap:wrap;
+    gap:10px; margin:0 0 22px;
+    padding-bottom:18px; border-bottom:1px dashed rgba(242,237,225,0.12);
+  }
+  .tb-field{ display:flex; flex-direction:column; gap:3px; }
+  .tb-field label{
+    font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em;
+    color:var(--chalk-faint); white-space:nowrap;
+  }
+  .tb-select, .tb-date{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.16);
+    color:var(--chalk); border-radius:9px; padding:7px 9px; font-size:12.5px;
+    font-family:'Work Sans',sans-serif; height:35px;
+  }
+  .tb-select{ width:180px; }
+  .tb-date{ width:132px; }
+  .profile-toolbar .estado-publicar{ flex-basis:100%; text-align:center; }
+  @media (max-width:640px){ .tb-select{ width:150px; } .tb-date{ width:118px; } }
 
   .card{
     background:rgba(38,45,40,0.5); border:1px solid rgba(242,237,225,0.1);
@@ -265,14 +267,6 @@
   @media (max-width:760px){
     .radar-wrap{ grid-template-columns:1fr; gap:14px; }
     .radar-chart svg{ width:min(100%,494px); }
-    .profile-header{
-      grid-template-columns:1fr auto;
-      grid-template-areas:
-        "title title"
-        "brand action";
-      row-gap:10px;
-    }
-    .profile-header .profile-title{ white-space:normal; }
     .profile-title{ font-size:25px !important; }
   }
 
@@ -351,10 +345,6 @@
   .card-pushfoot{ display:flex; flex-direction:column; height:100%; }
   .card-pushfoot > .out.hi:last-child{ margin-top:auto; margin-bottom:0; }
 
-  .publicar-perfil-row{
-    display:flex; flex-wrap:wrap; align-items:center; gap:14px;
-    margin-top:18px; padding-top:16px; border-top:1px dashed rgba(242,237,225,0.12);
-  }
   .estado-publicar{ font-size:12.5px; color:var(--chalk-faint); }
   .estado-publicar.ok{ color:var(--moss-light); font-weight:700; }
   .estado-publicar.error{ color:var(--danger); font-weight:700; }
@@ -422,14 +412,6 @@
       <button data-tab="boulder">Perfil Boulder</button>
     </nav>
     <div class="toolbar">
-      <div class="tb-field">
-        <label for="g-cliente">Cliente</label>
-        <select id="g-cliente" class="tb-select"><option value="">Cargando clientes...</option></select>
-      </div>
-      <div class="tb-field">
-        <label for="g-fecha">Fecha del test</label>
-        <input type="date" id="g-fecha" class="tb-date">
-      </div>
       <button class="icon-btn" id="btnExport">Exportar</button>
       <button class="icon-btn" id="btnImport">Importar</button>
       <button class="icon-btn danger" id="btnReset">Nuevo test</button>
@@ -1338,15 +1320,23 @@ function buildPerfil(kind){
       <div class="profile-header">
         <span class="eyebrow">Kaska.Climb</span>
         <h3 class="profile-title"><span class="profile-main">PERFIL FISIOLÓGICO</span> - <span class="profile-mode">${isDep ? "DEPORTIVA" : "BOULDER"}</span></h3>
+      </div>
+      <div class="profile-toolbar">
+        <div class="tb-field">
+          <label for="${kind}-cliente">Cliente</label>
+          <select id="${kind}-cliente" class="tb-select"><option value="">Cargando clientes...</option></select>
+        </div>
+        <div class="tb-field">
+          <label for="${kind}-fecha">Fecha del test</label>
+          <input type="date" id="${kind}-fecha" class="tb-date">
+        </div>
         <button class="icon-btn" onclick="exportarPerfilPNG('${kind}')">Exportar</button>
+        <button class="icon-btn" onclick="publicarPerfil('${kind}')">Publicar</button>
+        <span class="estado-publicar" id="${kind}-estado-publicar"></span>
       </div>
       <div class="radar-wrap">
         <div class="radar-chart"><svg viewBox="-45 -45 390 390" width="507" height="507" id="${kind}-radar"></svg></div>
         <div class="radar-legend" id="${kind}-legend"></div>
-      </div>
-      <div class="publicar-perfil-row">
-        <button class="icon-btn" onclick="publicarPerfil('${kind}')">Publicar perfil fisiológico</button>
-        <span class="estado-publicar" id="${kind}-estado-publicar"></span>
       </div>
     </div>
   `;
@@ -1486,8 +1476,8 @@ function publicarPerfil(kind){
   const estadoEl = $(kind+'-estado-publicar');
   if(!data || !estadoEl) return;
 
-  const cliente = $('g-cliente') ? $('g-cliente').value : '';
-  const fechaVal = $('g-fecha') ? $('g-fecha').value : ''; // yyyy-mm-dd, fecha REAL del test (no la de publicación)
+  const cliente = $(kind+'-cliente') ? $(kind+'-cliente').value : '';
+  const fechaVal = $(kind+'-fecha') ? $(kind+'-fecha').value : ''; // yyyy-mm-dd, fecha REAL del test (no la de publicación)
   if(!cliente || !fechaVal){
     estadoEl.textContent = 'Elige un cliente y la fecha del test antes de publicar.';
     estadoEl.className = 'estado-publicar error';
@@ -1939,7 +1929,8 @@ function loadState(){
 $('btnExport').addEventListener('click', async ()=>{
   const data = {}; ALL_IDS().forEach(id=>{ data[id] = $(id).value; });
   const nombre = ($('g-nombre').value || 'test').replace(/[^a-z0-9]+/gi,'_');
-  const filename = `${nombre}_${($('g-fecha').value||'sin_fecha')}.json`;
+  const hoy = new Date().toISOString().slice(0,10);
+  const filename = `${nombre}_${hoy}.json`;
   const jsonText = JSON.stringify(data,null,2);
 
   // En móvil (Android/iOS), usar el panel nativo de compartir: permite guardar
@@ -2008,7 +1999,10 @@ $('btnReset').addEventListener('click', ()=>{
 /* init */
 const _datosGuardados = loadState();
 poblarGradosNativos();
-if($('g-cliente')) cargarSelectorClientes($('g-cliente'));
+['deportiva','boulder'].forEach(kind=>{
+  const sel = $(kind+'-cliente');
+  if(sel) cargarSelectorClientes(sel);
+});
 if(_datosGuardados){
   ['g-gradoRP-nativo','g-gradoObj-nativo'].forEach(id=>{
     if(_datosGuardados[id] !== undefined && $(id)) $(id).value = _datosGuardados[id];
