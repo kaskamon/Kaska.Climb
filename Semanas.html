@@ -645,16 +645,11 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
   const estadoDiv = document.getElementById('estadoPublicarSemana');
 
   if (!cliente) { alert('Indica el cliente antes de cargar su última semana publicada.'); return; }
-  if (!document.getElementById('hiddenDate').value) {
-    alert('Indica primero la fecha del lunes de esta semana (campo "Fecha" arriba).');
-    return;
-  }
 
-  const fechaLunes = document.getElementById('displayDate').innerText.trim();
   estadoDiv.innerHTML = 'Cargando última semana publicada...';
 
   try {
-    const qs = new URLSearchParams({ cliente, fecha: fechaLunes });
+    const qs = new URLSearchParams({ cliente });
     const res = await fetch('/api/obtener-semana?' + qs.toString());
     const data = await res.json();
 
@@ -663,9 +658,17 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
       return;
     }
     if (!data.sesiones.length) {
-      estadoDiv.innerHTML = `<div class="error">Este cliente no tiene ninguna sesión publicada para la semana del ${fechaLunes}.</div>`;
+      estadoDiv.innerHTML = `<div class="error">Este cliente todavía no tiene ninguna semana publicada.</div>`;
       return;
     }
+
+    // El lunes que devuelve la propia semana encontrada pasa a ser el de la
+    // cabecera — así no hace falta escribirlo antes de cargar, y si luego
+    // se vuelve a publicar, las fechas de cada día siguen siendo correctas.
+    const fechaLunes = data.dias[0];
+    const [ddL, mmL, yyyyL] = fechaLunes.split('/');
+    document.getElementById('hiddenDate').value = `${yyyyL}-${mmL}-${ddL}`;
+    actualizarFecha(`${yyyyL}-${mmL}-${ddL}`);
 
     limpiarTabla();
 

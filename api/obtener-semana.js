@@ -42,9 +42,6 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, error: 'Falta el parámetro cliente.' });
     }
 
-    const ref = parseFechaDDMMYYYY(fecha) || new Date();
-    const dias = diasDeLaSemana(ref);
-
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
       return res.status(500).json({
         success: false,
@@ -75,6 +72,22 @@ module.exports = async (req, res) => {
         error: `No se pudo leer la pestaña "${SHEET_NAME}" (${e.message}).`,
       });
     }
+
+    // Sin fecha explícita: usamos el día de la fila más reciente publicada
+    // para este cliente (de abajo a arriba) como referencia — así "Cargar
+    // último publicado" no depende de que el entrenador escriba antes el
+    // lunes de la semana.
+    let ref;
+    if (fecha) {
+      ref = parseFechaDDMMYYYY(fecha) || new Date();
+    } else {
+      let ultimaFecha = null;
+      for (let i = filas.length - 1; i >= 0; i--) {
+        if (filas[i][1] === cliente) { ultimaFecha = filas[i][2]; break; }
+      }
+      ref = (ultimaFecha && parseFechaDDMMYYYY(ultimaFecha)) || new Date();
+    }
+    const dias = diasDeLaSemana(ref);
 
     // Para cada (fecha, mesociclo) del cliente en esta semana, nos quedamos con
     // la publicación más reciente (las filas van en orden de inserción, así que
