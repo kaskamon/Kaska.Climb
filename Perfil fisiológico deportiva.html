@@ -165,11 +165,41 @@
   .ring-label{ font-size:10px; fill:var(--chalk-dim); }
   .vertex{ fill:var(--stone-900); stroke:var(--moss); stroke-width:2.5; }
   .vertex.weak{ fill:var(--stone-900); stroke:var(--rope); }
+
+  .panel-guardar{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;
+    background:rgba(124,144,112,0.08); border:1px solid rgba(242,237,225,0.1);
+    border-radius:14px; padding:16px; margin-bottom:24px;
+  }
+  .campo-guardar{ display:flex; flex-direction:column; gap:4px; }
+  .campo-guardar label{ font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--chalk-dim); }
+  .campo-guardar input{
+    font-family:'Work Sans', sans-serif; font-size:13px;
+    padding:8px 10px; border:1px solid rgba(242,237,225,0.18); border-radius:8px;
+    background:var(--stone-800); color:var(--chalk);
+  }
+  .estado-guardar{ flex-basis:100%; font-size:12px; color:var(--chalk-dim); min-height:16px; }
+  .estado-guardar.ok{ color:var(--moss-light); font-weight:700; }
+  .estado-guardar.error{ color:var(--rope); font-weight:700; }
 </style>
 </head>
 <body>
 
 <div class="fondo-logo"></div>
+
+<div class="panel-guardar" style="max-width:1040px; margin:0 auto 20px;">
+  <div class="campo-guardar">
+    <label>Cliente (email)</label>
+    <input type="email" id="guardarCliente" placeholder="email@ejemplo.com">
+  </div>
+  <div class="campo-guardar">
+    <label>Fecha de realización del test</label>
+    <input type="date" id="guardarFecha">
+  </div>
+  <button class="btn-action" id="btn-guardar-perfil" type="button">Guardar en el historial del cliente</button>
+  <button class="btn-action" id="btn-cargar-perfil" type="button">Cargar test anterior</button>
+  <div class="estado-guardar" id="estadoGuardarPerfil"></div>
+</div>
 
 <div class="wrap" id="export-area">
 
@@ -337,6 +367,81 @@
   }
 
   redibujar();
+
+  /* ================= GUARDAR / CARGAR EN EL HISTORIAL DEL CLIENTE ================= */
+  const MODALIDAD = 'deportiva';
+  const inputGuardarCliente = document.getElementById('guardarCliente');
+  const inputGuardarFecha = document.getElementById('guardarFecha');
+  const estadoGuardarPerfil = document.getElementById('estadoGuardarPerfil');
+
+  inputGuardarCliente.value = localStorage.getItem('kaska_cliente_actual') || '';
+  inputGuardarCliente.addEventListener('input', () => {
+    localStorage.setItem('kaska_cliente_actual', inputGuardarCliente.value);
+  });
+
+  function mostrarEstadoGuardar(texto, clase){
+    estadoGuardarPerfil.textContent = texto;
+    estadoGuardarPerfil.classList.remove('ok', 'error');
+    if(clase) estadoGuardarPerfil.classList.add(clase);
+  }
+
+  document.getElementById('btn-guardar-perfil').addEventListener('click', async () => {
+    const cliente = inputGuardarCliente.value.trim();
+    const fechaVal = inputGuardarFecha.value; // yyyy-mm-dd, fecha REAL del test
+    if(!cliente || !fechaVal){
+      alert('Indica el email del cliente y la fecha de realización del test antes de guardar.');
+      return;
+    }
+    const [y, m, d] = fechaVal.split('-');
+    const fecha = `${d}/${m}/${y}`;
+    const capacidades = {};
+    CAPACIDADES.forEach(c => { capacidades[c.key] = c.valor; });
+
+    mostrarEstadoGuardar('Guardando...', null);
+    try{
+      const res = await fetch('/api/guardar-perfil-fisiologico', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cliente, fecha, modalidad: MODALIDAD, capacidades }),
+      });
+      const data = await res.json();
+      mostrarEstadoGuardar(
+        data.success ? `✓ Guardado — ${cliente} podrá comparar este test (${fecha}) con otros en su historial.` : ('✗ ' + (data.error || 'Error al guardar.')),
+        data.success ? 'ok' : 'error'
+      );
+    }catch(e){
+      mostrarEstadoGuardar('✗ Error de red: ' + e.message, 'error');
+    }
+  });
+
+  document.getElementById('btn-cargar-perfil').addEventListener('click', async () => {
+    const cliente = inputGuardarCliente.value.trim();
+    if(!cliente){
+      alert('Indica el email del cliente antes de cargar su último test.');
+      return;
+    }
+    mostrarEstadoGuardar('Cargando...', null);
+    try{
+      const qs = new URLSearchParams({ cliente, modalidad: MODALIDAD });
+      const res = await fetch('/api/obtener-perfiles-fisiologicos?' + qs.toString());
+      const data = await res.json();
+      if(!data.success || !data.perfiles.length){
+        mostrarEstadoGuardar(data.error || 'Este cliente todavía no tiene ningún test guardado de esta modalidad.', 'error');
+        return;
+      }
+      const ultimo = data.perfiles[data.perfiles.length - 1];
+      CAPACIDADES.forEach(c => {
+        if(ultimo.capacidades[c.key] !== undefined){
+          c.valor = ultimo.capacidades[c.key];
+          document.getElementById(`input-${c.key}`).value = c.valor;
+        }
+      });
+      redibujar();
+      mostrarEstadoGuardar(`✓ Cargado el test del ${ultimo.fecha}. Edítalo y guarda uno nuevo con la fecha de hoy.`, 'ok');
+    }catch(e){
+      mostrarEstadoGuardar('✗ Error de red: ' + e.message, 'error');
+    }
+  });
 
   document.getElementById('btn-exportar').addEventListener('click', async () => {
     const btnExp = document.getElementById('btn-exportar');

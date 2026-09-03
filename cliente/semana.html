@@ -89,6 +89,15 @@
     background:rgba(38,45,40,0.4); border:1px dashed rgba(242,237,225,0.15); border-radius:16px;
   }
   .vacio strong{ color:var(--chalk); }
+
+  .accesos{ display:flex; flex-wrap:wrap; gap:10px; margin-bottom:24px; }
+  .acceso-chip{
+    display:inline-flex; align-items:center; gap:8px;
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.16); color:var(--chalk);
+    padding:10px 16px; border-radius:10px; font-size:12px; font-weight:700; letter-spacing:0.3px;
+    text-transform:uppercase; text-decoration:none; transition:all .2s ease;
+  }
+  .acceso-chip:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
 </style>
 </head>
 <body>
@@ -106,6 +115,8 @@
     <h1 id="nombreTxt">— <span id="apellidoSpan"></span></h1>
     <div class="rango" id="rangoTxt"></div>
   </div>
+
+  <div class="accesos" id="accesosRapidos"></div>
 
   <div id="contenedorDias"></div>
 </div>
@@ -159,17 +170,42 @@ function tituloMesociclo(mesociclo){
   return (TITULOS && TITULOS[mesociclo]) || mesociclo;
 }
 
+function renderAccesosRapidos(driveUrl){
+  const qs = new URLSearchParams();
+  qs.set('cliente', CLIENTE);
+  if(NOMBRE_PARAM) qs.set('nombre', NOMBRE_PARAM);
+  const sufijo = '?' + qs.toString();
+
+  let html = `
+    <a class="acceso-chip" href="historial.html${sufijo}">Tu historial</a>
+    <a class="acceso-chip" href="perfil-fisiologico.html${sufijo}">Perfil fisiológico</a>`;
+  if(driveUrl){
+    html += `<a class="acceso-chip" href="${escapeHtml(driveUrl)}" target="_blank" rel="noopener">Tus documentos</a>`;
+  }
+  document.getElementById('accesosRapidos').innerHTML = html;
+}
+
 async function cargar(){
   try{
     const hoyStr = fechaHoyDDMMYYYY();
-    const qs = new URLSearchParams({ cliente: CLIENTE, fecha: hoyStr });
-    const res = await fetch('/api/obtener-semana?' + qs.toString());
-    const data = await res.json();
+    const qsSemana = new URLSearchParams({ cliente: CLIENTE, fecha: hoyStr });
+    const [resSemana, resCliente] = await Promise.all([
+      fetch('/api/obtener-semana?' + qsSemana.toString()),
+      fetch('/api/verificar-cliente?email=' + encodeURIComponent(CLIENTE)),
+    ]);
+    const data = await resSemana.json();
 
     if(!data.success){
       mostrarError(data.error || 'Ha ocurrido un error inesperado.');
       return;
     }
+
+    let driveUrl = null;
+    try{
+      const dataCliente = await resCliente.json();
+      if(dataCliente.success) driveUrl = dataCliente.cliente.drive || null;
+    }catch(e){ /* si falla, simplemente no mostramos el acceso a documentos */ }
+    renderAccesosRapidos(driveUrl);
 
     const nombrePartes = NOMBRE_DISPLAY.split(' ');
     document.getElementById('nombreTxt').innerHTML =

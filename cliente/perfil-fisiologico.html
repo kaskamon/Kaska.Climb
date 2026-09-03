@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Tu perfil fisiológico</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e;
+    --stone-800:#262d28;
+    --stone-700:#333b34;
+    --chalk:#f2ede1;
+    --chalk-dim:#c9c3b4;
+    --chalk-faint:#8d9187;
+    --moss:#7c9070;
+    --moss-light:#a7bd98;
+    --moss-deep:#4d5c46;
+    --amber:#c99a5b;
+    --danger:#c9705b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; background:#494d4b; color:var(--chalk);
+    font-family:'Work Sans', sans-serif;
+  }
+  h1,h2,h3{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.5px; margin:0; }
+
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:rgba(28,33,30,0.92); backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(242,237,225,0.1);
+  }
+  .topbar-inner{ max-width:900px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px; font-weight:700; color:var(--moss-light); text-transform:uppercase; }
+  .eyebrow::before{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .back-btn{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.16); color:var(--chalk);
+    padding:9px 14px; border-radius:10px; font-size:12px; font-weight:700; letter-spacing:0.5px;
+    text-transform:uppercase; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    text-decoration:none; transition:all .2s ease;
+  }
+  .back-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+
+  .wrap{ max-width:900px; margin:0 auto; padding:24px 24px 90px; }
+  .estado-carga, .estado-error{ max-width:760px; margin:60px auto; padding:0 24px; text-align:center; color:var(--chalk-dim); }
+  .estado-error{ color:var(--chalk); }
+  .estado-error h2{ font-size:22px; color:var(--danger); margin-bottom:10px; }
+  .estado-error p{ font-size:14px; line-height:1.6; }
+
+  .cabecera h1{ font-size:28px; margin-bottom:6px; }
+  .cabecera h1 span{ color:var(--moss); }
+  .cabecera .sub{ font-size:13px; color:var(--chalk-dim); margin-bottom:24px; }
+
+  .selectores{ display:flex; flex-wrap:wrap; gap:14px; margin-bottom:24px; }
+  .campo-fecha{ display:flex; flex-direction:column; gap:6px; }
+  .campo-fecha label{ font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--chalk-dim); }
+  .campo-fecha select{
+    font-family:'Work Sans', sans-serif; font-size:13.5px; font-weight:700;
+    padding:10px 14px; border-radius:10px; border:1px solid rgba(242,237,225,0.18);
+    background:var(--stone-700); color:var(--chalk);
+  }
+  .leyenda-fecha{ display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; }
+  .leyenda-fecha .dot{ width:10px; height:10px; border-radius:50%; }
+
+  .panel{
+    display:grid; grid-template-columns:1fr 320px; gap:24px; align-items:start;
+    background:rgba(38,45,40,0.55); border:1px solid rgba(242,237,225,0.12);
+    border-radius:20px; padding:24px; backdrop-filter:blur(8px); margin-bottom:20px;
+  }
+  @media (max-width:720px){ .panel{ grid-template-columns:1fr; } }
+  .chart-card{ display:flex; justify-content:center; }
+  .chart-card svg{ width:100%; max-width:420px; height:auto; }
+  .axis-label{ font-size:12px; font-weight:700; fill:var(--chalk); }
+  .ring-label{ font-size:9.5px; fill:var(--chalk-faint); }
+
+  table{ width:100%; border-collapse:collapse; font-size:13px; }
+  thead th{ text-align:left; font-size:10.5px; letter-spacing:0.06em; text-transform:uppercase; color:var(--chalk-dim); padding-bottom:8px; }
+  thead th:not(:first-child){ text-align:center; }
+  tbody tr{ border-top:1px solid rgba(242,237,225,0.08); }
+  tbody td{ padding:9px 0; }
+  tbody td:not(:first-child){ text-align:center; font-variant-numeric:tabular-nums; font-weight:700; }
+  .delta.up{ color:var(--moss-light); }
+  .delta.down{ color:var(--danger); }
+  .delta.same{ color:var(--chalk-faint); }
+
+  .vacio{
+    text-align:center; padding:50px 20px; color:var(--chalk-dim);
+    background:rgba(38,45,40,0.4); border:1px dashed rgba(242,237,225,0.15); border-radius:16px;
+  }
+  .vacio strong{ color:var(--chalk); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="eyebrow">Kaska.Climb</div>
+    <a class="back-btn" id="btnVolver" href="semana.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Semana
+    </a>
+  </div>
+</div>
+
+<div class="wrap" id="wrap" hidden>
+  <div class="cabecera">
+    <h1>Tu perfil <span>fisiológico</span></h1>
+    <div class="sub" id="subTxt"></div>
+  </div>
+  <div id="contenido"></div>
+</div>
+
+<div class="estado-carga" id="estadoCarga">Cargando tu perfil fisiológico…</div>
+<div class="estado-error" id="estadoError" hidden>
+  <h2>No se pudo cargar tu perfil</h2>
+  <p id="estadoErrorTexto"></p>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const CLIENTE = params.get('cliente');
+const NOMBRE_PARAM = params.get('nombre');
+
+const CAPACIDADES_POR_MODALIDAD = {
+  deportiva: [
+    { key: 'fmax',           corto: 'Fmax' },
+    { key: 'rfd',            corto: 'RFD 200ms' },
+    { key: 'desoxigenacion', corto: 'Desox.' },
+    { key: 'reoxigenacion',  corto: 'Reox.' },
+    { key: 'aerobico',       corto: 'Aeróbico' },
+    { key: 'traccion',       corto: 'Tracción' },
+  ],
+  boulder: [
+    { key: 'fmax',       corto: 'Fmáx' },
+    { key: 'rfd',        corto: 'RFD 200ms' },
+    { key: 'anaerobico', corto: 'Anaeróbico' },
+    { key: 'trac',       corto: 'Tracción' },
+  ],
+};
+
+function escapeHtml(str){
+  return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function mostrarError(mensaje){
+  document.getElementById('estadoCarga').hidden = true;
+  document.getElementById('wrap').hidden = true;
+  document.getElementById('estadoError').hidden = false;
+  document.getElementById('estadoErrorTexto').textContent = mensaje;
+}
+
+if(!CLIENTE){
+  mostrarError('No hemos podido identificarte. Vuelve a iniciar sesión desde la pantalla de acceso.');
+  throw new Error('Falta cliente');
+}
+
+(function(){
+  const qs = new URLSearchParams();
+  qs.set('cliente', CLIENTE);
+  if(NOMBRE_PARAM) qs.set('nombre', NOMBRE_PARAM);
+  document.getElementById('btnVolver').href = 'semana.html?' + qs.toString();
+})();
+
+function dibujarRadar(svg, capacidades, valoresA, valoresB, etiquetaA, etiquetaB){
+  const CENTRO = 210, RADIO = 150, N = capacidades.length;
+  const MAX_ESCALA = 10, ANILLOS = [0,2,4,6,8,10];
+
+  function puntoEnEje(i, frac){
+    const angulo = (Math.PI*2*i)/N - Math.PI/2;
+    return { x: CENTRO + frac*RADIO*Math.cos(angulo), y: CENTRO + frac*RADIO*Math.sin(angulo) };
+  }
+  function crear(tag, attrs){
+    const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k, v));
+    return el;
+  }
+
+  svg.setAttribute('viewBox', '0 0 420 420');
+  svg.innerHTML = '';
+
+  ANILLOS.forEach(nivel => {
+    const frac = nivel / MAX_ESCALA;
+    const pts = capacidades.map((_,i) => puntoEnEje(i, frac));
+    svg.appendChild(crear('polygon', { points: pts.map(p=>`${p.x},${p.y}`).join(' '), fill:'none', stroke:'rgba(242,237,225,0.14)', 'stroke-width':1 }));
+  });
+  capacidades.forEach((_, i) => {
+    const p = puntoEnEje(i, 1);
+    svg.appendChild(crear('line', { x1:CENTRO, y1:CENTRO, x2:p.x, y2:p.y, stroke:'rgba(242,237,225,0.14)', 'stroke-width':1 }));
+    const lp = puntoEnEje(i, 1.18);
+    const t = crear('text', { x:lp.x, y:lp.y, class:'axis-label', 'text-anchor': Math.abs(lp.x-CENTRO)<5 ? 'middle' : (lp.x>CENTRO?'start':'end'), 'dominant-baseline': lp.y<CENTRO-5?'auto':(lp.y>CENTRO+5?'hanging':'middle') });
+    t.textContent = capacidades[i].corto;
+    svg.appendChild(t);
+  });
+
+  function poligono(valores, color, opacidad){
+    if(!valores) return;
+    const pts = capacidades.map((c,i) => puntoEnEje(i, (valores[c.key]||0)/MAX_ESCALA));
+    svg.appendChild(crear('polygon', { points: pts.map(p=>`${p.x},${p.y}`).join(' '), fill: color, 'fill-opacity': opacidad, stroke: color, 'stroke-width':2.5, 'stroke-linejoin':'round' }));
+    pts.forEach(p => svg.appendChild(crear('circle', { cx:p.x, cy:p.y, r:4.5, fill:'var(--stone-900)', stroke: color, 'stroke-width':2 })));
+  }
+
+  // A siempre se pinta (referencia), B (si existe) se superpone
+  poligono(valoresA, '#8d9187', 0.14);
+  if(valoresB) poligono(valoresB, '#7c9070', 0.30);
+}
+
+function renderComparacion(modalidad, perfiles){
+  const capacidades = CAPACIDADES_POR_MODALIDAD[modalidad] || CAPACIDADES_POR_MODALIDAD.deportiva;
+  const contenido = document.getElementById('contenido');
+
+  if(perfiles.length === 0){
+    contenido.innerHTML = `<div class="vacio">Todavía no tienes ningún test de perfil fisiológico registrado.<br><strong>Tu entrenador lo añadirá</strong> la próxima vez que hagáis la valoración.</div>`;
+    return;
+  }
+
+  const idxB = perfiles.length - 1;
+  const idxA = perfiles.length >= 2 ? perfiles.length - 2 : idxB;
+
+  contenido.innerHTML = `
+    <div class="selectores">
+      <div class="campo-fecha">
+        <label><span class="leyenda-fecha"><span class="dot" style="background:#8d9187;"></span>Fecha A</span></label>
+        <select id="selFechaA"></select>
+      </div>
+      <div class="campo-fecha">
+        <label><span class="leyenda-fecha"><span class="dot" style="background:#7c9070;"></span>Fecha B</span></label>
+        <select id="selFechaB"></select>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="chart-card"><svg id="radar-svg"></svg></div>
+      <table>
+        <thead><tr><th>Capacidad</th><th>A</th><th>B</th><th>Δ</th></tr></thead>
+        <tbody id="tablaComparacion"></tbody>
+      </table>
+    </div>
+    ${perfiles.length === 1 ? '<div class="vacio">Solo tienes un test guardado — necesitas al menos dos para comparar la evolución.</div>' : ''}
+  `;
+
+  const selA = document.getElementById('selFechaA');
+  const selB = document.getElementById('selFechaB');
+  perfiles.forEach((p, i) => {
+    selA.appendChild(new Option(p.fecha, i, i === idxA, i === idxA));
+    selB.appendChild(new Option(p.fecha, i, i === idxB, i === idxB));
+  });
+
+  function actualizar(){
+    const a = perfiles[Number(selA.value)];
+    const b = perfiles.length >= 2 ? perfiles[Number(selB.value)] : null;
+    dibujarRadar(document.getElementById('radar-svg'), capacidades, a.capacidades, b ? b.capacidades : null);
+
+    document.getElementById('tablaComparacion').innerHTML = capacidades.map(c => {
+      const va = a.capacidades[c.key];
+      const vb = b ? b.capacidades[c.key] : undefined;
+      let deltaHtml = '—';
+      if(vb !== undefined && va !== undefined){
+        const d = vb - va;
+        const clase = d > 0.01 ? 'up' : (d < -0.01 ? 'down' : 'same');
+        const signo = d > 0 ? '+' : '';
+        deltaHtml = `<span class="delta ${clase}">${signo}${d.toFixed(2)}</span>`;
+      }
+      return `<tr>
+        <td>${escapeHtml(c.corto)}</td>
+        <td>${va !== undefined ? va.toFixed(2) : '—'}</td>
+        <td>${vb !== undefined ? vb.toFixed(2) : '—'}</td>
+        <td>${deltaHtml}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  selA.addEventListener('change', actualizar);
+  selB.addEventListener('change', actualizar);
+  actualizar();
+}
+
+async function cargar(){
+  try{
+    const [resCliente, ] = await Promise.all([
+      fetch('/api/verificar-cliente?email=' + encodeURIComponent(CLIENTE)),
+    ]);
+    const dataCliente = await resCliente.json();
+    if(!dataCliente.success){
+      mostrarError(dataCliente.error || 'No hemos podido identificarte.');
+      return;
+    }
+    const modalidad = (dataCliente.cliente.modalidad || 'deportiva').trim().toLowerCase();
+    document.getElementById('subTxt').textContent = `Modalidad: ${dataCliente.cliente.modalidad || '—'}`;
+
+    const resPerfiles = await fetch('/api/obtener-perfiles-fisiologicos?' + new URLSearchParams({ cliente: CLIENTE, modalidad }).toString());
+    const dataPerfiles = await resPerfiles.json();
+    if(!dataPerfiles.success){
+      mostrarError(dataPerfiles.error || 'Ha ocurrido un error inesperado.');
+      return;
+    }
+
+    renderComparacion(modalidad, dataPerfiles.perfiles);
+
+    document.getElementById('estadoCarga').hidden = true;
+    document.getElementById('wrap').hidden = false;
+  }catch(err){
+    mostrarError('Error de red: ' + err.message);
+  }
+}
+
+cargar();
+</script>
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Tu historial</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e;
+    --stone-800:#262d28;
+    --stone-700:#333b34;
+    --chalk:#f2ede1;
+    --chalk-dim:#c9c3b4;
+    --chalk-faint:#8d9187;
+    --moss:#7c9070;
+    --moss-light:#a7bd98;
+    --danger:#c9705b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; background:#494d4b; color:var(--chalk);
+    font-family:'Work Sans', sans-serif;
+  }
+  h1,h2{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.5px; margin:0; }
+
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:rgba(28,33,30,0.92); backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(242,237,225,0.1);
+  }
+  .topbar-inner{ max-width:760px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px; font-weight:700; color:var(--moss-light); text-transform:uppercase; }
+  .eyebrow::before{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .back-btn{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.16); color:var(--chalk);
+    padding:9px 14px; border-radius:10px; font-size:12px; font-weight:700; letter-spacing:0.5px;
+    text-transform:uppercase; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    text-decoration:none; transition:all .2s ease;
+  }
+  .back-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+
+  .wrap{ max-width:760px; margin:0 auto; padding:24px 24px 90px; }
+  .cabecera h1{ font-size:28px; margin-bottom:20px; }
+  .cabecera h1 span{ color:var(--moss); }
+
+  .estado-carga, .estado-error{ max-width:760px; margin:60px auto; padding:0 24px; text-align:center; color:var(--chalk-dim); }
+  .estado-error{ color:var(--chalk); }
+  .estado-error h2{ font-size:22px; color:var(--danger); margin-bottom:10px; }
+
+  .mes-titulo{
+    font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--chalk-faint); margin:24px 0 10px; padding-left:4px;
+  }
+  .mes-titulo:first-child{ margin-top:0; }
+
+  .fila-sesion{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    background:rgba(38,45,40,0.55); border:1px solid rgba(242,237,225,0.1);
+    border-radius:12px; padding:14px 18px; margin-bottom:8px;
+  }
+  .fila-sesion .izq{ display:flex; align-items:center; gap:12px; }
+  .fila-sesion .punto{ width:9px; height:9px; border-radius:50%; background:var(--moss); flex-shrink:0; }
+  .fila-sesion .meso{ font-weight:800; font-size:13.5px; letter-spacing:0.3px; }
+  .fila-sesion .fecha{ font-size:12.5px; color:var(--chalk-faint); font-variant-numeric:tabular-nums; }
+
+  .vacio{
+    text-align:center; padding:50px 20px; color:var(--chalk-dim);
+    background:rgba(38,45,40,0.4); border:1px dashed rgba(242,237,225,0.15); border-radius:16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="eyebrow">Kaska.Climb</div>
+    <a class="back-btn" id="btnVolver" href="semana.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Semana
+    </a>
+  </div>
+</div>
+
+<div class="wrap" id="wrap" hidden>
+  <div class="cabecera"><h1>Tu <span>historial</span></h1></div>
+  <div id="contenido"></div>
+</div>
+
+<div class="estado-carga" id="estadoCarga">Cargando tu historial…</div>
+<div class="estado-error" id="estadoError" hidden>
+  <h2>No se pudo cargar tu historial</h2>
+  <p id="estadoErrorTexto"></p>
+</div>
+
+<script src="../libs/mesociclos-config.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const CLIENTE = params.get('cliente');
+const NOMBRE_PARAM = params.get('nombre');
+const { TITULOS } = window.MESOCICLOS_CONFIG || {};
+
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+
+function escapeHtml(str){
+  return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function mostrarError(mensaje){
+  document.getElementById('estadoCarga').hidden = true;
+  document.getElementById('wrap').hidden = true;
+  document.getElementById('estadoError').hidden = false;
+  document.getElementById('estadoErrorTexto').textContent = mensaje;
+}
+if(!CLIENTE){
+  mostrarError('No hemos podido identificarte. Vuelve a iniciar sesión desde la pantalla de acceso.');
+  throw new Error('Falta cliente');
+}
+(function(){
+  const qs = new URLSearchParams();
+  qs.set('cliente', CLIENTE);
+  if(NOMBRE_PARAM) qs.set('nombre', NOMBRE_PARAM);
+  document.getElementById('btnVolver').href = 'semana.html?' + qs.toString();
+})();
+
+function tituloMesociclo(mesociclo){
+  return (TITULOS && TITULOS[mesociclo]) || mesociclo;
+}
+
+async function cargar(){
+  try{
+    const res = await fetch('/api/obtener-historial-sesiones?' + new URLSearchParams({ cliente: CLIENTE, limite: '80' }).toString());
+    const data = await res.json();
+    if(!data.success){
+      mostrarError(data.error || 'Ha ocurrido un error inesperado.');
+      return;
+    }
+
+    if(data.historial.length === 0){
+      document.getElementById('contenido').innerHTML = `<div class="vacio">Todavía no has completado ninguna sesión.</div>`;
+    }else{
+      let mesActual = null;
+      let html = '';
+      data.historial.forEach(h => {
+        const [d, m, y] = (h.fecha || '').split('/').map(Number);
+        const claveMes = d && m && y ? `${MESES[m-1]} ${y}` : 'Fecha desconocida';
+        if(claveMes !== mesActual){
+          html += `<div class="mes-titulo">${escapeHtml(claveMes)}</div>`;
+          mesActual = claveMes;
+        }
+        html += `
+          <div class="fila-sesion">
+            <div class="izq">
+              <span class="punto"></span>
+              <span class="meso">${escapeHtml(tituloMesociclo(h.mesociclo))}</span>
+            </div>
+            <span class="fecha">${escapeHtml(h.fecha)}</span>
+          </div>`;
+      });
+      document.getElementById('contenido').innerHTML = html;
+    }
+
+    document.getElementById('estadoCarga').hidden = true;
+    document.getElementById('wrap').hidden = false;
+  }catch(err){
+    mostrarError('Error de red: ' + err.message);
+  }
+}
+cargar();
+</script>
+</body>
+</html>
