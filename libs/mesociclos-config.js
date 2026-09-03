@@ -108,5 +108,20 @@
     'GYM-ANTAGONISTAS': 'GYM-ANTAGONISTAS',
   };
 
-  return { COLUMNS: COLUMNS, FIELD_MAP: FIELD_MAP, TITULOS: TITULOS };
+  // Categoría visual de cada mesociclo — Semanas.html ya no elige por caja
+  // entre los 6 mesociclos, solo entre 4 categorías (Sesión Roco / Gym-
+  // Antagonistas / Roca-Roco / Descanso). Estos 2 colores son los que
+  // corresponden a los mesociclos reales que SÍ se publican al cliente;
+  // Roca/roco y Descanso no tienen mesociclo (se pintan aparte, en la propia
+  // página que los usa).
+  var CATEGORIA_VISUAL = {
+    FMAX: { tipo: 'sesion', color: '#6f8ea6' },
+    REOX: { tipo: 'sesion', color: '#6f8ea6' },
+    DESOX: { tipo: 'sesion', color: '#6f8ea6' },
+    AERO: { tipo: 'sesion', color: '#6f8ea6' },
+    'GYM-FMAX': { tipo: 'gym', color: '#8d9187' },
+    'GYM-ANTAGONISTAS': { tipo: 'gym', color: '#8d9187' },
+  };
+
+  return { COLUMNS: COLUMNS, FIELD_MAP: FIELD_MAP, TITULOS: TITULOS, CATEGORIA_VISUAL: CATEGORIA_VISUAL };
 });

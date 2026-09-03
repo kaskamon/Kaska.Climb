@@ -117,7 +117,7 @@
 const params = new URLSearchParams(window.location.search);
 const CLIENTE = params.get('cliente');
 const NOMBRE_PARAM = params.get('nombre');
-const { TITULOS } = window.MESOCICLOS_CONFIG || {};
+const { TITULOS, CATEGORIA_VISUAL } = window.MESOCICLOS_CONFIG || {};
 
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 
@@ -144,6 +144,10 @@ if(!CLIENTE){
 function tituloMesociclo(mesociclo){
   return (TITULOS && TITULOS[mesociclo]) || mesociclo;
 }
+function colorMesociclo(mesociclo){
+  const cat = CATEGORIA_VISUAL && CATEGORIA_VISUAL[mesociclo];
+  return (cat && cat.color) || 'var(--moss)';
+}
 
 async function cargar(){
   try{
@@ -169,7 +173,7 @@ async function cargar(){
         html += `
           <div class="fila-sesion">
             <div class="izq">
-              <span class="punto"></span>
+              <span class="punto" style="background:${colorMesociclo(h.mesociclo)};"></span>
               <span class="meso">${escapeHtml(tituloMesociclo(h.mesociclo))}</span>
             </div>
             <span class="fecha">${escapeHtml(h.fecha)}</span>

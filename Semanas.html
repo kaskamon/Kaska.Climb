@@ -29,14 +29,10 @@
   --moss-light:#a7bd98;
   --moss-deep:#4d5c46;
 
-  --fmax: #c17c74;
-  --reox: #7c9070;
-  --roca: #8b6f47;
-  --antagonistas: #70908c;
+  --roca-roco: #7c9070;
+  --sesion-roco: #6f8ea6;
   --descanso: #a65d53;
-  --aero: #93859e;
-  --gym: #d4b26f;
-  --pausa: #c9c3b4;
+  --gym-antagonistas: #8d9187;
 }
 
 * {
@@ -146,6 +142,13 @@ body {
   border-color: var(--moss);
   color: var(--chalk);
 }
+select.head-select {
+  outline: none;
+}
+select.head-select option {
+  background: var(--stone-800);
+  color: var(--chalk);
+}
 
 .date-input-hidden {
   position: absolute;
@@ -213,14 +216,10 @@ body {
   filter: brightness(1.08);
 }
 
-.sesion.fmax { background-color: var(--fmax) !important; }
-.sesion.reox { background-color: var(--reox) !important; }
-.sesion.roca { background-color: var(--roca) !important; }
-.sesion.antagonistas { background-color: var(--antagonistas) !important; }
+.sesion.roca { background-color: var(--roca-roco) !important; }
+.sesion.sesion-roco { background-color: var(--sesion-roco) !important; }
 .sesion.descanso { background-color: var(--descanso) !important; }
-.sesion.aero { background-color: var(--aero) !important; }
-.sesion.gym { background-color: var(--gym) !important; }
-.sesion.pausa { background-color: var(--pausa) !important; }
+.sesion.gym { background-color: var(--gym-antagonistas) !important; }
 
 .sesion-contenido {
   display: grid;
@@ -479,7 +478,12 @@ body {
       <div class="head-item">
         Mesociclo:
         <br>
-        <span class="head-val" contenteditable="true" id="h3">REOX</span>
+        <select class="head-val head-select" id="h3">
+          <option value="REOX">REOX</option>
+          <option value="AERO">AERO</option>
+          <option value="DESOX">DESOX</option>
+          <option value="FMAX">FMAX</option>
+        </select>
       </div>
 
       <div class="head-item">
@@ -524,56 +528,28 @@ body {
     <div id="banco" class="no-print">
       <h4>Banco de sesiones</h4>
 
-      <div class="sesion fmax" data-file="Sesion_FMAX.html">
+      <div class="sesion sesion-roco" data-tipo="sesion">
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">FMAX (ROCO)</span>
+          <span class="sesion-text" contenteditable="true">SESIÓN (ROCO)</span>
         </div>
       </div>
 
-      <div class="sesion reox" data-file="Sesion_REOX.html">
+      <div class="sesion gym" data-tipo="gym">
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">REOX (ROCO)</span>
+          <span class="sesion-text" contenteditable="true">GYM/ANTAGONISTAS</span>
         </div>
       </div>
 
-      <div class="sesion antagonistas" data-file="Sesion_DESOX.html">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">DESOX/ANAE (ROCO)</span>
-        </div>
-      </div>
-
-      <div class="sesion aero" data-file="Sesion_AERO.html">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">AERO (ROCO)</span>
-        </div>
-      </div>
-
-      <div class="sesion gym" data-file="Sesion_GYM-FMAX.html">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">GYM-FMAX</span>
-        </div>
-      </div>
-
-      <div class="sesion gym" data-file="Sesion_GYM-ANTAGONISTAS.html">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">GYM-ANTAGONISTAS</span>
-        </div>
-      </div>
-
-      <div class="sesion roca">
+      <div class="sesion roca" data-tipo="roca">
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
           <span class="sesion-text" contenteditable="true">Roca/roco</span>
         </div>
       </div>
 
-      <div class="sesion pausa">
+      <div class="sesion descanso" data-tipo="descanso">
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
           <span class="sesion-text" contenteditable="true">Descanso</span>
@@ -665,11 +641,17 @@ document.addEventListener('click', e => {
   }
 });
 
-// Convierte el dataset.file de una caja de sesión ("Sesion_REOX.html") en su
-// clave de mesociclo real ("REOX") — misma clave que usan libs/mesociclos-config.js
-// y el resto de la app.
-function mesocicloDesdeDataFile(dataFile) {
-  return dataFile.replace(/^Sesion_/, '').replace(/\.html$/, '');
+// El banco solo tiene 4 tipos de caja (Sesión Roco / Gym-Antagonistas /
+// Roca-Roco / Descanso) — el mesociclo real (REOX/AERO/DESOX/FMAX y cuál de
+// los 2 GYM) se resuelve a partir del "Mesociclo" de la cabecera de esta
+// semana, no se elige por caja.
+const GYM_POR_MESOCICLO = { FMAX: 'GYM-FMAX', REOX: 'GYM-ANTAGONISTAS', AERO: 'GYM-ANTAGONISTAS', DESOX: 'GYM-ANTAGONISTAS' };
+
+function resolverMesocicloCaja(tipo) {
+  const mesocicloSemana = document.getElementById('h3').value;
+  if (tipo === 'sesion') return mesocicloSemana;
+  if (tipo === 'gym') return GYM_POR_MESOCICLO[mesocicloSemana] || 'GYM-ANTAGONISTAS';
+  return null; // roca / descanso no llevan mesociclo — no se publican al cliente
 }
 
 // La "Fecha" de la cabecera representa el lunes de esta semana. Cada columna de
@@ -709,10 +691,12 @@ document.getElementById('btnPublicarSemana').addEventListener('click', async () 
   estadoDiv.innerHTML = 'Publicando...';
 
   for (let i = 0; i < dias.length; i++) {
-    const caja = dias[i].querySelector('.sesion[data-file]');
+    const caja = dias[i].querySelector('.sesion[data-tipo]');
     if (!caja) continue;
 
-    const mesociclo = mesocicloDesdeDataFile(caja.dataset.file);
+    const mesociclo = resolverMesocicloCaja(caja.dataset.tipo);
+    if (!mesociclo) continue; // Roca/roco y Descanso: no llevan contenido publicable
+
     const fecha = fechaParaDiaIndice(i);
 
     try {
@@ -753,7 +737,7 @@ function guardar() {
   localStorage.h = JSON.stringify({
     h1: document.getElementById('h1').innerText,
     h2val: document.getElementById('hiddenDate').value,
-    h3: document.getElementById('h3').innerText,
+    h3: document.getElementById('h3').value,
     h4: document.getElementById('h4').innerText
   });
 
@@ -774,7 +758,7 @@ window.onload = () => {
         actualizarFecha(h.h2val);
       }
 
-      document.getElementById('h3').innerText = h.h3 || 'REOX';
+      document.getElementById('h3').value = h.h3 || 'REOX';
       document.getElementById('h4').innerText = h.h4 || '1/4';
     }
   }
