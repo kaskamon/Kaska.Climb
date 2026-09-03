@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kaska.Climb | Batería de Test</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="libs/clientes-selector.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -337,6 +338,14 @@
   .card-pushfoot{ display:flex; flex-direction:column; height:100%; }
   .card-pushfoot > .out.hi:last-child{ margin-top:auto; margin-bottom:0; }
 
+  .publicar-perfil-row{
+    display:flex; flex-wrap:wrap; align-items:center; gap:14px;
+    margin-top:18px; padding-top:16px; border-top:1px dashed rgba(242,237,225,0.12);
+  }
+  .estado-publicar{ font-size:12.5px; color:var(--chalk-faint); }
+  .estado-publicar.ok{ color:var(--moss-light); font-weight:700; }
+  .estado-publicar.error{ color:var(--danger); font-weight:700; }
+
   footer{ text-align:center; color:var(--chalk-faint); font-size:12px; padding:30px 0 10px; }
   .link-btn{ background:none; border:none; color:var(--moss-light); text-decoration:underline; cursor:pointer; font-size:12px; padding:0; }
 
@@ -435,6 +444,9 @@
         <select id="g-gradoObj-nativo"><option value="">–</option></select>
       </div>
       <div class="field"><label>Grado objetivo <span class="unit">(IRCRA)</span></label><input type="number" step="1" id="g-gradoObj" readonly></div>
+      <div class="field"><label>Cliente <span class="unit">(para publicar)</span></label>
+        <select id="g-cliente"><option value="">Cargando clientes...</option></select>
+      </div>
     </div>
   </div>
 
@@ -1315,6 +1327,10 @@ function buildPerfil(kind){
         <div class="radar-chart"><svg viewBox="-45 -45 390 390" width="507" height="507" id="${kind}-radar"></svg></div>
         <div class="radar-legend" id="${kind}-legend"></div>
       </div>
+      <div class="publicar-perfil-row">
+        <button class="icon-btn" onclick="publicarPerfil('${kind}')">Publicar perfil fisiológico</button>
+        <span class="estado-publicar" id="${kind}-estado-publicar"></span>
+      </div>
     </div>
   `;
 }
@@ -1438,6 +1454,52 @@ async function exportarPerfilPNG(kind){
   }finally{
     stage.innerHTML = '';
   }
+}
+
+/* ============================================================
+   PUBLICAR PERFIL FISIOLÓGICO (al historial del cliente)
+   ============================================================ */
+const LABEL_TO_KEY = {
+  deportiva: { 'Fmax agarre':'fmax', 'RFD 200ms':'rfd', 'Desox.':'desoxigenacion', 'Reox.':'reoxigenacion', 'Aero.':'aerobico', 'Tracción':'traccion' },
+  boulder:   { 'Fmax agarre':'fmax', 'RFD 200ms':'rfd', 'Anae.':'anaerobico', 'Tracción':'trac' },
+};
+
+function publicarPerfil(kind){
+  const data = perfilData[kind];
+  const estadoEl = $(kind+'-estado-publicar');
+  if(!data || !estadoEl) return;
+
+  const cliente = $('g-cliente') ? $('g-cliente').value : '';
+  const fechaVal = $('g-fecha') ? $('g-fecha').value : ''; // yyyy-mm-dd, fecha REAL del test (no la de publicación)
+  if(!cliente || !fechaVal){
+    estadoEl.textContent = 'Elige un cliente y la fecha del test antes de publicar.';
+    estadoEl.className = 'estado-publicar error';
+    return;
+  }
+  const [y, m, d] = fechaVal.split('-');
+  const fecha = `${d}/${m}/${y}`;
+
+  const mapa = LABEL_TO_KEY[kind] || {};
+  const capacidades = {};
+  data.labels.forEach((l, i) => {
+    const key = mapa[l];
+    const score = data.scores[i];
+    if(key && score!==null && score!==undefined && isFinite(score)) capacidades[key] = Number(score.toFixed(2));
+  });
+
+  estadoEl.textContent = 'Publicando...';
+  estadoEl.className = 'estado-publicar';
+  fetch('/api/guardar-perfil-fisiologico', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cliente, fecha, modalidad: kind, capacidades }),
+  }).then(r => r.json()).then(res => {
+    estadoEl.textContent = res.success ? `✓ Publicado (test del ${fecha})` : ('✗ ' + (res.error || 'Error al publicar.'));
+    estadoEl.className = 'estado-publicar ' + (res.success ? 'ok' : 'error');
+  }).catch(e => {
+    estadoEl.textContent = '✗ Error de red: ' + e.message;
+    estadoEl.className = 'estado-publicar error';
+  });
 }
 
 /* ============================================================
@@ -1929,6 +1991,7 @@ $('btnReset').addEventListener('click', ()=>{
 /* init */
 const _datosGuardados = loadState();
 poblarGradosNativos();
+if($('g-cliente')) cargarSelectorClientes($('g-cliente'));
 if(_datosGuardados){
   ['g-gradoRP-nativo','g-gradoObj-nativo'].forEach(id=>{
     if(_datosGuardados[id] !== undefined && $(id)) $(id).value = _datosGuardados[id];
