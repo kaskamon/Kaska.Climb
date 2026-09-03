@@ -69,6 +69,15 @@
     border-radius:12px; padding:12px 14px; font-size:12px; color:var(--chalk-dim); line-height:1.5; text-align:left;
   }
   .welcome .note strong{ color:#c99a5b; }
+  .welcome .note.error{ background:rgba(201,112,91,0.16); border-color:rgba(201,112,91,0.4); }
+  .welcome .note.error strong{ color:var(--danger); }
+
+  .btn-reintentar{
+    margin-top:16px; background:var(--stone-800); border:1px solid rgba(242,237,225,0.16); color:var(--chalk);
+    padding:10px 18px; border-radius:10px; font-size:12.5px; font-weight:700; letter-spacing:0.3px;
+    text-transform:uppercase; cursor:pointer; font-family:'Work Sans',sans-serif;
+  }
+  .btn-reintentar:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
 
   #loginBox.hide{ display:none; }
 </style>
@@ -89,7 +98,8 @@
     <img id="wPhoto" src="" alt="">
     <div class="name" id="wName"></div>
     <div class="email" id="wEmail"></div>
-    <div class="note"><strong>Fase 1 — prueba de login.</strong> El acceso con Google funciona de verdad. Lo que falta por conectar: comprobar tu email contra la base de clientes y llevarte directo a tu semana — eso llega en la Fase 2.</div>
+    <div class="note" id="wNote">Comprobando tu cuenta de cliente...</div>
+    <button class="btn-reintentar" id="btnReintentar" style="display:none;" type="button">Volver a intentar</button>
   </div>
 </div>
 
@@ -104,13 +114,38 @@
     return JSON.parse(json);
   }
 
-  function handleCredentialResponse(response){
+  async function handleCredentialResponse(response){
     const payload = decodeJwt(response.credential);
     document.getElementById('wPhoto').src = payload.picture;
     document.getElementById('wName').textContent = payload.name;
     document.getElementById('wEmail').textContent = payload.email;
     document.getElementById('loginBox').classList.add('hide');
     document.getElementById('welcome').classList.add('show');
+
+    const nota = document.getElementById('wNote');
+    const btnReintentar = document.getElementById('btnReintentar');
+    nota.classList.remove('error');
+    nota.innerHTML = 'Comprobando tu cuenta de cliente...';
+    btnReintentar.style.display = 'none';
+
+    try{
+      const res = await fetch('/api/verificar-cliente?email=' + encodeURIComponent(payload.email));
+      const data = await res.json();
+
+      if(data.success){
+        nota.innerHTML = `<strong>¡Cuenta encontrada!</strong> Te llevamos a tu semana...`;
+        const url = '/cliente/semana.html?cliente=' + encodeURIComponent(data.cliente.nombreCompleto);
+        setTimeout(() => { window.location.href = url; }, 1200);
+      }else{
+        nota.classList.add('error');
+        nota.innerHTML = `<strong>No hemos podido darte acceso.</strong> ${data.error || 'Ha ocurrido un error inesperado.'}`;
+        btnReintentar.style.display = 'inline-block';
+      }
+    }catch(err){
+      nota.classList.add('error');
+      nota.innerHTML = `<strong>Error de red.</strong> ${err.message}`;
+      btnReintentar.style.display = 'inline-block';
+    }
   }
 
   window.onload = function(){
@@ -122,6 +157,11 @@
       document.getElementById('gBtn'),
       { theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with', width: 280 }
     );
+
+    document.getElementById('btnReintentar').addEventListener('click', () => {
+      document.getElementById('welcome').classList.remove('show');
+      document.getElementById('loginBox').classList.remove('hide');
+    });
   };
 </script>
 </body>
