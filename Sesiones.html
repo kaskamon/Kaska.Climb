@@ -396,7 +396,7 @@
             <div class="panel-publicar no-print">
                 <div class="campo-publicar">
                     <label>Cliente</label>
-                    <input type="email" id="publicarCliente" placeholder="Email del cliente">
+                    <select id="publicarCliente"><option value="">Cargando clientes...</option></select>
                 </div>
                 <div class="campo-publicar">
                     <label>Fecha de la sesión</label>
@@ -429,6 +429,7 @@
         </div>
     </div>
 
+    <script src="libs/clientes-selector.js"></script>
     <script>
         // Comprobamos si la página se está viendo dentro de una vista previa (iframe),
         // ya que en ese caso el navegador bloquea window.print() por seguridad y no pasa nada al pulsar el botón.
@@ -706,11 +707,7 @@
         const panelDesoxAlt = document.getElementById('panelDesoxAlternativa');
         const estadoPublicar = document.getElementById('estadoPublicar');
 
-        // Recordamos el cliente entre sesiones de trabajo (misma clave que usa Semanas.html).
-        inputPublicarCliente.value = localStorage.getItem('kaska_cliente_actual') || '';
-        inputPublicarCliente.addEventListener('input', () => {
-            localStorage.setItem('kaska_cliente_actual', inputPublicarCliente.value);
-        });
+        cargarSelectorClientes(inputPublicarCliente);
 
         selectPublicarMesociclo.addEventListener('change', () => {
             panelDesoxAlt.hidden = selectPublicarMesociclo.value !== 'DESOX';

@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="libs/clientes-selector.js"></script>
 <style>
   :root{
     --stone-900:#1c211e;
@@ -173,7 +174,7 @@
   }
   .campo-guardar{ display:flex; flex-direction:column; gap:4px; }
   .campo-guardar label{ font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em; color:var(--chalk-dim); }
-  .campo-guardar input{
+  .campo-guardar input, .campo-guardar select{
     font-family:'Work Sans', sans-serif; font-size:13px;
     padding:8px 10px; border:1px solid rgba(242,237,225,0.18); border-radius:8px;
     background:var(--stone-800); color:var(--chalk);
@@ -189,14 +190,14 @@
 
 <div class="panel-guardar" style="max-width:1040px; margin:0 auto 20px;">
   <div class="campo-guardar">
-    <label>Cliente (email)</label>
-    <input type="email" id="guardarCliente" placeholder="email@ejemplo.com">
+    <label>Cliente</label>
+    <select id="guardarCliente"><option value="">Cargando clientes...</option></select>
   </div>
   <div class="campo-guardar">
     <label>Fecha de realización del test</label>
     <input type="date" id="guardarFecha">
   </div>
-  <button class="btn-action" id="btn-guardar-perfil" type="button">Guardar en el historial del cliente</button>
+  <button class="btn-action" id="btn-guardar-perfil" type="button">Publicar perfil fisiológico</button>
   <button class="btn-action" id="btn-cargar-perfil" type="button">Cargar test anterior</button>
   <div class="estado-guardar" id="estadoGuardarPerfil"></div>
 </div>
@@ -374,10 +375,7 @@
   const inputGuardarFecha = document.getElementById('guardarFecha');
   const estadoGuardarPerfil = document.getElementById('estadoGuardarPerfil');
 
-  inputGuardarCliente.value = localStorage.getItem('kaska_cliente_actual') || '';
-  inputGuardarCliente.addEventListener('input', () => {
-    localStorage.setItem('kaska_cliente_actual', inputGuardarCliente.value);
-  });
+  cargarSelectorClientes(inputGuardarCliente);
 
   function mostrarEstadoGuardar(texto, clase){
     estadoGuardarPerfil.textContent = texto;

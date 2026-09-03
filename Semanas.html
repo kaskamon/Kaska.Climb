@@ -14,6 +14,7 @@
 <script src="libs/Sortable.min.js"></script>
 <script src="libs/html2canvas.min.js"></script>
 <script src="libs/jspdf.umd.min.js"></script>
+<script src="libs/clientes-selector.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -387,7 +388,7 @@ body {
   font-family: 'Anton', sans-serif; font-weight: 400; letter-spacing: 0.5px;
   text-transform: uppercase; font-size: 15px; color: var(--chalk);
 }
-.panel-publicar-semana input {
+.panel-publicar-semana input, .panel-publicar-semana select {
   background: var(--stone-800); border: 1px solid rgba(242,237,225,0.16);
   color: var(--chalk); border-radius: 8px; padding: 8px 10px; font-size: 12px;
   font-family: 'Work Sans', sans-serif;
@@ -613,7 +614,7 @@ body {
 
     <div class="panel-publicar-semana no-print">
       <h4>Publicar semana</h4>
-      <input type="email" id="publicarClienteSemana" placeholder="Email del cliente">
+      <select id="publicarClienteSemana"><option value="">Cargando clientes...</option></select>
       <div style="font-size:10.5px; color:var(--chalk-dim); line-height:1.4;">
         Este email lo usan también los botones "Link" de cada caja para generar el enlace real del cliente. "Publicar semana completa" copia, para cada día con sesión asignada, la última versión publicada de ese mesociclo para este cliente, con la fecha real de ese día de la semana (a partir del lunes indicado arriba en "Fecha").
       </div>
@@ -776,10 +777,7 @@ function addLink(el) {
 
 /* ================= PUBLICAR SEMANA COMPLETA ================= */
 const inputPublicarClienteSemana = document.getElementById('publicarClienteSemana');
-inputPublicarClienteSemana.value = localStorage.getItem('kaska_cliente_actual') || '';
-inputPublicarClienteSemana.addEventListener('input', () => {
-  localStorage.setItem('kaska_cliente_actual', inputPublicarClienteSemana.value);
-});
+cargarSelectorClientes(inputPublicarClienteSemana);
 
 document.getElementById('btnPublicarSemana').addEventListener('click', async () => {
   const cliente = inputPublicarClienteSemana.value.trim();
