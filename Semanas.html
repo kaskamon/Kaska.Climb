@@ -337,11 +337,6 @@ select.head-select option {
   flex-direction: column;
   gap: 8px;
 }
-.panel-publicar-semana h4 {
-  margin: 0 0 4px 0;
-  font-family: 'Anton', sans-serif; font-weight: 400; letter-spacing: 0.5px;
-  text-transform: uppercase; font-size: 15px; color: var(--chalk);
-}
 .panel-publicar-semana input, .panel-publicar-semana select {
   background: var(--stone-800); border: 1px solid rgba(242,237,225,0.16);
   color: var(--chalk); border-radius: 8px; padding: 8px 10px; font-size: 12px;
@@ -543,11 +538,7 @@ select.head-select option {
     </div>
 
     <div class="panel-publicar-semana no-print">
-      <h4>Publicar semana</h4>
       <select id="publicarClienteSemana"><option value="">Cargando clientes...</option></select>
-      <div style="font-size:10.5px; color:var(--chalk-dim); line-height:1.4;">
-        "Cargar último publicado" trae la última semana publicada para este cliente. "Publicar semana completa" copia, para cada día con sesión asignada, la última versión publicada de ese mesociclo, con la fecha real de ese día (a partir del lunes indicado arriba en "Fecha").
-      </div>
       <button class="btn-action" id="btnCargarUltimaSemana" type="button">Cargar último publicado</button>
       <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
       <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
