@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Clientes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e; --stone-800:#262d28; --stone-700:#333b34;
+    --chalk:#f2ede1; --chalk-dim:#c9c3b4; --chalk-faint:#8d9187;
+    --moss:#7c9070; --moss-light:#a7bd98; --moss-deep:#4d5c46;
+    --amber:#c99a5b; --danger:#c9705b;
+    --line:rgba(242,237,225,0.10); --line-strong:rgba(242,237,225,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; min-height:100vh; background:var(--stone-900); color:var(--chalk); font-family:'Work Sans', sans-serif; }
+  h1,h2,h3{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.4px; margin:0; }
+
+  .topbar{ position:sticky; top:0; z-index:40; background:rgba(28,33,30,0.92); backdrop-filter:blur(10px); border-bottom:1px solid var(--line-strong); }
+  .topbar-inner{ max-width:1180px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px; font-weight:700; color:var(--moss-light); text-transform:uppercase; }
+  .eyebrow::before{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .brand h1{ font-size:22px; }
+  .icon-btn{
+    background:var(--stone-800); border:1px solid var(--line-strong); color:var(--chalk);
+    padding:9px 14px; border-radius:10px; font-size:12px; font-weight:700; letter-spacing:0.5px;
+    text-transform:uppercase; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    text-decoration:none; transition:all .2s ease;
+  }
+  .icon-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+
+  .wrap{ max-width:1180px; margin:0 auto; padding:28px 24px 80px; }
+  .cabecera-pagina{ margin-bottom:22px; }
+  .cabecera-pagina h2{ font-size:26px; }
+  .cabecera-pagina p{ color:var(--chalk-dim); font-size:13.5px; margin:6px 0 0; max-width:60ch; }
+
+  .card{ background:rgba(38,45,40,0.55); border:1px solid var(--line-strong); border-radius:18px; backdrop-filter:blur(8px); }
+
+  .toolbar-clientes{ display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; padding:22px 26px 0; }
+  .buscador{ display:flex; align-items:center; gap:8px; background:var(--stone-800); border:1px solid var(--line-strong); border-radius:10px; padding:9px 14px; min-width:240px; }
+  .buscador input{ background:none; border:none; outline:none; color:var(--chalk); font-size:12.5px; font-family:inherit; width:100%; }
+  .buscador input::placeholder{ color:var(--chalk-faint); }
+  .buscador svg{ flex:0 0 auto; opacity:0.7; color:var(--chalk-faint); }
+  .filtros{ display:flex; gap:8px; }
+  .chip-filtro{
+    font-size:11px; font-weight:700; letter-spacing:0.4px; text-transform:uppercase;
+    padding:8px 13px; border-radius:99px; border:1px solid var(--line-strong); color:var(--chalk-dim);
+    cursor:pointer; background:none; font-family:inherit;
+  }
+  .chip-filtro.activo{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+
+  .tabla-scroll{ overflow-x:auto; }
+  table.tabla-clientes{ width:100%; border-collapse:collapse; }
+  table.tabla-clientes th{
+    text-align:left; font-size:10.5px; letter-spacing:1px; text-transform:uppercase;
+    color:var(--chalk-faint); font-weight:700; padding:14px 16px; white-space:nowrap; border-bottom:1px solid var(--line-strong);
+  }
+  table.tabla-clientes td{ padding:14px 16px; font-size:13px; border-bottom:1px solid var(--line); white-space:nowrap; vertical-align:middle; }
+  table.tabla-clientes tbody tr:hover{ background:rgba(124,144,112,0.06); }
+  .nombre-cliente{ font-weight:700; color:var(--chalk); }
+  .nombre-cliente .correo{ display:block; font-weight:400; font-size:11.5px; color:var(--chalk-faint); margin-top:2px; }
+
+  .pill{ display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:800; letter-spacing:0.5px; text-transform:uppercase; padding:5px 11px; border-radius:99px; }
+  .pill::before{ content:""; width:6px; height:6px; border-radius:50%; }
+  .pill.activo{ background:rgba(124,144,112,0.18); color:var(--moss-light); }
+  .pill.activo::before{ background:var(--moss-light); }
+  .pill.inactivo{ background:rgba(201,112,91,0.16); color:var(--danger); }
+  .pill.inactivo::before{ background:var(--danger); }
+
+  .btn-fila{
+    font-size:11px; font-weight:700; letter-spacing:0.3px; text-transform:uppercase;
+    background:transparent; border:1px solid var(--line-strong); color:var(--chalk-dim);
+    padding:7px 12px; border-radius:8px; cursor:pointer; transition:all .15s ease; font-family:inherit;
+  }
+  .btn-fila:hover{ border-color:var(--moss); color:var(--chalk); }
+  .btn-fila + .btn-fila{ margin-left:6px; }
+  .fila-editando{ background:rgba(201,154,91,0.07); }
+
+  .panel-edicion{ border-top:1px dashed var(--line-strong); padding:22px 26px 26px; background:rgba(0,0,0,0.14); }
+  .panel-edicion .cab-edicion{ display:flex; align-items:center; gap:10px; margin-bottom:18px; }
+  .panel-edicion .cab-edicion .punto{ width:8px; height:8px; border-radius:50%; background:var(--amber); }
+  .panel-edicion .cab-edicion span{ font-size:11px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:var(--amber); }
+  .grid-edicion{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .campo{ display:flex; flex-direction:column; gap:6px; }
+  .campo label{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--chalk-faint); }
+  .campo label small{ text-transform:none; font-weight:400; opacity:0.75; }
+  .campo input, .campo select{ background:var(--stone-800); border:1px solid var(--line-strong); color:var(--chalk); border-radius:9px; padding:10px 12px; font-size:13px; font-family:'Work Sans',sans-serif; }
+  .campo input:disabled{ opacity:0.55; }
+  .acciones-edicion{ display:flex; align-items:center; gap:10px; margin-top:20px; }
+  .btn-guardar{ background:var(--moss); color:var(--stone-900); border:none; font-weight:800; font-size:12px; letter-spacing:0.4px; text-transform:uppercase; padding:11px 22px; border-radius:9px; cursor:pointer; font-family:inherit; }
+  .btn-guardar:disabled{ opacity:0.6; cursor:default; }
+  .btn-cancelar{ background:transparent; border:1px solid var(--line-strong); color:var(--chalk-dim); font-weight:700; font-size:12px; letter-spacing:0.4px; text-transform:uppercase; padding:11px 20px; border-radius:9px; cursor:pointer; font-family:inherit; }
+  .estado-edicion{ font-size:12px; color:var(--chalk-dim); }
+  .estado-edicion.ok{ color:var(--moss-light); font-weight:700; }
+  .estado-edicion.error{ color:var(--danger); font-weight:700; }
+
+  .estado-carga{ text-align:center; padding:60px 20px; color:var(--chalk-dim); }
+  .vacio{ text-align:center; padding:50px 20px; color:var(--chalk-dim); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="eyebrow">Kaska.Climb</div>
+      <h1>Clientes</h1>
+    </div>
+    <a class="icon-btn" href="index.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Inicio
+    </a>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="cabecera-pagina">
+    <h2>Base de clientes</h2>
+    <p>Buscar, ver el estado de un vistazo, y editar sin abrir el Sheet en bruto.</p>
+  </div>
+
+  <div class="card">
+    <div class="toolbar-clientes">
+      <div class="buscador">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="buscador" placeholder="Buscar por nombre o email…">
+      </div>
+      <div class="filtros" id="filtros">
+        <button class="chip-filtro activo" data-filtro="todos">Todos</button>
+        <button class="chip-filtro" data-filtro="activo">Activos</button>
+        <button class="chip-filtro" data-filtro="inactivo">Inactivos</button>
+      </div>
+    </div>
+
+    <div id="contenidoTabla" style="padding:22px 0 4px;">
+      <div class="estado-carga">Cargando clientes…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COL_LABELS = {
+  estado: 'Estado', telefono: 'Teléfono', fechaNacimiento: 'Fecha de nacimiento',
+  lesion: '¿Lesión?', modalidad: 'Modalidad', disponibilidad: 'Disponibilidad', drive: 'Carpeta Drive',
+};
+
+let TODOS_LOS_CLIENTES = [];
+let filtroEstado = 'todos';
+let textoBusqueda = '';
+let correoEditando = null;
+
+function escapeHtml(str){
+  return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function cargarClientes(){
+  try{
+    const res = await fetch('/api/listar-clientes?completo=1');
+    const data = await res.json();
+    if(!data.success){
+      document.getElementById('contenidoTabla').innerHTML = `<div class="vacio">${escapeHtml(data.error || 'No se pudo cargar la base de clientes.')}</div>`;
+      return;
+    }
+    TODOS_LOS_CLIENTES = data.clientes;
+    render();
+  }catch(e){
+    document.getElementById('contenidoTabla').innerHTML = `<div class="vacio">Error de red: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function clientesFiltrados(){
+  return TODOS_LOS_CLIENTES.filter(c => {
+    if(filtroEstado === 'activo' && c.estado.toLowerCase() !== 'activo') return false;
+    if(filtroEstado === 'inactivo' && c.estado.toLowerCase() === 'activo') return false;
+    if(textoBusqueda){
+      const t = textoBusqueda.toLowerCase();
+      if(!c.nombreCompleto.toLowerCase().includes(t) && !c.email.toLowerCase().includes(t)) return false;
+    }
+    return true;
+  });
+}
+
+function filaEdicion(c){
+  const campo = (id, label, valor, tipo) => `
+    <div class="campo"><label>${label}</label><input type="${tipo || 'text'}" id="edit-${id}" value="${escapeHtml(valor)}"></div>`;
+  return `
+    <tr><td colspan="7" style="padding:0;">
+      <div class="panel-edicion">
+        <div class="cab-edicion"><span class="punto"></span><span>Editando · ${escapeHtml(c.nombreCompleto)}</span></div>
+        <div class="grid-edicion">
+          <div class="campo">
+            <label>Estado</label>
+            <select id="edit-estado">
+              <option value="Activo"${c.estado.toLowerCase()==='activo'?' selected':''}>Activo</option>
+              <option value="Inactivo"${c.estado.toLowerCase()!=='activo'?' selected':''}>Inactivo</option>
+            </select>
+          </div>
+          ${campo('telefono', 'Teléfono', c.telefono)}
+          <div class="campo">
+            <label>Modalidad</label>
+            <select id="edit-modalidad">
+              <option value="Deportiva"${c.modalidad==='Deportiva'?' selected':''}>Deportiva</option>
+              <option value="Boulder"${c.modalidad==='Boulder'?' selected':''}>Boulder</option>
+            </select>
+          </div>
+          ${campo('disponibilidad', 'Disponibilidad', c.disponibilidad)}
+          ${campo('fechaNacimiento', 'Fecha de nacimiento', c.fechaNacimiento)}
+          ${campo('lesion', '¿Lesión?', c.lesion)}
+          <div class="campo" style="grid-column:span 2;">${campo('drive', 'Carpeta Drive', c.drive).replace('<div class="campo">','').replace('</div>','')}</div>
+          <div class="campo"><label>Correo <small>(identificador, no editable)</small></label><input type="text" value="${escapeHtml(c.email)}" disabled></div>
+        </div>
+        <div class="acciones-edicion">
+          <button class="btn-guardar" id="btnGuardarEdicion">Guardar cambios</button>
+          <button class="btn-cancelar" id="btnCancelarEdicion">Cancelar</button>
+          <span class="estado-edicion" id="estadoEdicion"></span>
+        </div>
+      </div>
+    </td></tr>`;
+}
+
+function render(){
+  const lista = clientesFiltrados();
+  const cont = document.getElementById('contenidoTabla');
+  if(!lista.length){
+    cont.innerHTML = `<div class="vacio">No hay clientes que coincidan con la búsqueda.</div>`;
+    return;
+  }
+  let html = `<div class="tabla-scroll"><table class="tabla-clientes"><thead><tr>
+    <th>Cliente</th><th>Estado</th><th>Modalidad</th><th>Disponibilidad</th><th>Teléfono</th><th>Fecha de nacimiento</th><th></th>
+  </tr></thead><tbody>`;
+  lista.forEach(c => {
+    const editando = c.email === correoEditando;
+    html += `<tr class="${editando?'fila-editando':''}">
+      <td class="nombre-cliente">${escapeHtml(c.nombreCompleto) || '<em>(sin nombre)</em>'}<span class="correo">${escapeHtml(c.email)}</span></td>
+      <td><span class="pill ${c.estado.toLowerCase()==='activo'?'activo':'inactivo'}">${escapeHtml(c.estado || '—')}</span></td>
+      <td>${escapeHtml(c.modalidad || '—')}</td>
+      <td>${escapeHtml(c.disponibilidad || '—')}</td>
+      <td>${escapeHtml(c.telefono || '—')}</td>
+      <td>${escapeHtml(c.fechaNacimiento || '—')}</td>
+      <td><button class="btn-fila" data-editar="${escapeHtml(c.email)}">${editando ? 'Cerrar' : 'Editar'}</button></td>
+    </tr>`;
+    if(editando) html += filaEdicion(c);
+  });
+  html += `</tbody></table></div>`;
+  cont.innerHTML = html;
+
+  cont.querySelectorAll('[data-editar]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      correoEditando = (correoEditando === btn.dataset.editar) ? null : btn.dataset.editar;
+      render();
+    });
+  });
+
+  const btnGuardar = document.getElementById('btnGuardarEdicion');
+  if(btnGuardar){
+    document.getElementById('btnCancelarEdicion').addEventListener('click', () => { correoEditando = null; render(); });
+    btnGuardar.addEventListener('click', async () => {
+      const cliente = TODOS_LOS_CLIENTES.find(c => c.email === correoEditando);
+      const campos = {
+        estado: document.getElementById('edit-estado').value,
+        telefono: document.getElementById('edit-telefono').value,
+        modalidad: document.getElementById('edit-modalidad').value,
+        disponibilidad: document.getElementById('edit-disponibilidad').value,
+        fechaNacimiento: document.getElementById('edit-fechaNacimiento').value,
+        lesion: document.getElementById('edit-lesion').value,
+        drive: document.getElementById('edit-drive').value,
+      };
+      const estadoEl = document.getElementById('estadoEdicion');
+      estadoEl.textContent = 'Guardando…';
+      estadoEl.className = 'estado-edicion';
+      btnGuardar.disabled = true;
+      try{
+        const res = await fetch('/api/listar-clientes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ correo: cliente.email, campos }),
+        });
+        const data = await res.json();
+        if(data.success){
+          Object.assign(cliente, campos);
+          estadoEl.textContent = '✓ Guardado';
+          estadoEl.className = 'estado-edicion ok';
+          setTimeout(() => { correoEditando = null; render(); }, 600);
+        }else{
+          estadoEl.textContent = '✗ ' + (data.error || 'Error al guardar.');
+          estadoEl.className = 'estado-edicion error';
+          btnGuardar.disabled = false;
+        }
+      }catch(e){
+        estadoEl.textContent = '✗ Error de red: ' + e.message;
+        estadoEl.className = 'estado-edicion error';
+        btnGuardar.disabled = false;
+      }
+    });
+  }
+}
+
+document.getElementById('buscador').addEventListener('input', (e) => { textoBusqueda = e.target.value.trim(); render(); });
+document.getElementById('filtros').addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-filtro]'); if(!btn) return;
+  filtroEstado = btn.dataset.filtro;
+  document.querySelectorAll('.chip-filtro').forEach(c => c.classList.remove('activo'));
+  btn.classList.add('activo');
+  render();
+});
+
+cargarClientes();
+</script>
+</body>
+</html>

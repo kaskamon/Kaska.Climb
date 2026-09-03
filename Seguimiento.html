@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Seguimiento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.min.js"></script>
+<script src="libs/clientes-selector.js"></script>
+<style>
+  :root{
+    --stone-900:#1c211e; --stone-800:#262d28; --stone-700:#333b34;
+    --chalk:#f2ede1; --chalk-dim:#c9c3b4; --chalk-faint:#8d9187;
+    --moss:#7c9070; --moss-light:#a7bd98; --moss-deep:#4d5c46;
+    --amber:#c99a5b; --danger:#c9705b;
+    --meso-fmax:#c17c74; --meso-reox:#7c9070; --meso-desox:#70908c; --meso-aero:#93859e; --meso-tapering:#c99a5b;
+    --line:rgba(242,237,225,0.10); --line-strong:rgba(242,237,225,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; min-height:100vh; background:var(--stone-900); color:var(--chalk); font-family:'Work Sans', sans-serif; }
+  h1,h2,h3{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.4px; margin:0; }
+
+  .topbar{ position:sticky; top:0; z-index:40; background:rgba(28,33,30,0.92); backdrop-filter:blur(10px); border-bottom:1px solid var(--line-strong); }
+  .topbar-inner{ max-width:1180px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px; font-weight:700; color:var(--moss-light); text-transform:uppercase; }
+  .eyebrow::before{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .brand h1{ font-size:22px; }
+  .icon-btn{
+    background:var(--stone-800); border:1px solid var(--line-strong); color:var(--chalk);
+    padding:9px 14px; border-radius:10px; font-size:12px; font-weight:700; letter-spacing:0.5px;
+    text-transform:uppercase; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    text-decoration:none; transition:all .2s ease;
+  }
+  .icon-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+
+  .wrap{ max-width:1180px; margin:0 auto; padding:28px 24px 80px; }
+  .cabecera-pagina{ margin-bottom:22px; }
+  .cabecera-pagina h2{ font-size:26px; }
+  .cabecera-pagina p{ color:var(--chalk-dim); font-size:13.5px; margin:6px 0 0; max-width:64ch; }
+
+  .card{ background:rgba(38,45,40,0.55); border:1px solid var(--line-strong); border-radius:18px; backdrop-filter:blur(8px); padding:26px 28px 30px; }
+
+  .selector-fila{ display:flex; align-items:flex-end; gap:22px; flex-wrap:wrap; margin-bottom:26px; }
+  .selector-cliente{ display:flex; flex-direction:column; gap:6px; }
+  .selector-cliente label{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--chalk-faint); }
+  .selector-cliente select{
+    background:var(--stone-800); border:1px solid var(--line-strong); color:var(--chalk);
+    border-radius:10px; padding:11px 14px; font-size:13.5px; font-weight:600; min-width:230px; font-family:inherit;
+  }
+  .tabs-meso{ display:flex; gap:6px; flex-wrap:wrap; }
+  .tab-meso{
+    font-size:11.5px; font-weight:800; letter-spacing:0.4px; text-transform:uppercase;
+    padding:9px 15px; border-radius:9px; border:1px solid var(--line-strong); color:var(--chalk-dim);
+    cursor:pointer; transition:all .15s ease; background:none; font-family:inherit;
+  }
+  .tab-meso.activo{ color:var(--stone-900); border-color:transparent; }
+
+  .estado-panel{ color:var(--chalk-dim); font-size:13px; padding:30px 0; text-align:center; }
+
+  .stat-tiles{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:26px; }
+  .stat-tile{ background:var(--stone-800); border:1px solid var(--line); border-radius:14px; padding:16px 18px; }
+  .stat-tile .k{ font-size:10.5px; font-weight:700; letter-spacing:0.5px; text-transform:uppercase; color:var(--chalk-faint); }
+  .stat-tile .v{ font-family:'Anton',sans-serif; font-size:26px; margin-top:6px; font-variant-numeric:tabular-nums; }
+  .stat-tile .v small{ font-family:'Work Sans',sans-serif; font-size:13px; font-weight:700; color:var(--chalk-faint); margin-left:3px; }
+  .stat-tile .delta{ font-size:11.5px; font-weight:700; margin-top:4px; }
+  .stat-tile .delta.up{ color:var(--moss-light); }
+  .stat-tile .delta.down{ color:var(--danger); }
+
+  .chart-shell{ background:var(--stone-800); border:1px solid var(--line); border-radius:16px; padding:22px 22px 12px; margin-bottom:26px; }
+  .chart-shell .leyenda{ display:flex; gap:18px; margin-bottom:6px; flex-wrap:wrap; }
+  .leyenda .item{ display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--chalk-dim); font-weight:600; }
+  .leyenda .sw{ width:14px; height:3px; border-radius:2px; }
+  .chart-holder{ position:relative; height:280px; }
+
+  .tabla-datos-wrap{ overflow-x:auto; }
+  table.tabla-datos{ width:100%; border-collapse:collapse; }
+  table.tabla-datos th{ text-align:left; font-size:10.5px; letter-spacing:0.8px; text-transform:uppercase; color:var(--chalk-faint); font-weight:700; padding:10px 14px; white-space:nowrap; border-bottom:1px solid var(--line-strong); }
+  table.tabla-datos td{ padding:10px 14px; font-size:12.5px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; white-space:nowrap; }
+  table.tabla-datos td.no-entrenada{ color:var(--chalk-faint); font-style:italic; }
+  table.tabla-datos tbody tr:last-child td{ border-bottom:none; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="eyebrow">Kaska.Climb</div>
+      <h1>Seguimiento</h1>
+    </div>
+    <a class="icon-btn" href="index.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Inicio
+    </a>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="cabecera-pagina">
+    <h2>Progresión por mesociclo</h2>
+    <p>PFinicial, PFfinal y Fmax de cada cliente, convertidos en gráfica en vez de columnas anchas del Sheet.</p>
+  </div>
+
+  <div class="card">
+    <div class="selector-fila">
+      <div class="selector-cliente">
+        <label>Cliente</label>
+        <select id="selectorCliente"><option value="">Cargando clientes…</option></select>
+      </div>
+      <div class="tabs-meso" id="tabsMeso">
+        <button class="tab-meso" data-meso="REOX" style="--c:var(--meso-reox);">REOX</button>
+        <button class="tab-meso" data-meso="AERO" style="--c:var(--meso-aero);">AERO</button>
+        <button class="tab-meso" data-meso="DESOX" style="--c:var(--meso-desox);">DESOX</button>
+        <button class="tab-meso" data-meso="FMAX" style="--c:var(--meso-fmax);">FMAX</button>
+        <button class="tab-meso" data-meso="TAPERING" style="--c:var(--meso-tapering);">TAPERING</button>
+      </div>
+    </div>
+
+    <div id="panelDatos"><div class="estado-panel">Elige un cliente para ver su progresión.</div></div>
+  </div>
+</div>
+
+<script>
+const MESO_COLORS = { REOX:'#7c9070', AERO:'#93859e', DESOX:'#70908c', FMAX:'#c17c74', TAPERING:'#c99a5b' };
+let PORMESOCICLO = null;
+let MESO_ACTIVO = 'REOX';
+let chartInstance = null;
+
+function escapeHtml(str){
+  return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.querySelectorAll('.tab-meso').forEach(tab => {
+  tab.addEventListener('click', () => { MESO_ACTIVO = tab.dataset.meso; pintarTabs(); pintarDatos(); });
+});
+function pintarTabs(){
+  document.querySelectorAll('.tab-meso').forEach(tab => {
+    const on = tab.dataset.meso === MESO_ACTIVO;
+    tab.classList.toggle('activo', on);
+    tab.style.background = on ? tab.style.getPropertyValue('--c') : '';
+  });
+}
+pintarTabs();
+
+async function cargarCliente(email){
+  const panel = document.getElementById('panelDatos');
+  if(!email){ panel.innerHTML = '<div class="estado-panel">Elige un cliente para ver su progresión.</div>'; return; }
+  panel.innerHTML = '<div class="estado-panel">Cargando historial…</div>';
+  try{
+    const res = await fetch('/api/obtener-historial?' + new URLSearchParams({ cliente: email }).toString());
+    const data = await res.json();
+    if(!data.success){
+      panel.innerHTML = `<div class="estado-panel">${escapeHtml(data.error || 'No se pudo cargar el historial.')}</div>`;
+      return;
+    }
+    PORMESOCICLO = data.porMesociclo;
+    pintarDatos();
+  }catch(e){
+    panel.innerHTML = `<div class="estado-panel">Error de red: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+function pintarDatos(){
+  const panel = document.getElementById('panelDatos');
+  if(!PORMESOCICLO) return;
+  const historial = (PORMESOCICLO[MESO_ACTIVO] || []).filter(h => h.entrenada);
+
+  if(!historial.length){
+    panel.innerHTML = '<div class="estado-panel">Este cliente todavía no tiene sesiones entrenadas de este mesociclo.</div>';
+    return;
+  }
+
+  const ultimo = historial[historial.length - 1];
+  const primero = historial[0];
+  const media = Math.round(historial.reduce((s,h) => s + h.pfInicial, 0) / historial.length);
+  const tendencia = primero.pfInicial ? ((ultimo.pfInicial - primero.pfInicial) / primero.pfInicial * 100) : 0;
+  const noRecuperadas = (PORMESOCICLO[MESO_ACTIVO] || []).filter(h => !h.entrenada).length;
+
+  panel.innerHTML = `
+    <div class="stat-tiles">
+      <div class="stat-tile"><div class="k">PFinicial medio</div><div class="v">${media}<small>N</small></div></div>
+      <div class="stat-tile">
+        <div class="k">Tendencia (${historial.length} ses.)</div>
+        <div class="v" style="color:${tendencia>=0?'var(--moss-light)':'var(--danger)'};">${tendencia>=0?'+':''}${tendencia.toFixed(1)}<small>%</small></div>
+        <div class="delta ${tendencia>=0?'up':'down'}">${tendencia>=0?'↑ progresando':'↓ en descenso'}</div>
+      </div>
+      <div class="stat-tile"><div class="k">Última PFinicial</div><div class="v">${ultimo.pfInicial}<small>N</small></div></div>
+      <div class="stat-tile"><div class="k">Sesiones no recuperadas</div><div class="v">${noRecuperadas}<small>/${historial.length + noRecuperadas}</small></div></div>
+    </div>
+    <div class="chart-shell">
+      <div class="leyenda">
+        <span class="item"><span class="sw" style="background:${MESO_COLORS[MESO_ACTIVO]};"></span>PFinicial (test al empezar)</span>
+        <span class="item"><span class="sw" style="background:var(--amber);"></span>PFfinal (test al acabar)</span>
+      </div>
+      <div class="chart-holder"><canvas id="chartPF"></canvas></div>
+    </div>
+    <div class="tabla-datos-wrap">
+      <table class="tabla-datos">
+        <thead><tr><th>Fecha</th><th>PFinicial (N)</th><th>PFfinal (N)</th><th>Fmax izq. (N)</th><th>Fmax der. (N)</th><th>Sesión</th></tr></thead>
+        <tbody>${(PORMESOCICLO[MESO_ACTIVO] || []).map(h => h.entrenada
+          ? `<tr><td>${escapeHtml(h.fecha)}</td><td>${h.pfInicial}</td><td>${h.pfFinal ?? '—'}</td><td>${h.fmaxIzq ?? '—'}</td><td>${h.fmaxDer ?? '—'}</td><td>Entrenada</td></tr>`
+          : `<tr><td>${escapeHtml(h.fecha)}</td><td>${h.pfInicial}</td><td class="no-entrenada">—</td><td class="no-entrenada">—</td><td class="no-entrenada">—</td><td class="no-entrenada">No recuperado</td></tr>`
+        ).join('')}</tbody>
+      </table>
+    </div>`;
+
+  const ctx = document.getElementById('chartPF').getContext('2d');
+  if(chartInstance) chartInstance.destroy();
+  const color = MESO_COLORS[MESO_ACTIVO];
+  chartInstance = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels: historial.map(h => h.fecha),
+      datasets:[
+        { label:'PFinicial', data: historial.map(h=>h.pfInicial), borderColor:color, backgroundColor:color+'28', borderWidth:2.5, pointRadius:3.5, pointBackgroundColor:color, pointBorderColor:'#1c211e', pointBorderWidth:1.5, fill:true, tension:0.32 },
+        { label:'PFfinal', data: historial.map(h=>h.pfFinal ?? null), borderColor:'#c99a5b', backgroundColor:'rgba(201,154,91,0.10)', borderWidth:2.5, pointRadius:3.5, pointBackgroundColor:'#c99a5b', pointBorderColor:'#1c211e', pointBorderWidth:1.5, fill:true, tension:0.32, spanGaps:true },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false }, tooltip:{
+        backgroundColor:'#1c211e', titleColor:'#f2ede1', bodyColor:'#c9c3b4',
+        borderColor:'rgba(242,237,225,0.16)', borderWidth:1, padding:10,
+        callbacks:{ label: c => `${c.dataset.label}: ${c.parsed.y} N` }
+      }},
+      scales:{
+        x:{ grid:{ color:'rgba(242,237,225,0.06)' }, ticks:{ color:'#8d9187', font:{ family:'Work Sans', size:11 } } },
+        y:{ grid:{ color:'rgba(242,237,225,0.06)' }, ticks:{ color:'#8d9187', font:{ family:'Work Sans', size:11 }, callback:v=>v+'N' } }
+      }
+    }
+  });
+}
+
+(async function init(){
+  const sel = document.getElementById('selectorCliente');
+  await cargarSelectorClientes(sel);
+  sel.addEventListener('change', () => cargarCliente(sel.value));
+  if(sel.value) cargarCliente(sel.value);
+})();
+</script>
+</body>
+</html>
