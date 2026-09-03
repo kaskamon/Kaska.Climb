@@ -196,6 +196,17 @@ select.head-select option {
   user-select: none;
 }
 
+/* Contenedor real que gestiona Sortable — el nombre del día vive fuera de él
+   a propósito, para que nunca pueda desplazarse al soltar una caja encima. */
+.dia-sesiones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  min-height: 28px;
+}
+
 .sesion {
   background: var(--stone-700);
   padding: 8px 12px;
@@ -308,41 +319,10 @@ select.head-select option {
   color: var(--chalk);
 }
 
-.grid-botones-abajo {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  width: 300px;
-  margin-top: 16px;
-  box-sizing: border-box;
-}
-
 .panel-derecho {
   width: 300px;
   display: flex;
   flex-direction: column;
-}
-
-.btn-inicio {
-  width: fit-content;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin: 24px auto 0 auto;
-  background: var(--stone-800);
-  border: 1px solid rgba(242,237,225,0.16);
-  border-radius: 10px;
-  padding: 10px 20px;
-  font-size: 12px;
-}
-.btn-inicio:hover {
-  background: var(--moss);
-  color: var(--stone-900);
-  border-color: var(--moss);
 }
 
 .panel-publicar-semana {
@@ -394,8 +374,7 @@ select.head-select option {
     width: 300px;
   }
 
-  #banco,
-  .grid-botones-abajo {
+  #banco {
     width: 300px;
   }
 }
@@ -423,8 +402,7 @@ select.head-select option {
   .panel-derecho,
   #banco,
   .no-print,
-  .btn-action,
-  .grid-botones-abajo {
+  .btn-action {
     display: none !important;
     visibility: hidden !important;
   }
@@ -496,30 +474,37 @@ select.head-select option {
     <div class="semana-grid" id="grid">
       <div class="dia-columna" id="d1">
         <div class="dia-nombre">LUN</div>
+        <div class="dia-sesiones"></div>
       </div>
 
       <div class="dia-columna" id="d2">
         <div class="dia-nombre">MAR</div>
+        <div class="dia-sesiones"></div>
       </div>
 
       <div class="dia-columna" id="d3">
         <div class="dia-nombre">MIÉ</div>
+        <div class="dia-sesiones"></div>
       </div>
 
       <div class="dia-columna" id="d4">
         <div class="dia-nombre">JUE</div>
+        <div class="dia-sesiones"></div>
       </div>
 
       <div class="dia-columna" id="d5">
         <div class="dia-nombre">VIE</div>
+        <div class="dia-sesiones"></div>
       </div>
 
       <div class="dia-columna" id="d6">
         <div class="dia-nombre">SÁB</div>
+        <div class="dia-sesiones"></div>
       </div>
 
       <div class="dia-columna" id="d7">
         <div class="dia-nombre">DOM</div>
+        <div class="dia-sesiones"></div>
       </div>
     </div>
   </div>
@@ -561,31 +546,26 @@ select.head-select option {
       <h4>Publicar semana</h4>
       <select id="publicarClienteSemana"><option value="">Cargando clientes...</option></select>
       <div style="font-size:10.5px; color:var(--chalk-dim); line-height:1.4;">
-        "Publicar semana completa" copia, para cada día con sesión asignada, la última versión publicada de ese mesociclo para este cliente, con la fecha real de ese día de la semana (a partir del lunes indicado arriba en "Fecha").
+        "Cargar último publicado" trae la última semana publicada para este cliente. "Publicar semana completa" copia, para cada día con sesión asignada, la última versión publicada de ese mesociclo, con la fecha real de ese día (a partir del lunes indicado arriba en "Fecha").
       </div>
+      <button class="btn-action" id="btnCargarUltimaSemana" type="button">Cargar último publicado</button>
       <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
+      <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
+      <button class="btn-action" onclick="window.location.href='index.html'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Inicio
+      </button>
       <div class="estado-publicar-semana" id="estadoPublicarSemana"></div>
     </div>
-
-    <div class="no-print grid-botones-abajo">
-      <button class="btn-action" onclick="guardar()">Guardar</button>
-      <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
-    </div>
-
-    <button class="btn-action btn-inicio no-print" onclick="window.location.href='index.html'">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-      Inicio
-    </button>
   </div>
 </div>
 
 <script>
 function act() {
   if (window.Sortable) {
-    document.querySelectorAll('.dia-columna').forEach(d => {
+    document.querySelectorAll('.dia-sesiones').forEach(d => {
       new Sortable(d, {
-        group: 's',
-        filter: '.dia-nombre'
+        group: 's'
       });
     });
 
@@ -620,13 +600,7 @@ function actualizarFecha(val) {
 }
 
 function limpiarTabla() {
-  document.querySelectorAll('.dia-columna').forEach(d => {
-    Array.from(d.children).forEach(child => {
-      if (!child.classList.contains('dia-nombre')) {
-        child.remove();
-      }
-    });
-  });
+  document.querySelectorAll('.dia-sesiones').forEach(d => { d.innerHTML = ''; });
 }
 
 document.addEventListener('click', e => {
@@ -670,6 +644,75 @@ function fechaParaDiaIndice(indiceDia) {
 /* ================= PUBLICAR SEMANA COMPLETA ================= */
 const inputPublicarClienteSemana = document.getElementById('publicarClienteSemana');
 cargarSelectorClientes(inputPublicarClienteSemana);
+
+const MESOCICLOS_SEMANA = ['REOX', 'AERO', 'DESOX', 'FMAX'];
+
+document.getElementById('btnCargarUltimaSemana').addEventListener('click', async () => {
+  const cliente = inputPublicarClienteSemana.value.trim();
+  const estadoDiv = document.getElementById('estadoPublicarSemana');
+
+  if (!cliente) { alert('Indica el cliente antes de cargar su última semana publicada.'); return; }
+  if (!document.getElementById('hiddenDate').value) {
+    alert('Indica primero la fecha del lunes de esta semana (campo "Fecha" arriba).');
+    return;
+  }
+
+  const fechaLunes = document.getElementById('displayDate').innerText.trim();
+  estadoDiv.innerHTML = 'Cargando última semana publicada...';
+
+  try {
+    const qs = new URLSearchParams({ cliente, fecha: fechaLunes });
+    const res = await fetch('/api/obtener-semana?' + qs.toString());
+    const data = await res.json();
+
+    if (!data.success) {
+      estadoDiv.innerHTML = `<div class="error">${data.error || 'No se pudo cargar la semana.'}</div>`;
+      return;
+    }
+    if (!data.sesiones.length) {
+      estadoDiv.innerHTML = `<div class="error">Este cliente no tiene ninguna sesión publicada para la semana del ${fechaLunes}.</div>`;
+      return;
+    }
+
+    limpiarTabla();
+
+    // Nunca hay 2 mesociclos en la misma semana — con que aparezca uno de
+    // los 4 en cualquier sesión encontrada, ya sabemos el de toda la semana.
+    let mesocicloSemana = null;
+    data.sesiones.forEach(s => { if (MESOCICLOS_SEMANA.includes(s.mesociclo)) mesocicloSemana = s.mesociclo; });
+    if (mesocicloSemana) document.getElementById('h3').value = mesocicloSemana;
+
+    data.dias.forEach((fechaDia, i) => {
+      const columna = document.getElementById('d' + (i + 1)).querySelector('.dia-sesiones');
+      data.sesiones.filter(s => s.fecha === fechaDia).forEach(s => {
+        let tipo = null;
+        if (MESOCICLOS_SEMANA.includes(s.mesociclo)) tipo = 'sesion';
+        else if (s.mesociclo === 'GYM-FMAX' || s.mesociclo === 'GYM-ANTAGONISTAS') tipo = 'gym';
+        if (!tipo) return;
+        const plantilla = document.querySelector(`#banco .sesion[data-tipo="${tipo}"]`);
+        if (plantilla) columna.appendChild(plantilla.cloneNode(true));
+      });
+    });
+
+    // "Semana" y "Sem. Meso." de la cabecera — se leen de la fila real de
+    // cualquiera de las sesiones encontradas (misma fecha+mesociclo+cliente
+    // que ya sabemos que existe).
+    const primera = data.sesiones[0];
+    try {
+      const qsSesion = new URLSearchParams({ cliente, fecha: primera.fecha, mesociclo: primera.mesociclo });
+      const resSesion = await fetch('/api/obtener-sesion?' + qsSesion.toString());
+      const dataSesion = await resSesion.json();
+      if (dataSesion.success) {
+        if (dataSesion.semana) document.getElementById('h1').innerText = dataSesion.semana;
+        if (dataSesion.semanaMesociclo) document.getElementById('h4').innerText = dataSesion.semanaMesociclo;
+      }
+    } catch (e) { /* si falla, se dejan los valores que hubiera en la cabecera */ }
+
+    estadoDiv.innerHTML = `<div class="ok">✓ Cargada la semana del ${fechaLunes} para ${cliente}.</div>`;
+  } catch (e) {
+    estadoDiv.innerHTML = `<div class="error">Error de red: ${e.message}</div>`;
+  }
+});
 
 document.getElementById('btnPublicarSemana').addEventListener('click', async () => {
   const cliente = inputPublicarClienteSemana.value.trim();
@@ -729,40 +772,7 @@ document.getElementById('btnPublicarSemana').addEventListener('click', async () 
     : 'No hay ninguna sesión asignada esta semana.';
 });
 
-function guardar() {
-  const grid = document.getElementById('grid');
-
-  localStorage.g = grid.innerHTML;
-
-  localStorage.h = JSON.stringify({
-    h1: document.getElementById('h1').innerText,
-    h2val: document.getElementById('hiddenDate').value,
-    h3: document.getElementById('h3').value,
-    h4: document.getElementById('h4').innerText
-  });
-
-  alert("Guardado");
-}
-
 window.onload = () => {
-  if (localStorage.g) {
-    document.getElementById('grid').innerHTML = localStorage.g;
-
-    if (localStorage.h) {
-      const h = JSON.parse(localStorage.h);
-
-      document.getElementById('h1').innerText = h.h1 || '01';
-      document.getElementById('hiddenDate').value = h.h2val || '';
-
-      if (h.h2val) {
-        actualizarFecha(h.h2val);
-      }
-
-      document.getElementById('h3').value = h.h3 || 'REOX';
-      document.getElementById('h4').innerText = h.h4 || '1/4';
-    }
-  }
-
   act();
 };
 </script>
