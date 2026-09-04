@@ -136,5 +136,19 @@
     TAPERING: { tipo: 'sesion', color: '#c99a5b' },
   };
 
-  return { COLUMNS: COLUMNS, FIELD_MAP: FIELD_MAP, TITULOS: TITULOS, CATEGORIA_VISUAL: CATEGORIA_VISUAL };
+  // Paleta simplificada de 4 colores — la misma que usa el banco de
+  // Semanas.html (Sesión Roco / Gym-Antagonistas / Roca-Roco / Descanso).
+  // La usa cliente/semana.html para que el cliente vea la semana con el
+  // mismo código de colores que ve el entrenador al construirla. El
+  // historial del cliente (cliente/historial.html) sigue usando los colores
+  // detallados de CATEGORIA_VISUAL, uno por mesociclo, porque ahí sí importa
+  // distinguir REOX de AERO de DESOX de FMAX de un vistazo.
+  var COLOR_POR_TIPO = {
+    sesion: '#6f8ea6',
+    gym: '#8d9187',
+    roca: '#7c9070',
+    descanso: '#a65d53',
+  };
+
+  return { COLUMNS: COLUMNS, FIELD_MAP: FIELD_MAP, TITULOS: TITULOS, CATEGORIA_VISUAL: CATEGORIA_VISUAL, COLOR_POR_TIPO: COLOR_POR_TIPO };
 });

@@ -155,7 +155,7 @@ const CLIENTE = params.get('cliente');     // email — identificador real
 const NOMBRE_PARAM = params.get('nombre'); // solo para mostrar
 const NOMBRE_DISPLAY = NOMBRE_PARAM || CLIENTE;
 
-const { TITULOS, CATEGORIA_VISUAL } = window.MESOCICLOS_CONFIG || {};
+const { TITULOS, CATEGORIA_VISUAL, COLOR_POR_TIPO } = window.MESOCICLOS_CONFIG || {};
 const SIN_ENLACE = ['ROCA', 'DESCANSO']; // días sin sesión diseñada — no llevan a cliente/sesion.html
 
 const NOMBRES_DIA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -257,7 +257,7 @@ async function cargar(){
       if(sesiones.length > 0){
         contenidoDerecha = `<div class="sesiones-dia">` + sesiones.map(mesociclo => {
           const cat = CATEGORIA_VISUAL && CATEGORIA_VISUAL[mesociclo];
-          const color = (cat && cat.color) || 'var(--moss)';
+          const color = (COLOR_POR_TIPO && cat && COLOR_POR_TIPO[cat.tipo]) || 'var(--moss)';
           if(SIN_ENLACE.includes(mesociclo)){
             return `<span class="chip-sesion chip-estatica" style="background:${color};">${escapeHtml(tituloMesociclo(mesociclo))}</span>`;
           }
