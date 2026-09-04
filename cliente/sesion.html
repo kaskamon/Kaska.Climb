@@ -265,6 +265,7 @@
 </div>
 
 <script src="../libs/mesociclos-config.js"></script>
+<script src="../libs/sesion-cliente-front.js"></script>
 <script>
 /* =====================================================================
    MOTOR GENÉRICO DE SESIÓN
@@ -323,6 +324,8 @@ if(!CLIENTE || !FECHA_PARAM || !MESOCICLO){
   mostrarError('Falta identificar cliente, fecha o mesociclo en el enlace. Vuelve a Semanas.html y genera el enlace de nuevo.');
   throw new Error('Parámetros incompletos');
 }
+const SESION = exigirSesionCliente(CLIENTE);
+if(!SESION) throw new Error('Sin sesión válida — redirigiendo a login');
 if(!FIELD_MAP || !FIELD_MAP[MESOCICLO]){
   mostrarError(`El mesociclo "${MESOCICLO}" no existe todavía.`);
   throw new Error('Mesociclo desconocido');
@@ -805,6 +808,7 @@ function wireInteractividad(ultimaValida){
     topError.classList.remove('show');
 
     const payload = construirPayload();
+    payload.token = SESION.token;
     const rows = construirFilasModal(payload);
     document.getElementById('modalTable').innerHTML =
       rows.map(([k, v]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(v)}</td></tr>`).join('');
@@ -845,11 +849,11 @@ function wireInteractividad(ultimaValida){
 /* ---------- Carga de datos y arranque ---------- */
 async function cargar(){
   try{
-    const qsSesion = new URLSearchParams({ cliente: CLIENTE, fecha: FECHA_PARAM, mesociclo: MESOCICLO });
+    const qsSesion = new URLSearchParams({ cliente: CLIENTE, fecha: FECHA_PARAM, mesociclo: MESOCICLO, token: SESION.token });
     const necesitaHistorial = !!CFG.pfInicial;
     const peticiones = [ fetch('/api/obtener-sesion?' + qsSesion.toString()) ];
     if(necesitaHistorial){
-      const qsHist = new URLSearchParams({ cliente: CLIENTE, mesociclo: MESOCICLO, limite: '10' });
+      const qsHist = new URLSearchParams({ cliente: CLIENTE, mesociclo: MESOCICLO, limite: '10', token: SESION.token });
       peticiones.push(fetch('/api/obtener-historial?' + qsHist.toString()));
     }
 

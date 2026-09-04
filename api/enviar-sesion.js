@@ -1,5 +1,6 @@
 const { google } = require('googleapis');
 const { COLUMNS: MESOCICLOS } = require('../libs/mesociclos-config.js');
+const { verificarAccesoCliente } = require('../libs/sesion-cliente.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Respuestas de formulario 1';
@@ -31,6 +32,12 @@ module.exports = async (req, res) => {
 
     if (!nombre || !fecha || !mesociclo) {
       return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (nombre, fecha o mesociclo).' });
+    }
+    if (correo) {
+      const acceso = verificarAccesoCliente(req, correo);
+      if (!acceso.ok) {
+        return res.status(401).json({ success: false, error: acceso.error });
+      }
     }
 
     const cfg = MESOCICLOS[mesociclo];

@@ -124,6 +124,21 @@
     return JSON.parse(json);
   }
 
+  // Lee solo la caducidad de nuestro token de sesión (segundo tramo,
+  // base64url) — comprobación de comodidad en el navegador para no lanzar
+  // el botón de Google sin necesidad; la comprobación de verdad (firma
+  // incluida) la hace cada endpoint en el servidor con la clave secreta,
+  // que nunca sale de Vercel.
+  function tokenSigueVivo(token){
+    try{
+      const partes = String(token).split('.');
+      if(partes.length !== 3) return false;
+      const pad = partes[1].length % 4 === 0 ? '' : '='.repeat(4 - (partes[1].length % 4));
+      const caduca = Number(atob(partes[1].replace(/-/g,'+').replace(/_/g,'/') + pad));
+      return caduca > Date.now();
+    }catch(e){ return false; }
+  }
+
   function mostrarBienvenida(nombre, email, foto){
     const wPhoto = document.getElementById('wPhoto');
     if(foto){ wPhoto.src = foto; wPhoto.style.display = ''; }
@@ -134,7 +149,12 @@
     document.getElementById('welcome').classList.add('show');
   }
 
-  async function verificarYRedirigir(email){
+  function irASemana(cliente, nombre){
+    const qs = new URLSearchParams({ cliente, nombre });
+    window.location.href = '/cliente/semana.html?' + qs.toString();
+  }
+
+  async function verificarYRedirigir(idToken){
     const nota = document.getElementById('wNote');
     const btnReintentar = document.getElementById('btnReintentar');
     nota.classList.remove('error');
@@ -142,18 +162,21 @@
     btnReintentar.style.display = 'none';
 
     try{
-      const res = await fetch('/api/verificar-cliente?email=' + encodeURIComponent(email));
+      const res = await fetch('/api/verificar-cliente', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
+      });
       const data = await res.json();
 
       if(data.success){
         localStorage.setItem(CLAVE_SESION, JSON.stringify({
           email: data.cliente.email,
           nombreCompleto: data.cliente.nombreCompleto,
+          token: data.token,
         }));
         nota.innerHTML = `<strong>¡Cuenta encontrada!</strong> Te llevamos a tu semana...`;
-        const qs = new URLSearchParams({ cliente: data.cliente.email, nombre: data.cliente.nombreCompleto });
-        const url = '/cliente/semana.html?' + qs.toString();
-        setTimeout(() => { window.location.href = url; }, 1200);
+        setTimeout(() => irASemana(data.cliente.email, data.cliente.nombreCompleto), 1200);
       }else{
         // Si la sesión guardada ya no vale (p.ej. el entrenador desactivó al
         // cliente), la borramos para no quedarnos en bucle en la próxima visita.
@@ -172,7 +195,7 @@
   function handleCredentialResponse(response){
     const payload = decodeJwt(response.credential);
     mostrarBienvenida(payload.name, payload.email, payload.picture);
-    verificarYRedirigir(payload.email);
+    verificarYRedirigir(response.credential);
   }
 
   window.onload = function(){
@@ -181,18 +204,20 @@
       document.getElementById('loginBox').classList.remove('hide');
     });
 
-    // Si ya nos habíamos identificado antes en este dispositivo, nos saltamos
-    // el botón de Google y verificamos directamente.
+    // Si ya tenemos un token de sesión propio vigente en este dispositivo,
+    // nos saltamos el botón de Google directamente — el propio token (no un
+    // correo suelto) es lo que demuestra quién eres en cada página/endpoint.
     const guardado = localStorage.getItem(CLAVE_SESION);
     if(guardado){
       try{
         const datos = JSON.parse(guardado);
-        if(datos && datos.email){
+        if(datos && datos.email && datos.token && tokenSigueVivo(datos.token)){
           mostrarBienvenida(datos.nombreCompleto, datos.email, null);
-          verificarYRedirigir(datos.email);
+          irASemana(datos.email, datos.nombreCompleto);
           return;
         }
       }catch(e){ /* si está corrupto, seguimos con el login normal */ }
+      localStorage.removeItem(CLAVE_SESION);
     }
 
     google.accounts.id.initialize({

@@ -1,4 +1,5 @@
 const { google } = require('googleapis');
+const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
 
 // Planificación de macrociclo por cliente (Macrociclos.html) — hoja principal,
 // distinta de la de sesiones/historial. Columnas: A marcaTemporal, B correo,
@@ -25,6 +26,10 @@ async function manejarGet(req, res, sheets) {
   const { cliente } = req.query || {};
   if (!cliente) {
     return res.status(400).json({ success: false, error: 'Falta el parámetro cliente.' });
+  }
+  const acceso = verificarAccesoCliente(req, cliente);
+  if (!acceso.ok) {
+    return res.status(401).json({ success: false, error: acceso.error });
   }
 
   let filas;
@@ -74,6 +79,10 @@ async function manejarGet(req, res, sheets) {
 
 // POST — publica (añade) un macrociclo nuevo para un cliente.
 async function manejarPost(req, res, sheets) {
+  const acceso = verificarEntrenador(req);
+  if (!acceso.ok) {
+    return res.status(401).json({ success: false, error: acceso.error });
+  }
   const { correo, nombre, inicio, fin, bloques } = req.body || {};
   if (!correo || !nombre || !Array.isArray(bloques)) {
     return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (correo, nombre o bloques).' });

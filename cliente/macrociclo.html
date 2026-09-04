@@ -121,6 +121,7 @@
   <p id="estadoErrorTexto"></p>
 </div>
 
+<script src="../libs/sesion-cliente-front.js"></script>
 <script>
 const FASE_INFO = {
   fmax:  { titulo: 'FMAX',     color: '#c17c74' },
@@ -147,6 +148,8 @@ if(!CLIENTE){
   mostrarError('No hemos podido identificarte. Vuelve a iniciar sesión desde la pantalla de acceso.');
   throw new Error('Falta cliente');
 }
+const SESION = exigirSesionCliente(CLIENTE);
+if(!SESION) throw new Error('Sin sesión válida — redirigiendo a login');
 (function(){
   const qs = new URLSearchParams();
   qs.set('cliente', CLIENTE);
@@ -213,7 +216,7 @@ function renderPlan(plan){
 
 async function cargar(){
   try{
-    const res = await fetch('/api/macrociclo?' + new URLSearchParams({ cliente: CLIENTE }).toString());
+    const res = await fetch('/api/macrociclo?' + new URLSearchParams({ cliente: CLIENTE, token: SESION.token }).toString());
     const data = await res.json();
     if(!data.success){
       mostrarError(data.error || 'Ha ocurrido un error inesperado.');

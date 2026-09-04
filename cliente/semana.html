@@ -149,6 +149,7 @@
 </div>
 
 <script src="../libs/mesociclos-config.js"></script>
+<script src="../libs/sesion-cliente-front.js"></script>
 <script>
 const params = new URLSearchParams(window.location.search);
 const CLIENTE = params.get('cliente');     // email — identificador real
@@ -176,6 +177,8 @@ if(!CLIENTE){
   mostrarError('No hemos podido identificarte. Vuelve a iniciar sesión desde la pantalla de acceso.');
   throw new Error('Falta cliente');
 }
+const SESION = exigirSesionCliente(CLIENTE);
+if(!SESION) throw new Error('Sin sesión válida — redirigiendo a login');
 
 // El botón "Salir" y cualquier vuelta atrás mantienen la identidad del cliente.
 document.getElementById('btnSalir').href = '../login.html';
@@ -214,7 +217,7 @@ function renderAccesosRapidos(driveUrl){
 async function cargar(){
   try{
     const hoyStr = fechaHoyDDMMYYYY();
-    const qsSemana = new URLSearchParams({ cliente: CLIENTE, fecha: hoyStr });
+    const qsSemana = new URLSearchParams({ cliente: CLIENTE, fecha: hoyStr, token: SESION.token });
     const [resSemana, resCliente] = await Promise.all([
       fetch('/api/obtener-semana?' + qsSemana.toString()),
       fetch('/api/verificar-cliente?email=' + encodeURIComponent(CLIENTE)),

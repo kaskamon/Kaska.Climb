@@ -1,4 +1,5 @@
 const { google } = require('googleapis');
+const { verificarAccesoCliente } = require('../libs/sesion-cliente.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Sesiones_Programadas';
@@ -40,6 +41,10 @@ module.exports = async (req, res) => {
     const { cliente, fecha } = req.query || {};
     if (!cliente) {
       return res.status(400).json({ success: false, error: 'Falta el parámetro cliente.' });
+    }
+    const acceso = verificarAccesoCliente(req, cliente);
+    if (!acceso.ok) {
+      return res.status(401).json({ success: false, error: acceso.error });
     }
 
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {

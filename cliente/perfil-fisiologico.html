@@ -137,6 +137,7 @@
   <p id="estadoErrorTexto"></p>
 </div>
 
+<script src="../libs/sesion-cliente-front.js"></script>
 <script>
 const params = new URLSearchParams(window.location.search);
 const CLIENTE = params.get('cliente');
@@ -174,6 +175,8 @@ if(!CLIENTE){
   mostrarError('No hemos podido identificarte. Vuelve a iniciar sesión desde la pantalla de acceso.');
   throw new Error('Falta cliente');
 }
+const SESION = exigirSesionCliente(CLIENTE);
+if(!SESION) throw new Error('Sin sesión válida — redirigiendo a login');
 
 (function(){
   const qs = new URLSearchParams();
@@ -339,7 +342,7 @@ async function cargar(){
     const modalidad = (dataCliente.cliente.modalidad || 'deportiva').trim().toLowerCase();
     document.getElementById('subTxt').textContent = `Modalidad: ${dataCliente.cliente.modalidad || '—'}`;
 
-    const resPerfiles = await fetch('/api/obtener-perfiles-fisiologicos?' + new URLSearchParams({ cliente: CLIENTE, modalidad }).toString());
+    const resPerfiles = await fetch('/api/obtener-perfiles-fisiologicos?' + new URLSearchParams({ cliente: CLIENTE, modalidad, token: SESION.token }).toString());
     const dataPerfiles = await resPerfiles.json();
     if(!dataPerfiles.success){
       mostrarError(dataPerfiles.error || 'Ha ocurrido un error inesperado.');

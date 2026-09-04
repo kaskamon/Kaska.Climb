@@ -1,5 +1,6 @@
 const { google } = require('googleapis');
 const { COLUMNS } = require('../libs/mesociclos-config.js');
+const { verificarAccesoCliente } = require('../libs/sesion-cliente.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 // Pestaña nueva (hay que crearla a mano en el Sheet) donde Semanas.html / Sesiones.html
@@ -21,6 +22,10 @@ module.exports = async (req, res) => {
     }
     if (!COLUMNS[mesociclo]) {
       return res.status(400).json({ success: false, error: `El mesociclo "${mesociclo}" no existe.` });
+    }
+    const acceso = verificarAccesoCliente(req, cliente);
+    if (!acceso.ok) {
+      return res.status(401).json({ success: false, error: acceso.error });
     }
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
       return res.status(500).json({
