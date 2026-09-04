@@ -148,8 +148,7 @@ if(!CLIENTE){
   mostrarError('No hemos podido identificarte. Vuelve a iniciar sesión desde la pantalla de acceso.');
   throw new Error('Falta cliente');
 }
-const SESION = exigirSesionCliente(CLIENTE);
-if(!SESION) throw new Error('Sin sesión válida — redirigiendo a login');
+const TOKEN = tokenParaCliente(CLIENTE);
 (function(){
   const qs = new URLSearchParams();
   qs.set('cliente', CLIENTE);
@@ -216,7 +215,8 @@ function renderPlan(plan){
 
 async function cargar(){
   try{
-    const res = await fetch('/api/macrociclo?' + new URLSearchParams({ cliente: CLIENTE, token: SESION.token }).toString());
+    const res = await fetch('/api/macrociclo?' + new URLSearchParams({ cliente: CLIENTE, token: TOKEN }).toString());
+    if(res.status === 401){ manejarSesionInvalida(); return; }
     const data = await res.json();
     if(!data.success){
       mostrarError(data.error || 'Ha ocurrido un error inesperado.');
