@@ -89,6 +89,7 @@ module.exports = async (req, res) => {
         spreadsheetId: SPREADSHEET_ID,
         range: `'${SHEET_NAME}'!A:AI`,
         valueInputOption: 'USER_ENTERED',
+        insertDataOption: 'INSERT_ROWS',
         requestBody: { values: [fila] },
       });
     } catch (e) {
@@ -103,6 +104,7 @@ module.exports = async (req, res) => {
         spreadsheetId: SPREADSHEET_ID,
         range: `'${BACKUP_SHEET_NAME}'!A:C`,
         valueInputOption: 'USER_ENTERED',
+        insertDataOption: 'INSERT_ROWS',
         requestBody: { values: [[marcaTemporal, `${nombre} — ${mesociclo}`, JSON.stringify(body)]] },
       });
     } catch (e) {

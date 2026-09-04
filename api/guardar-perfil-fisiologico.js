@@ -42,6 +42,7 @@ module.exports = async (req, res) => {
       spreadsheetId: SPREADSHEET_ID,
       range: `'${SHEET_NAME}'!A:E`,
       valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
       requestBody: { values: [[marcaTemporal, cliente, fecha, modalidad, JSON.stringify(capacidades)]] },
     });
 
