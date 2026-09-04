@@ -111,12 +111,17 @@
     gap: 14px;
   }
 
-  /* Portátil o tablet en horizontal: 2 filas de 4, manteniendo el orden. En
-     móvil (por debajo de este ancho) se queda tal cual, en una columna. */
+  /* Portátil o tablet en horizontal: 2 columnas de 4, manteniendo el orden.
+     En móvil (por debajo de este ancho) se queda tal cual, en una columna.
+     El contenedor tenía un ancho pensado para una sola columna estrecha —
+     se ensancha aquí para que quepa el texto de cada botón sin apretarse. */
   @media (min-width: 768px) {
+    .contenedor-menu {
+      max-width: 600px;
+    }
     .botones-menu {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(2, 1fr);
     }
   }
   
