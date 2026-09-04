@@ -104,7 +104,7 @@
 <div class="wrap">
   <div class="cabecera-pagina">
     <h2>Progresión por mesociclo</h2>
-    <p>PFinicial, PFfinal y Fmax de cada cliente, convertidos en gráfica en vez de columnas anchas del Sheet.</p>
+    <p>PFinicial y Fmax de cada cliente, convertidos en gráfica en vez de columnas anchas del Sheet.</p>
   </div>
 
   <div class="card">
@@ -118,7 +118,6 @@
         <button class="tab-meso" data-meso="AERO" style="--c:var(--meso-aero);">AERO</button>
         <button class="tab-meso" data-meso="DESOX" style="--c:var(--meso-desox);">DESOX</button>
         <button class="tab-meso" data-meso="FMAX" style="--c:var(--meso-fmax);">FMAX</button>
-        <button class="tab-meso" data-meso="TAPERING" style="--c:var(--meso-tapering);">TAPERING</button>
       </div>
     </div>
 
@@ -127,7 +126,7 @@
 </div>
 
 <script>
-const MESO_COLORS = { REOX:'#7c9070', AERO:'#93859e', DESOX:'#70908c', FMAX:'#c17c74', TAPERING:'#c99a5b' };
+const MESO_COLORS = { REOX:'#7c9070', AERO:'#93859e', DESOX:'#70908c', FMAX:'#c17c74' };
 let PORMESOCICLO = null;
 let MESO_ACTIVO = 'REOX';
 
@@ -144,9 +143,7 @@ function dibujarGrafica(svg, historial, colorPrincipal){
   const plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
 
   const valoresPFinicial = historial.map(h => h.pfInicial).filter(v => v !== undefined && v !== null);
-  const valoresPFfinal = historial.map(h => h.pfFinal).filter(v => v !== undefined && v !== null);
-  const todos = valoresPFinicial.concat(valoresPFfinal);
-  const rawMin = Math.min(...todos), rawMax = Math.max(...todos);
+  const rawMin = Math.min(...valoresPFinicial), rawMax = Math.max(...valoresPFinicial);
   const margen = Math.max(6, (rawMax - rawMin) * 0.12);
   const yMin = Math.floor((rawMin - margen) / 5) * 5;
   const yMax = Math.ceil((rawMax + margen) / 5) * 5;
@@ -191,7 +188,6 @@ function dibujarGrafica(svg, historial, colorPrincipal){
   }
 
   svgStr += trazado(historial.map(h=>h.pfInicial), colorPrincipal, true);
-  svgStr += trazado(historial.map(h=>h.pfFinal), '#c99a5b', false);
 
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.innerHTML = svgStr;
@@ -257,16 +253,15 @@ function pintarDatos(){
     <div class="chart-shell">
       <div class="leyenda">
         <span class="item"><span class="sw" style="background:${MESO_COLORS[MESO_ACTIVO]};"></span>PFinicial (test al empezar)</span>
-        <span class="item"><span class="sw" style="background:var(--amber);"></span>PFfinal (test al acabar)</span>
       </div>
       <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
     </div>
     <div class="tabla-datos-wrap">
       <table class="tabla-datos">
-        <thead><tr><th>Fecha</th><th>PFinicial (N)</th><th>PFfinal (N)</th><th>Fmax izq. (N)</th><th>Fmax der. (N)</th><th>Sesión</th></tr></thead>
+        <thead><tr><th>Fecha</th><th>PFinicial (N)</th><th>Fmax izq. (N)</th><th>Fmax der. (N)</th><th>Sesión</th></tr></thead>
         <tbody>${(PORMESOCICLO[MESO_ACTIVO] || []).map(h => h.entrenada
-          ? `<tr><td>${escapeHtml(h.fecha)}</td><td>${h.pfInicial}</td><td>${h.pfFinal ?? '—'}</td><td>${h.fmaxIzq ?? '—'}</td><td>${h.fmaxDer ?? '—'}</td><td>Entrenada</td></tr>`
-          : `<tr><td>${escapeHtml(h.fecha)}</td><td>${h.pfInicial}</td><td class="no-entrenada">—</td><td class="no-entrenada">—</td><td class="no-entrenada">—</td><td class="no-entrenada">No recuperado</td></tr>`
+          ? `<tr><td>${escapeHtml(h.fecha)}</td><td>${h.pfInicial}</td><td>${h.fmaxIzq ?? '—'}</td><td>${h.fmaxDer ?? '—'}</td><td>Entrenada</td></tr>`
+          : `<tr><td>${escapeHtml(h.fecha)}</td><td>${h.pfInicial}</td><td class="no-entrenada">—</td><td class="no-entrenada">—</td><td class="no-entrenada">No recuperado</td></tr>`
         ).join('')}</tbody>
       </table>
     </div>`;
