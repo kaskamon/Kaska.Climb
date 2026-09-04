@@ -31,8 +31,8 @@
   --moss-deep:#4d5c46;
 
   --roca-roco: #7c9070;
-  --sesion-roco: #6f8ea6;
-  --descanso: #a65d53;
+  --sesion-roco: #7791a0;
+  --descanso: #a3695c;
   --gym-antagonistas: #8d9187;
 }
 
@@ -209,17 +209,18 @@ select.head-select option {
 }
 
 .sesion {
-  background: var(--stone-700);
+  background: var(--stone-800);
   padding: 8px 12px;
   border-radius: 8px;
   cursor: move;
-  border: 1px solid rgba(0,0,0,0.15);
+  border: 1px solid rgba(242,237,225,0.16);
   flex-grow: 1;
   display: flex;
   align-items: center;
+  gap: 8px;
   min-height: 45px;
   text-transform: uppercase;
-  color: var(--stone-900);
+  color: var(--chalk-dim);
   font-weight: 700;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   transition: transform 0.15s ease, filter 0.15s ease;
@@ -227,14 +228,22 @@ select.head-select option {
      scroll/selección de texto en vez de dejarle el gesto a Sortable. */
   touch-action: none;
 }
+.sesion::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
+}
 .sesion:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.25);
 }
 
-.sesion.roca { background-color: var(--roca-roco) !important; }
-.sesion.sesion-roco { background-color: var(--sesion-roco) !important; }
-.sesion.descanso { background-color: var(--descanso) !important; }
-.sesion.gym { background-color: var(--gym-antagonistas) !important; }
+.sesion.roca { color: var(--roca-roco) !important; border-color: rgba(124,144,112,0.35) !important; }
+.sesion.sesion-roco { color: var(--sesion-roco) !important; border-color: rgba(119,145,160,0.35) !important; }
+.sesion.descanso { color: var(--descanso) !important; border-color: rgba(163,105,92,0.35) !important; }
+.sesion.gym { color: var(--gym-antagonistas) !important; border-color: rgba(141,145,135,0.35) !important; }
 
 .sesion-contenido {
   display: grid;

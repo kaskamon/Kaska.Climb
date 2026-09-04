@@ -90,12 +90,13 @@
   .sesiones-dia{ display:flex; flex-wrap:wrap; gap:8px; flex:1; justify-content:flex-end; }
   .chip-sesion{
     display:inline-flex; align-items:center; justify-content:center; gap:6px;
-    background:var(--moss); color:var(--stone-900); border:none;
+    background:var(--stone-800); color:var(--moss); border:1px solid rgba(242,237,225,0.16);
     width:150px; min-height:44px; padding:8px 10px; border-radius:10px; font-weight:800; font-size:11.5px;
     letter-spacing:0.3px; text-transform:uppercase; text-decoration:none; text-align:center; line-height:1.25;
     box-shadow:0 6px 18px rgba(0,0,0,0.25); transition:transform .15s ease, filter .2s ease;
   }
-  .chip-sesion:hover{ filter:brightness(1.12); transform:translateY(-1px); }
+  .chip-sesion:hover{ filter:brightness(1.25); transform:translateY(-1px); }
+  .chip-sesion .punto{ width:7px; height:7px; border-radius:50%; background:currentColor; flex:0 0 auto; }
   .chip-sesion .flecha{ font-size:14px; }
   .chip-sesion.chip-estatica{ cursor:default; box-shadow:none; }
   .chip-sesion.chip-estatica:hover{ transform:none; }
@@ -156,7 +157,7 @@ const CLIENTE = params.get('cliente');     // email — identificador real
 const NOMBRE_PARAM = params.get('nombre'); // solo para mostrar
 const NOMBRE_DISPLAY = NOMBRE_PARAM || CLIENTE;
 
-const { TITULOS, CATEGORIA_VISUAL, COLOR_POR_TIPO } = window.MESOCICLOS_CONFIG || {};
+const { TITULOS, CATEGORIA_VISUAL, COLOR_POR_TIPO, BORDE_POR_TIPO } = window.MESOCICLOS_CONFIG || {};
 const SIN_ENLACE = ['ROCA', 'DESCANSO']; // días sin sesión diseñada — no llevan a cliente/sesion.html
 
 const NOMBRES_DIA = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
@@ -262,12 +263,14 @@ async function cargar(){
         contenidoDerecha = `<div class="sesiones-dia">` + sesiones.map(mesociclo => {
           const cat = CATEGORIA_VISUAL && CATEGORIA_VISUAL[mesociclo];
           const color = (COLOR_POR_TIPO && cat && COLOR_POR_TIPO[cat.tipo]) || 'var(--moss)';
+          const borde = (BORDE_POR_TIPO && cat && BORDE_POR_TIPO[cat.tipo]) || 'rgba(242,237,225,0.16)';
+          const estilo = `color:${color}; border-color:${borde};`;
           if(SIN_ENLACE.includes(mesociclo)){
-            return `<span class="chip-sesion chip-estatica" style="background:${color};">${escapeHtml(tituloMesociclo(mesociclo))}</span>`;
+            return `<span class="chip-sesion chip-estatica" style="${estilo}"><span class="punto"></span>${escapeHtml(tituloMesociclo(mesociclo))}</span>`;
           }
           const qsSesion = new URLSearchParams({ cliente: CLIENTE, fecha, mesociclo });
           if(NOMBRE_PARAM) qsSesion.set('nombre', NOMBRE_PARAM);
-          return `<a class="chip-sesion" href="sesion.html?${qsSesion.toString()}" style="background:${color};">${escapeHtml(tituloMesociclo(mesociclo))}<span class="flecha">→</span></a>`;
+          return `<a class="chip-sesion" href="sesion.html?${qsSesion.toString()}" style="${estilo}"><span class="punto"></span>${escapeHtml(tituloMesociclo(mesociclo))}<span class="flecha">→</span></a>`;
         }).join('') + `</div>`;
       } else {
         contenidoDerecha = `<div class="sin-sesion">Sin sesión programada</div>`;

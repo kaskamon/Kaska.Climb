@@ -144,11 +144,20 @@
   // detallados de CATEGORIA_VISUAL, uno por mesociclo, porque ahí sí importa
   // distinguir REOX de AERO de DESOX de FMAX de un vistazo.
   var COLOR_POR_TIPO = {
-    sesion: '#6f8ea6',
+    sesion: '#7791a0',
     gym: '#8d9187',
     roca: '#7c9070',
-    descanso: '#a65d53',
+    descanso: '#a3695c',
   };
 
-  return { COLUMNS: COLUMNS, FIELD_MAP: FIELD_MAP, TITULOS: TITULOS, CATEGORIA_VISUAL: CATEGORIA_VISUAL, COLOR_POR_TIPO: COLOR_POR_TIPO };
+  // Borde a juego con cada color de COLOR_POR_TIPO (mismo tono, 35% opacidad)
+  // para el formato de chip "punto + borde" sobre fondo oscuro.
+  var BORDE_POR_TIPO = {
+    sesion: 'rgba(119,145,160,0.35)',
+    gym: 'rgba(141,145,135,0.35)',
+    roca: 'rgba(124,144,112,0.35)',
+    descanso: 'rgba(163,105,92,0.35)',
+  };
+
+  return { COLUMNS: COLUMNS, FIELD_MAP: FIELD_MAP, TITULOS: TITULOS, CATEGORIA_VISUAL: CATEGORIA_VISUAL, COLOR_POR_TIPO: COLOR_POR_TIPO, BORDE_POR_TIPO: BORDE_POR_TIPO };
 });
