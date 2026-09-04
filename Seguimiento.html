@@ -69,9 +69,16 @@
   .stat-tile .delta.down{ color:var(--danger); }
 
   .chart-shell{ background:var(--stone-800); border:1px solid var(--line); border-radius:16px; padding:22px 22px 12px; margin-bottom:26px; }
-  .chart-shell .leyenda{ display:flex; gap:18px; margin-bottom:6px; flex-wrap:wrap; }
-  .leyenda .item{ display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--chalk-dim); font-weight:600; }
-  .leyenda .sw{ width:14px; height:3px; border-radius:2px; }
+  .chart-shell .leyenda{ display:flex; gap:10px; margin-bottom:6px; flex-wrap:wrap; }
+  .leyenda .item{
+    display:flex; align-items:center; gap:7px; font-size:11.5px; color:var(--chalk-dim); font-weight:600;
+    background:none; border:1px solid var(--line-strong); border-radius:99px; padding:5px 12px 5px 9px;
+    cursor:pointer; font-family:inherit; transition:all .15s ease;
+  }
+  .leyenda .item:hover{ border-color:var(--chalk-faint); }
+  .leyenda .item.off{ color:var(--chalk-faint); opacity:0.55; }
+  .leyenda .item.off .sw{ opacity:0.4; }
+  .leyenda .sw{ width:14px; height:3px; border-radius:2px; flex:0 0 auto; }
   .chart-holder{ position:relative; }
   .chart-holder svg{ display:block; width:100%; height:auto; overflow:visible; }
   .grafica .eje-label{ font-size:10.5px; fill:var(--chalk-faint); font-family:'Work Sans',sans-serif; }
@@ -130,6 +137,17 @@ const MESO_COLORS = { REOX:'#7c9070', AERO:'#93859e', DESOX:'#70908c', FMAX:'#c1
 let PORMESOCICLO = null;
 let MESO_ACTIVO = 'REOX';
 
+// Qué líneas se ven en la gráfica — las 3 son informativas por igual
+// (PFinicial y Fmax 5" mano der./izq.), así que se pueden activar y
+// desactivar por separado en vez de forzar verlas siempre todas juntas.
+const VARIABLES = {
+  pfInicial: { label: 'PFinicial (test al empezar)', color: null }, // null = color del mesociclo activo
+  fmaxDer:   { label: 'Fmax 5" mano derecha', color: '#c99a5b' },
+  fmaxIzq:   { label: 'Fmax 5" mano izquierda', color: '#6f8ea6' },
+};
+const VARIABLES_ACTIVAS = { pfInicial: true, fmaxDer: true, fmaxIzq: true };
+let HISTORIAL_ACTUAL = null;
+
 function escapeHtml(str){
   return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
@@ -143,8 +161,11 @@ function dibujarGrafica(svg, historial, colorPrincipal){
   const plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
 
   const soloValores = campo => historial.map(h => h[campo]).filter(v => v !== undefined && v !== null);
-  const todosLosValores = [...soloValores('pfInicial'), ...soloValores('fmaxDer'), ...soloValores('fmaxIzq')];
-  const rawMin = Math.min(...todosLosValores), rawMax = Math.max(...todosLosValores);
+  const camposActivos = Object.keys(VARIABLES).filter(c => VARIABLES_ACTIVAS[c]);
+  const todosLosValores = camposActivos.flatMap(soloValores);
+  const hayValores = todosLosValores.length > 0;
+  const rawMin = hayValores ? Math.min(...todosLosValores) : 0;
+  const rawMax = hayValores ? Math.max(...todosLosValores) : 10;
   const margen = Math.max(6, (rawMax - rawMin) * 0.12);
   const yMin = Math.floor((rawMin - margen) / 5) * 5;
   const yMax = Math.ceil((rawMax + margen) / 5) * 5;
@@ -188,9 +209,9 @@ function dibujarGrafica(svg, historial, colorPrincipal){
     return s;
   }
 
-  svgStr += trazado(historial.map(h=>h.pfInicial), colorPrincipal, true);
-  svgStr += trazado(historial.map(h=>h.fmaxDer), '#c99a5b', false);
-  svgStr += trazado(historial.map(h=>h.fmaxIzq), '#6f8ea6', false);
+  if(VARIABLES_ACTIVAS.pfInicial) svgStr += trazado(historial.map(h=>h.pfInicial), colorPrincipal, true);
+  if(VARIABLES_ACTIVAS.fmaxDer) svgStr += trazado(historial.map(h=>h.fmaxDer), VARIABLES.fmaxDer.color, false);
+  if(VARIABLES_ACTIVAS.fmaxIzq) svgStr += trazado(historial.map(h=>h.fmaxIzq), VARIABLES.fmaxIzq.color, false);
 
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.innerHTML = svgStr;
@@ -254,10 +275,13 @@ function pintarDatos(){
       <div class="stat-tile"><div class="k">Sesiones no recuperadas</div><div class="v">${noRecuperadas}<small>/${historial.length + noRecuperadas}</small></div></div>
     </div>
     <div class="chart-shell">
-      <div class="leyenda">
-        <span class="item"><span class="sw" style="background:${MESO_COLORS[MESO_ACTIVO]};"></span>PFinicial (test al empezar)</span>
-        <span class="item"><span class="sw" style="background:#c99a5b;"></span>Fmax 5&quot; mano derecha</span>
-        <span class="item"><span class="sw" style="background:#6f8ea6;"></span>Fmax 5&quot; mano izquierda</span>
+      <div class="leyenda" id="leyendaVariables">
+        ${Object.keys(VARIABLES).map(campo => {
+          const v = VARIABLES[campo];
+          const color = v.color || MESO_COLORS[MESO_ACTIVO];
+          const off = !VARIABLES_ACTIVAS[campo];
+          return `<button type="button" class="item${off?' off':''}" data-campo="${campo}"><span class="sw" style="background:${color};"></span>${escapeHtml(v.label)}</button>`;
+        }).join('')}
       </div>
       <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
     </div>
@@ -271,7 +295,17 @@ function pintarDatos(){
       </table>
     </div>`;
 
+  HISTORIAL_ACTUAL = historial;
   dibujarGrafica(document.getElementById('chartPF'), historial, MESO_COLORS[MESO_ACTIVO]);
+
+  document.getElementById('leyendaVariables').querySelectorAll('[data-campo]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const campo = btn.dataset.campo;
+      VARIABLES_ACTIVAS[campo] = !VARIABLES_ACTIVAS[campo];
+      btn.classList.toggle('off', !VARIABLES_ACTIVAS[campo]);
+      dibujarGrafica(document.getElementById('chartPF'), HISTORIAL_ACTUAL, MESO_COLORS[MESO_ACTIVO]);
+    });
+  });
 }
 
 (async function init(){
