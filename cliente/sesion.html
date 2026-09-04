@@ -477,10 +477,13 @@ function renderParte(parte, ultimaValida){
 
   // GYM-FMAX agrupa varios ejercicios sueltos bajo un mismo bloque (press
   // banca, press militar, dominadas, bloqueos...) — cada uno necesita su
-  // propio check. El resto de mesociclos, incluido el circuito de
-  // antagonistas (pensado para hacerse seguido como un único bloque),
-  // mantiene un solo check para todo el bloque.
-  const unCheckPorEjercicio = MESOCICLO === 'GYM-FMAX' && ejercicios.length > 1;
+  // propio check. Pero un día GYM-FMAX puede incluir también un circuito
+  // (p.ej. de antagonistas, como prevención), que está pensado para hacerse
+  // seguido como un único bloque — así que no basta con mirar el mesociclo
+  // del día, hay que mirar el bloque en concreto: si su título contiene
+  // "circuito", se queda con un solo check para todo.
+  const esCircuito = /circuito/i.test(parte.titulo || '');
+  const unCheckPorEjercicio = MESOCICLO === 'GYM-FMAX' && ejercicios.length > 1 && !esCircuito;
 
   if(unCheckPorEjercicio){
     ejercicios.forEach(ej => {
