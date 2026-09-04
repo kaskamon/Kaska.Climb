@@ -621,8 +621,30 @@ function abrirSelectorFecha() {
 function actualizarFecha(val) {
   if (!val) return;
 
-  const [y, m, d] = val.split('-');
-  document.getElementById('displayDate').innerText = `${d}/${m}/${y}`;
+  let [y, m, d] = val.split('-').map(Number);
+  const fecha = new Date(y, m - 1, d);
+  const diaSemana = fecha.getDay(); // 0=Dom, 1=Lun, ... 6=Sáb
+
+  // La "Fecha" es siempre el lunes de la semana (fechaParaDiaIndice suma el
+  // índice de cada día a partir de aquí) — si se elige otro día de la
+  // semana por error, toda la tabla se publica desplazada (el lunes que
+  // diseñaste pasa a aparecer con la fecha de ese otro día). Lo corregimos
+  // aquí mismo, al lunes de esa misma semana, en vez de dejar que se publique así.
+  if (diaSemana !== 1) {
+    const offset = diaSemana === 0 ? -6 : 1 - diaSemana;
+    fecha.setDate(fecha.getDate() + offset);
+    y = fecha.getFullYear();
+    m = fecha.getMonth() + 1;
+    d = fecha.getDate();
+    const yyyy = String(y).padStart(4, '0');
+    const mm = String(m).padStart(2, '0');
+    const dd = String(d).padStart(2, '0');
+    document.getElementById('hiddenDate').value = `${yyyy}-${mm}-${dd}`;
+  }
+
+  const ddStr = String(d).padStart(2, '0');
+  const mmStr = String(m).padStart(2, '0');
+  document.getElementById('displayDate').innerText = `${ddStr}/${mmStr}/${y}`;
 }
 
 function limpiarTabla() {
