@@ -165,8 +165,8 @@
               </div>
             </div>
             <div class="campo">
-              <label>Fecha de nacimiento <small>(opcional, dd/mm/aaaa)</small></label>
-              <input type="text" id="fechaNacimiento" placeholder="dd/mm/aaaa" style="max-width:200px;">
+              <label>Fecha de nacimiento <small>(opcional)</small></label>
+              <input type="date" id="fechaNacimiento" style="max-width:200px;" max="2020-01-01">
             </div>
           </div>
         </div>
@@ -258,6 +258,11 @@ document.getElementById('formAlta').addEventListener('submit', async (e) => {
   const modalidadEl = document.querySelector('.modalidad-opt.on');
   const disponibilidad = Array.from(document.querySelectorAll('.dia-check.on')).map(el => el.dataset.dia);
 
+  // El input type="date" da aaaa-mm-dd — lo pasamos a dd/mm/aaaa, que es el
+  // formato que usa el resto de la app (fecha de nacimiento en Clientes.html).
+  const fechaNacValor = document.getElementById('fechaNacimiento').value;
+  const fechaNacimiento = fechaNacValor ? fechaNacValor.split('-').reverse().join('/') : '';
+
   const btn = document.getElementById('btnEnviar');
   btn.disabled = true;
   btn.textContent = 'Enviando...';
@@ -270,7 +275,7 @@ document.getElementById('formAlta').addEventListener('submit', async (e) => {
         accion: 'alta',
         nombre, apellidos, correo,
         telefono: document.getElementById('telefono').value.trim(),
-        fechaNacimiento: document.getElementById('fechaNacimiento').value.trim(),
+        fechaNacimiento,
         modalidad: modalidadEl ? modalidadEl.dataset.valor : '',
         disponibilidad,
         lesion: document.getElementById('lesion').value.trim(),
