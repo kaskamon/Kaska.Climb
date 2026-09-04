@@ -560,9 +560,13 @@ function wireInteractividad(ultimaValida){
     const topbar = document.querySelector('.topbar');
     function updateProgress(){
       const threshold = topbar.offsetHeight + 40;
+      // Si ya no queda más página por debajo (estás al final del todo, p.ej.
+      // en el botón Enviar), se da por completo aunque el último bloque no
+      // quepa entero por encima de la línea de referencia antes de eso.
+      const alFinalDeTodo = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
       blocks.forEach((block, i) => {
         const rect = block.getBoundingClientRect();
-        const frac = rect.height > 0 ? Math.min(1, Math.max(0, (threshold - rect.top) / rect.height)) : 0;
+        const frac = alFinalDeTodo ? 1 : (rect.height > 0 ? Math.min(1, Math.max(0, (threshold - rect.top) / rect.height)) : 0);
         fills[i].style.width = (frac * 100) + '%';
       });
     }
