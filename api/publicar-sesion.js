@@ -105,10 +105,14 @@ module.exports = async (req, res) => {
     const cortePorAntiguedad = lunesDe(new Date());
     cortePorAntiguedad.setDate(cortePorAntiguedad.getDate() - 7);
 
-    // Nunca puede haber 2 mesociclos reales (REOX/AERO/DESOX/FMAX/TAPERING)
+    // Nunca puede haber 2 días reales de sesión (REOX/AERO/DESOX/FMAX/TAPERING)
     // en la misma semana de un cliente — si esta publicación es de uno de
-    // ellos, cualquier fila de otro mesociclo real en la misma semana se
-    // considera obsoleta (el trainer cambió de idea) y se borra también.
+    // ellos, cualquier otra fila real en la misma semana se considera
+    // obsoleta (el trainer cambió de día o de idea) y se borra también. Esto
+    // tiene que valer aunque sea EL MISMO mesociclo en otro día (p.ej.
+    // publicar FMAX el sábado tras haberlo publicado por error el viernes) —
+    // antes solo se comparaba con mesociclos distintos, así que ese caso
+    // dejaba el día viejo huérfano en el Sheet.
     const esSesionReal = CATEGORIA_VISUAL[mesociclo] && CATEGORIA_VISUAL[mesociclo].tipo === 'sesion';
     const lunesPublicado = lunesDe(parseFechaDDMMYYYY(fecha) || new Date()).getTime();
 
@@ -124,10 +128,10 @@ module.exports = async (req, res) => {
       const esMismoDia = f[2] === fecha;
       const fechaFila = parseFechaDDMMYYYY(f[2]);
       const esAntigua = fechaFila ? lunesDe(fechaFila) < cortePorAntiguedad : false;
-      const esOtroMesocicloRealMismaSemana = esSesionReal && f[3] !== mesociclo
+      const esOtroDiaRealMismaSemana = esSesionReal && !esMismoDia
         && CATEGORIA_VISUAL[f[3]] && CATEGORIA_VISUAL[f[3]].tipo === 'sesion'
         && fechaFila && lunesDe(fechaFila).getTime() === lunesPublicado;
-      if (esMismoDia || esAntigua || esOtroMesocicloRealMismaSemana) indicesABorrar.push(i);
+      if (esMismoDia || esAntigua || esOtroDiaRealMismaSemana) indicesABorrar.push(i);
     });
 
     if (hoja && indicesABorrar.length) {
