@@ -262,6 +262,13 @@ select.head-select option {
 .btn-del-sesion:hover {
   opacity: 1;
 }
+/* La X solo tiene sentido una vez la sesión está colocada en un día de la
+   semana — en el banco (las plantillas de origen) se oculta, porque
+   arrastrar clona la plantilla y borrar el original la quitaría del banco
+   entero. */
+#banco .btn-del-sesion {
+  display: none;
+}
 
 
 .btn-action {
