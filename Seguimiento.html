@@ -142,8 +142,9 @@ function dibujarGrafica(svg, historial, colorPrincipal){
   const W = 640, H = 260;
   const plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
 
-  const valoresPFinicial = historial.map(h => h.pfInicial).filter(v => v !== undefined && v !== null);
-  const rawMin = Math.min(...valoresPFinicial), rawMax = Math.max(...valoresPFinicial);
+  const soloValores = campo => historial.map(h => h[campo]).filter(v => v !== undefined && v !== null);
+  const todosLosValores = [...soloValores('pfInicial'), ...soloValores('fmaxDer'), ...soloValores('fmaxIzq')];
+  const rawMin = Math.min(...todosLosValores), rawMax = Math.max(...todosLosValores);
   const margen = Math.max(6, (rawMax - rawMin) * 0.12);
   const yMin = Math.floor((rawMin - margen) / 5) * 5;
   const yMax = Math.ceil((rawMax + margen) / 5) * 5;
@@ -188,6 +189,8 @@ function dibujarGrafica(svg, historial, colorPrincipal){
   }
 
   svgStr += trazado(historial.map(h=>h.pfInicial), colorPrincipal, true);
+  svgStr += trazado(historial.map(h=>h.fmaxDer), '#c99a5b', false);
+  svgStr += trazado(historial.map(h=>h.fmaxIzq), '#6f8ea6', false);
 
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   svg.innerHTML = svgStr;
@@ -253,6 +256,8 @@ function pintarDatos(){
     <div class="chart-shell">
       <div class="leyenda">
         <span class="item"><span class="sw" style="background:${MESO_COLORS[MESO_ACTIVO]};"></span>PFinicial (test al empezar)</span>
+        <span class="item"><span class="sw" style="background:#c99a5b;"></span>Fmax 5&quot; mano derecha</span>
+        <span class="item"><span class="sw" style="background:#6f8ea6;"></span>Fmax 5&quot; mano izquierda</span>
       </div>
       <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
     </div>
