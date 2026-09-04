@@ -203,7 +203,8 @@ function renderAccesosRapidos(driveUrl){
 
   let html = `
     <a class="acceso-chip" href="historial.html${sufijo}">Tu historial</a>
-    <a class="acceso-chip" href="perfil-fisiologico.html${sufijo}">Perfil fisiológico</a>`;
+    <a class="acceso-chip" href="perfil-fisiologico.html${sufijo}">Perfil fisiológico</a>
+    <a class="acceso-chip" href="macrociclo.html${sufijo}">Macrociclo</a>`;
   if(driveUrl){
     html += `<a class="acceso-chip" href="${escapeHtml(driveUrl)}" target="_blank" rel="noopener">Tus documentos</a>`;
   }

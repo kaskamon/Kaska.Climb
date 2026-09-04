@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<link rel="manifest" href="/manifest-cliente.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kaska.Climb">
+<link rel="apple-touch-icon" href="/logo-192.png">
+<meta name="theme-color" content="#1c211e">
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Tu macrociclo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e; --stone-800:#262d28; --stone-700:#333b34;
+    --chalk:#f2ede1; --chalk-dim:#c9c3b4; --chalk-faint:#8d9187;
+    --moss:#7c9070; --moss-light:#a7bd98; --moss-deep:#4d5c46;
+    --amber:#c99a5b; --danger:#c9705b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    background: radial-gradient(120% 90% at 15% 0%, #262d28 0%, var(--stone-900) 55%, #121614 100%);
+    color:var(--chalk); font-family:'Work Sans', sans-serif; position:relative;
+  }
+  .fondo-logo{
+    position:fixed; top:0; left:0; width:100vw; height:100vh; height:100dvh;
+    background-image:url('/logo.png');
+    background-repeat:no-repeat; background-position:center; background-size:cover;
+    opacity:0.2; z-index:-10;
+  }
+  h1,h2,h3{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.5px; margin:0; }
+
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:rgba(28,33,30,0.92); backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(242,237,225,0.1);
+  }
+  .topbar-inner{ max-width:900px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px; font-weight:700; color:var(--moss-light); text-transform:uppercase; }
+  .eyebrow::before{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .back-btn{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.16); color:var(--chalk);
+    padding:9px 14px; border-radius:10px; font-size:12px; font-weight:700; letter-spacing:0.5px;
+    text-transform:uppercase; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    text-decoration:none; transition:all .2s ease;
+  }
+  .back-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+
+  .wrap{ max-width:900px; margin:0 auto; padding:24px 24px 90px; }
+  .estado-carga, .estado-error{ max-width:760px; margin:60px auto; padding:0 24px; text-align:center; color:var(--chalk-dim); }
+  .estado-error{ color:var(--chalk); }
+  .estado-error h2{ font-size:22px; color:var(--danger); margin-bottom:10px; }
+
+  .cabecera h1{ font-size:28px; margin-bottom:6px; }
+  .cabecera h1 span{ color:var(--moss); }
+  .cabecera .sub{ font-size:13px; color:var(--chalk-dim); margin-bottom:24px; }
+
+  .panel{
+    background:rgba(38,45,40,0.55); border:1px solid rgba(242,237,225,0.12);
+    border-radius:20px; padding:26px 24px; backdrop-filter:blur(8px); margin-bottom:20px;
+  }
+
+  .resumen{ display:flex; gap:28px; flex-wrap:wrap; margin-bottom:22px; }
+  .resumen .item .k{ font-size:10.5px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--chalk-faint); margin-bottom:4px; }
+  .resumen .item .v{ font-family:'Anton', sans-serif; font-size:20px; color:var(--chalk); }
+
+  .barra-wrap{ background:rgba(0,0,0,0.2); border:1px solid rgba(242,237,225,0.08); border-radius:12px; padding:4px; }
+  .barra{ display:flex; width:100%; height:56px; gap:2px; }
+  .bloque{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:var(--stone-900); font-weight:800; font-size:12.5px; border-radius:6px; text-align:center;
+  }
+  .bloque .semanas-label{ font-size:10.5px; font-weight:600; opacity:0.85; }
+
+  .lista-bloques{ margin-top:18px; display:flex; flex-direction:column; gap:8px; }
+  .fila-bloque{
+    display:flex; align-items:center; gap:12px; padding:11px 14px;
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.1); border-radius:10px;
+  }
+  .fila-bloque .punto{ width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
+  .fila-bloque .nombre{ font-weight:700; font-size:13.5px; flex:1; }
+  .fila-bloque .semanas{ font-size:12px; color:var(--chalk-dim); font-weight:600; }
+  .fila-bloque .fechas{ font-size:11.5px; color:var(--chalk-faint); font-variant-numeric:tabular-nums; min-width:110px; text-align:right; }
+
+  .vacio{
+    text-align:center; padding:50px 20px; color:var(--chalk-dim);
+    background:rgba(38,45,40,0.4); border:1px dashed rgba(242,237,225,0.15); border-radius:16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="fondo-logo"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="eyebrow">Kaska.Climb</div>
+    <a class="back-btn" id="btnVolver" href="semana.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Atrás
+    </a>
+  </div>
+</div>
+
+<div class="wrap" id="wrap" hidden>
+  <div class="cabecera">
+    <h1>Tu <span>macrociclo</span></h1>
+    <div class="sub" id="subTxt"></div>
+  </div>
+  <div id="contenido"></div>
+</div>
+
+<div class="estado-carga" id="estadoCarga">Cargando tu macrociclo…</div>
+<div class="estado-error" id="estadoError" hidden>
+  <h2>No se pudo cargar tu macrociclo</h2>
+  <p id="estadoErrorTexto"></p>
+</div>
+
+<script>
+const FASE_INFO = {
+  fmax:  { titulo: 'FMAX',     color: '#c17c74' },
+  desox: { titulo: 'DESOX',    color: '#70908c' },
+  reox:  { titulo: 'REOX',     color: '#7c9070' },
+  aero:  { titulo: 'AERO',     color: '#93859e' },
+  tap:   { titulo: 'TAPERING', color: '#c99a5b' },
+};
+
+const params = new URLSearchParams(window.location.search);
+const CLIENTE = params.get('cliente');
+const NOMBRE_PARAM = params.get('nombre');
+
+function escapeHtml(str){
+  return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function mostrarError(mensaje){
+  document.getElementById('estadoCarga').hidden = true;
+  document.getElementById('wrap').hidden = true;
+  document.getElementById('estadoError').hidden = false;
+  document.getElementById('estadoErrorTexto').textContent = mensaje;
+}
+if(!CLIENTE){
+  mostrarError('No hemos podido identificarte. Vuelve a iniciar sesión desde la pantalla de acceso.');
+  throw new Error('Falta cliente');
+}
+(function(){
+  const qs = new URLSearchParams();
+  qs.set('cliente', CLIENTE);
+  if(NOMBRE_PARAM) qs.set('nombre', NOMBRE_PARAM);
+  document.getElementById('btnVolver').href = 'semana.html?' + qs.toString();
+})();
+
+function formatearFecha(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  if(!y || !m || !d) return iso;
+  return `${d}/${m}/${y}`;
+}
+
+function renderPlan(plan){
+  const bloques = plan.bloques || [];
+  const totalSemanas = bloques.reduce((s,b) => s + (Number(b.semanas) || 0), 0);
+
+  let fechaActual = plan.inicio ? new Date(plan.inicio + 'T00:00:00') : null;
+  const bloquesConFechas = bloques.map(b => {
+    const info = FASE_INFO[b.fase] || { titulo: (b.fase || '').toUpperCase(), color: 'var(--moss)' };
+    let inicioBloque = null, finBloque = null;
+    if(fechaActual){
+      inicioBloque = new Date(fechaActual);
+      const fin = new Date(fechaActual);
+      fin.setDate(fin.getDate() + (b.semanas * 7) - 1);
+      finBloque = fin;
+      fechaActual = new Date(fin);
+      fechaActual.setDate(fechaActual.getDate() + 1);
+    }
+    return { ...b, info, inicioBloque, finBloque };
+  });
+
+  const barraHtml = bloquesConFechas.map(b => `
+    <div class="bloque" style="flex:${b.semanas}; background:${b.info.color};">
+      <span>${escapeHtml(b.info.titulo)}</span>
+      <span class="semanas-label">${b.semanas}S</span>
+    </div>`).join('');
+
+  const listaHtml = bloquesConFechas.map(b => {
+    const rango = b.inicioBloque && b.finBloque
+      ? `${b.inicioBloque.toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'})} – ${b.finBloque.toLocaleDateString('es-ES', {day:'2-digit', month:'2-digit'})}`
+      : '';
+    return `
+      <div class="fila-bloque">
+        <span class="punto" style="background:${b.info.color};"></span>
+        <span class="nombre">${escapeHtml(b.info.titulo)}</span>
+        <span class="semanas">${b.semanas} semana${b.semanas === 1 ? '' : 's'}</span>
+        <span class="fechas">${rango}</span>
+      </div>`;
+  }).join('');
+
+  document.getElementById('contenido').innerHTML = `
+    <div class="panel">
+      <div class="resumen">
+        <div class="item"><div class="k">Inicio</div><div class="v">${formatearFecha(plan.inicio) || '—'}</div></div>
+        <div class="item"><div class="k">Fin</div><div class="v">${formatearFecha(plan.fin) || '—'}</div></div>
+        <div class="item"><div class="k">Duración total</div><div class="v">${totalSemanas} semanas</div></div>
+      </div>
+      <div class="barra-wrap"><div class="barra">${barraHtml}</div></div>
+      <div class="lista-bloques">${listaHtml}</div>
+    </div>`;
+}
+
+async function cargar(){
+  try{
+    const res = await fetch('/api/macrociclo?' + new URLSearchParams({ cliente: CLIENTE }).toString());
+    const data = await res.json();
+    if(!data.success){
+      mostrarError(data.error || 'Ha ocurrido un error inesperado.');
+      return;
+    }
+
+    document.getElementById('subTxt').textContent = NOMBRE_PARAM ? `Plan de temporada de ${NOMBRE_PARAM}` : 'Tu plan de temporada';
+
+    if(!data.plan){
+      document.getElementById('contenido').innerHTML = `<div class="vacio">Todavía no tienes ningún macrociclo publicado. Pregunta a tu entrenador.</div>`;
+    }else{
+      renderPlan(data.plan);
+    }
+
+    document.getElementById('estadoCarga').hidden = true;
+    document.getElementById('wrap').hidden = false;
+  }catch(err){
+    mostrarError('Error de red: ' + err.message);
+  }
+}
+cargar();
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
