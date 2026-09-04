@@ -575,7 +575,12 @@ function act() {
         // editable sin que se confunda con querer arrastrar.
         delay: 150,
         delayOnTouchOnly: true,
-        touchStartThreshold: 5,
+        // El HTML5 drag nativo del navegador apenas funciona bien en
+        // tablet/móvil — forceFallback hace que sea el propio Sortable
+        // quien simule el arrastre entero con eventos táctiles, en vez de
+        // dejárselo al navegador.
+        forceFallback: true,
+        fallbackTolerance: 5,
       });
     });
 
@@ -588,7 +593,8 @@ function act() {
       sort: false,
       delay: 150,
       delayOnTouchOnly: true,
-      touchStartThreshold: 5,
+      forceFallback: true,
+      fallbackTolerance: 5,
     });
   } else {
     alert("No se ha cargado Sortable.min.js. Revisa que esté en la carpeta libs.");
