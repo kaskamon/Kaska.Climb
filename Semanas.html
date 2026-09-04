@@ -581,9 +581,14 @@ function act() {
         group: 's',
         // En táctil, un pequeño retraso antes de iniciar el arrastre deja
         // que un toque normal siga sirviendo para tocar la X o el texto
-        // editable sin que se confunda con querer arrastrar.
+        // editable sin que se confunda con querer arrastrar. Sin
+        // touchStartThreshold, el más mínimo temblor del dedo durante esa
+        // espera (unos pocos px — inevitable con un dedo real, a diferencia
+        // del ratón) cancela el arrastre antes de que llegue a empezar, que
+        // es justo lo que pasaba en tablet.
         delay: 150,
         delayOnTouchOnly: true,
+        touchStartThreshold: 15,
       });
     });
 
@@ -596,6 +601,7 @@ function act() {
       sort: false,
       delay: 150,
       delayOnTouchOnly: true,
+      touchStartThreshold: 15,
     });
   } else {
     alert("No se ha cargado Sortable.min.js. Revisa que esté en la carpeta libs.");
