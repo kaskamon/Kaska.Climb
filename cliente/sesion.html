@@ -479,10 +479,13 @@ function renderParte(parte, ultimaValida){
   // título (press banca, press militar, dominadas, bloqueos...) — cada uno
   // necesita su propio check, sea cual sea el mesociclo del día (pueden
   // aparecer también dentro de una sesión FMAX/REOX normal, no solo en un
-  // día GYM-FMAX). La excepción es un circuito (p.ej. de antagonistas,
-  // prevención), pensado para hacerse seguido como un único bloque: si el
-  // título del bloque contiene "circuito", se queda con un solo check.
-  const esCircuito = /circuito/i.test(parte.titulo || '');
+  // día GYM-FMAX). La excepción es un circuito (p.ej. de antagonistas al
+  // final de una sesión ROCO, o de prevención), pensado para hacerse
+  // seguido como un único bloque: si el título O la descripción del bloque
+  // contiene "circuito" — la palabra no siempre está en el título, a veces
+  // solo en la descripción ("Circuito de Fmax de la musculatura
+  // antagonista...") — se queda con un solo check para todo.
+  const esCircuito = /circuito/i.test((parte.titulo || '') + ' ' + (parte.descripcion || ''));
   const unCheckPorEjercicio = ejercicios.length > 1 && !esCircuito;
 
   if(unCheckPorEjercicio){
