@@ -57,8 +57,13 @@
   .seccion-titulo::after{ content:""; flex:1; height:1px; background:var(--line-strong); }
 
   .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  .campo{ display:flex; flex-direction:column; gap:7px; margin-bottom:16px; }
-  .campo:last-child{ margin-bottom:0; }
+  /* El espaciado vertical entre grupos de campos vive en el propio contenedor
+     (gap), no en cada .campo — así es uniforme tanto si van en pareja
+     (.grid2, 2 columnas en escritorio) como apilados (móvil, 1 columna). Un
+     margin-bottom + :last-child por campo se rompía al apilarse: cada pareja
+     perdía su margen final por separado, dejando huecos irregulares. */
+  .seccion-contenido{ display:flex; flex-direction:column; gap:16px; }
+  .campo{ display:flex; flex-direction:column; gap:7px; }
   .campo label{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--chalk-dim); }
   .campo label small{ text-transform:none; font-weight:400; color:var(--chalk-faint); letter-spacing:0; }
   .campo input, .campo select, .campo textarea{
@@ -135,58 +140,62 @@
       <form id="formAlta" novalidate>
         <div class="seccion">
           <div class="seccion-titulo">Datos de contacto</div>
-          <div class="grid2">
-            <div class="campo" id="campo-nombre">
-              <label>Nombre</label>
-              <input type="text" id="nombre" placeholder="Tu nombre">
-              <span class="error-msg">Obligatorio</span>
+          <div class="seccion-contenido">
+            <div class="grid2">
+              <div class="campo" id="campo-nombre">
+                <label>Nombre</label>
+                <input type="text" id="nombre" placeholder="Tu nombre">
+                <span class="error-msg">Obligatorio</span>
+              </div>
+              <div class="campo" id="campo-apellidos">
+                <label>Apellidos</label>
+                <input type="text" id="apellidos" placeholder="Tus apellidos">
+                <span class="error-msg">Obligatorio</span>
+              </div>
             </div>
-            <div class="campo" id="campo-apellidos">
-              <label>Apellidos</label>
-              <input type="text" id="apellidos" placeholder="Tus apellidos">
-              <span class="error-msg">Obligatorio</span>
-            </div>
-          </div>
-          <div class="grid2">
-            <div class="campo" id="campo-correo">
-              <label>Correo electrónico</label>
-              <input type="email" id="correo" placeholder="tucorreo@ejemplo.com">
-              <span class="error-msg">Escribe un correo válido</span>
+            <div class="grid2">
+              <div class="campo" id="campo-correo">
+                <label>Correo electrónico</label>
+                <input type="email" id="correo" placeholder="tucorreo@ejemplo.com">
+                <span class="error-msg">Escribe un correo válido</span>
+              </div>
+              <div class="campo">
+                <label>Teléfono <small>(opcional)</small></label>
+                <input type="tel" id="telefono" placeholder="600 000 000">
+              </div>
             </div>
             <div class="campo">
-              <label>Teléfono <small>(opcional)</small></label>
-              <input type="tel" id="telefono" placeholder="600 000 000">
+              <label>Fecha de nacimiento <small>(opcional, dd/mm/aaaa)</small></label>
+              <input type="text" id="fechaNacimiento" placeholder="dd/mm/aaaa" style="max-width:200px;">
             </div>
-          </div>
-          <div class="campo">
-            <label>Fecha de nacimiento <small>(opcional, dd/mm/aaaa)</small></label>
-            <input type="text" id="fechaNacimiento" placeholder="dd/mm/aaaa" style="max-width:200px;">
           </div>
         </div>
 
         <div class="seccion">
           <div class="seccion-titulo">Tu entrenamiento</div>
-          <div class="campo">
-            <label>Modalidad</label>
-            <div class="modalidad-grid" id="modalidadGrid">
-              <div class="modalidad-opt" data-valor="Deportiva">
-                <div class="t">Deportiva</div>
-              </div>
-              <div class="modalidad-opt" data-valor="Boulder">
-                <div class="t">Boulder</div>
+          <div class="seccion-contenido">
+            <div class="campo">
+              <label>Modalidad</label>
+              <div class="modalidad-grid" id="modalidadGrid">
+                <div class="modalidad-opt" data-valor="Deportiva">
+                  <div class="t">Deportiva</div>
+                </div>
+                <div class="modalidad-opt" data-valor="Boulder">
+                  <div class="t">Boulder</div>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="campo">
-            <label>Disponibilidad para entrenar <small>(opcional)</small></label>
-            <div class="dias-grid" id="diasGrid">
-              <label class="dia-check" data-dia="Lunes"><input type="checkbox">Lun</label>
-              <label class="dia-check" data-dia="Martes"><input type="checkbox">Mar</label>
-              <label class="dia-check" data-dia="Miércoles"><input type="checkbox">Mié</label>
-              <label class="dia-check" data-dia="Jueves"><input type="checkbox">Jue</label>
-              <label class="dia-check" data-dia="Viernes"><input type="checkbox">Vie</label>
-              <label class="dia-check" data-dia="Sábado"><input type="checkbox">Sáb</label>
-              <label class="dia-check" data-dia="Domingo"><input type="checkbox">Dom</label>
+            <div class="campo">
+              <label>Disponibilidad para entrenar <small>(opcional)</small></label>
+              <div class="dias-grid" id="diasGrid">
+                <label class="dia-check" data-dia="Lunes"><input type="checkbox">Lun</label>
+                <label class="dia-check" data-dia="Martes"><input type="checkbox">Mar</label>
+                <label class="dia-check" data-dia="Miércoles"><input type="checkbox">Mié</label>
+                <label class="dia-check" data-dia="Jueves"><input type="checkbox">Jue</label>
+                <label class="dia-check" data-dia="Viernes"><input type="checkbox">Vie</label>
+                <label class="dia-check" data-dia="Sábado"><input type="checkbox">Sáb</label>
+                <label class="dia-check" data-dia="Domingo"><input type="checkbox">Dom</label>
+              </div>
             </div>
           </div>
         </div>
