@@ -18,6 +18,9 @@ const RUTAS_PUBLICAS = [
   '/logo.png',
   '/logo-192.png',
   '/logo-512.png',
+  '/favicon.ico',
+  '/apple-touch-icon.png',
+  '/apple-touch-icon-precomposed.png',
 ];
 
 export default function middleware(request) {
