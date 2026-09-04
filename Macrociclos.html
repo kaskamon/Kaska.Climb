@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kaska.Climb | Macrociclos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="libs/clientes-selector.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -261,15 +261,16 @@
             <div class="eyebrow">Kaska.Climb</div>
             <h1 id="titulo-container">
                 <span class="titulo-fijo">Macrociclo</span>
-                <span id="nombre-editable" contenteditable="true" onblur="autoGuardar()">Mikel García</span>
+                <span id="nombre-editable">—</span>
             </h1>
         </div>
         <div class="fechas">
-            <div>Inicio: <input type="date" id="fechaInicio" onchange="calcularTotal(); autoGuardar();"></div>
+            <div>Inicio: <input type="date" id="fechaInicio" onchange="calcularTotal();"></div>
             <div>Fin: <input type="date" id="fechaFin" readonly></div>
         </div>
     </div>
     <div class="controls" id="controles-ui">
+        <select id="selectorCliente"><option value="">Cargando clientes…</option></select>
         <select id="fase">
             <option value="fmax">FMAX</option>
             <option value="desox">DESOX</option>
@@ -281,11 +282,11 @@
             <script>for(let i=1; i<=8; i++) document.write(`<option value="${i}">${i}S</option>`);</script>
         </select>
         <button onclick="agregarBloque()">Añadir</button>
-        <button onclick="guardarArchivo()">Guardar</button>
-        <button onclick="cargarArchivo()">Cargar</button>
+        <button onclick="cargarPlanCliente()">Cargar</button>
+        <button onclick="publicarPlan()" id="btnPublicar">Publicar</button>
         <button onclick="limpiarPlan()">Limpiar</button>
-        <button onclick="exportarPNG()">Exportar PNG</button>
     </div>
+    <div id="estadoMacrociclo" style="font-size:12px; color:var(--chalk-dim); margin:-12px 0 16px;"></div>
     <div id="pantalla-wrapper">
         <div id="pantalla"></div>
         <div id="contenedor-fechas" style="display: flex; width: 100%;"></div>
@@ -301,39 +302,19 @@
 </div>
 
 <script>
-    const PLAN_POR_DEFECTO = {
-        "nombre": "Mikel García",
-        "inicio": "2026-06-29",
-        "bloques": [
-            {"fase": "reox", "semanas": 6}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 4},
-            {"fase": "desox", "semanas": 4}, {"fase": "tap", "semanas": 2}, {"fase": "fmax", "semanas": 3}, {"fase": "aero", "semanas": 4}
-        ]
-    };
-
-    function autoGuardar() {
-        const data = {
-            nombre: document.getElementById('nombre-editable').innerText,
-            inicio: document.getElementById('fechaInicio').value,
-            bloques: Array.from(document.querySelectorAll('.bloque')).map(b => ({
-                fase: b.className.split(' ')[1],
-                semanas: parseInt(b.style.flex)
-            }))
-        };
-        localStorage.setItem('kaskaPlan', JSON.stringify(data));
-    }
+    let CLIENTE_ACTUAL = '';
 
     function agregarBloque(fase = document.getElementById('fase').value, duracion = parseInt(document.getElementById('duracion').value)) {
         const b = document.createElement('div');
         b.className = 'bloque ' + fase;
         b.style.flex = duracion;
-        b.innerHTML = `<span>${fase.toUpperCase()}</span><span class="semanas-label">${duracion}S</span><button class="btn-borrar" onclick="event.stopPropagation(); this.parentElement.remove(); calcularTotal(); autoGuardar();">X</button>`;
+        b.innerHTML = `<span>${fase.toUpperCase()}</span><span class="semanas-label">${duracion}S</span><button class="btn-borrar" onclick="event.stopPropagation(); this.parentElement.remove(); calcularTotal();">X</button>`;
         b.addEventListener('click', (e) => {
             if (e.target.classList.contains('btn-borrar')) return;
             editarDuracion(b);
         });
         document.getElementById('pantalla').appendChild(b);
         calcularTotal();
-        autoGuardar();
     }
 
     function editarDuracion(bloque) {
@@ -350,26 +331,86 @@
         bloque.style.flex = nueva;
         bloque.querySelector('.semanas-label').innerText = nueva + 'S';
         calcularTotal();
-        autoGuardar();
     }
-    
+
     function limpiarPlan() {
         document.getElementById('pantalla').innerHTML = '';
         document.getElementById('contenedor-fechas').innerHTML = '';
-        localStorage.setItem('kaskaPlan', 'vacio');
         document.getElementById('totalSemanas').innerText = '0';
         document.getElementById('fechaFin').value = '';
-        document.getElementById('nombre-editable').innerText = '';
         document.getElementById('fechaInicio').value = '';
     }
 
-    window.onload = () => {
-        const dataGuardada = localStorage.getItem('kaskaPlan');
-        let data = (!dataGuardada || dataGuardada === 'vacio') ? PLAN_POR_DEFECTO : JSON.parse(dataGuardada);
-        document.getElementById('nombre-editable').innerText = data.nombre !== undefined ? data.nombre : "Mikel García";
-        document.getElementById('fechaInicio').value = data.inicio;
-        data.bloques.forEach(b => agregarBloque(b.fase, b.semanas));
-    };
+    function nombreClienteSeleccionado() {
+        const sel = document.getElementById('selectorCliente');
+        return sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex].text : '';
+    }
+
+    async function cargarPlanCliente() {
+        const email = document.getElementById('selectorCliente').value;
+        const estado = document.getElementById('estadoMacrociclo');
+        if (!email) { alert('Elige primero un cliente.'); return; }
+        CLIENTE_ACTUAL = email;
+        estado.textContent = 'Cargando…';
+        try {
+            const res = await fetch('/api/macrociclo?' + new URLSearchParams({ cliente: email }));
+            const data = await res.json();
+            if (!data.success) { estado.textContent = ''; alert(data.error || 'No se pudo cargar.'); return; }
+
+            limpiarPlan();
+            document.getElementById('nombre-editable').innerText = nombreClienteSeleccionado();
+
+            if (!data.plan) {
+                estado.textContent = 'Este cliente todavía no tiene ningún macrociclo publicado — puedes crear uno nuevo.';
+                return;
+            }
+            document.getElementById('fechaInicio').value = data.plan.inicio || '';
+            data.plan.bloques.forEach(b => agregarBloque(b.fase, b.semanas));
+            estado.textContent = 'Último macrociclo publicado de ' + nombreClienteSeleccionado() + '.';
+        } catch (e) {
+            estado.textContent = '';
+            alert('Error de red: ' + e.message);
+        }
+    }
+
+    async function publicarPlan() {
+        if (!CLIENTE_ACTUAL) { alert('Primero elige un cliente y pulsa Cargar (o elige uno y añade bloques).'); return; }
+        const bloques = Array.from(document.querySelectorAll('.bloque')).map(b => ({
+            fase: b.className.split(' ')[1],
+            semanas: parseInt(b.style.flex)
+        }));
+        if (!bloques.length) { alert('Añade al menos un bloque antes de publicar.'); return; }
+
+        const btn = document.getElementById('btnPublicar');
+        const estado = document.getElementById('estadoMacrociclo');
+        btn.disabled = true; btn.textContent = 'Publicando…';
+        try {
+            const res = await fetch('/api/macrociclo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    correo: CLIENTE_ACTUAL,
+                    nombre: nombreClienteSeleccionado(),
+                    inicio: document.getElementById('fechaInicio').value,
+                    fin: document.getElementById('fechaFin').value,
+                    bloques,
+                }),
+            });
+            const data = await res.json();
+            estado.textContent = data.success ? 'Publicado correctamente.' : '';
+            if (!data.success) alert(data.error || 'No se pudo publicar.');
+        } catch (e) {
+            alert('Error de red: ' + e.message);
+        }
+        btn.disabled = false; btn.textContent = 'Publicar';
+    }
+
+    (async function initSelector() {
+        const sel = document.getElementById('selectorCliente');
+        await cargarSelectorClientes(sel);
+        sel.addEventListener('change', () => { if (sel.value) cargarPlanCliente(); });
+        if (sel.value) cargarPlanCliente();
+    })();
 
     function calcularTotal() {
         let t = 0;
@@ -405,66 +446,7 @@
         }
     }
 
-    function guardarArchivo() { 
-        const blob = new Blob([localStorage.getItem('kaskaPlan')], {type: 'application/json'});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'plan.json'; a.click(); 
-    }
-
-    function cargarArchivo() {
-        const input = document.createElement('input'); input.type = 'file';
-        input.onchange = e => {
-            const reader = new FileReader();
-            reader.onload = event => { localStorage.setItem('kaskaPlan', event.target.result); location.reload(); };
-            reader.readAsText(e.target.files[0]);
-        };
-        input.click();
-    }
-
-    async function exportarPNG() {
-        calcularTotal();
-        const controles = document.getElementById('controles-ui');
-        const navBottom = document.getElementById('nav-bottom-container');
-        const botonesBorrar = document.querySelectorAll('.btn-borrar');
-        const element = document.getElementById('export-area');
-
-        controles.style.display = 'none';
-        navBottom.style.display = 'none';
-        botonesBorrar.forEach(btn => btn.style.display = 'none');
-
-        try {
-            const contentCanvas = await html2canvas(element, {
-                backgroundColor: null,
-                scale: 2,
-                useCORS: true,
-                allowTaint: true
-            });
-
-            const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = contentCanvas.width;
-            finalCanvas.height = contentCanvas.height;
-            const ctx = finalCanvas.getContext('2d');
-
-            ctx.fillStyle = '#494d4b';
-            ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
-
-            ctx.drawImage(contentCanvas, 0, 0);
-
-            const link = document.createElement('a');
-            link.download = 'Macrociclo.png';
-            link.href = finalCanvas.toDataURL('image/png');
-            link.click();
-
-        } catch (e) {
-            console.error(e);
-            alert("Error al generar la imagen: " + e.message);
-        } finally {
-            controles.style.display = 'flex';
-            navBottom.style.display = 'block';
-            botonesBorrar.forEach(btn => btn.style.display = 'inline-block');
-        }
-    }
-
-    new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => { calcularTotal(); autoGuardar(); } });
+    new Sortable(document.getElementById('pantalla'), { animation: 200, onSort: () => calcularTotal() });
 </script>
 </body>
 </html>
