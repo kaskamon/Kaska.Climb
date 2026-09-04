@@ -144,7 +144,7 @@
 
 <script>
 const COL_LABELS = {
-  estado: 'Estado', telefono: 'Teléfono', fechaNacimiento: 'Fecha de nacimiento',
+  estado: 'Estado', duracion: 'Duración (meses)', telefono: 'Teléfono', fechaNacimiento: 'Fecha de nacimiento',
   lesion: '¿Lesión?', modalidad: 'Modalidad', disponibilidad: 'Disponibilidad', drive: 'Carpeta Drive',
 };
 
@@ -155,6 +155,35 @@ let correoEditando = null;
 
 function escapeHtml(str){
   return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// La automatización de altas (Apps Script) da por defecto 3 meses de contrato
+// cuando la duración está en blanco — replicamos la misma regla aquí para que
+// la fecha de vencimiento que se ve coincida con la que realmente se aplica.
+function parseFechaAlta(marcaTemporal){
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(marcaTemporal || '');
+  if(!m) return null;
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+}
+function calcularVencimiento(c){
+  const alta = parseFechaAlta(c.marcaTemporal);
+  if(!alta) return null;
+  const meses = Number(c.duracion) > 0 ? Number(c.duracion) : 3;
+  const vence = new Date(alta);
+  vence.setMonth(vence.getMonth() + meses);
+  return vence;
+}
+function formatearFecha(d){
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+function celdaVencimiento(c){
+  const vence = calcularVencimiento(c);
+  if(!vence) return '—';
+  const diasRestantes = Math.round((vence - new Date()) / 86400000);
+  const texto = formatearFecha(vence);
+  if(diasRestantes < 0) return `<span style="color:var(--danger); font-weight:700;">${texto} (vencido)</span>`;
+  if(diasRestantes <= 14) return `<span style="color:var(--amber); font-weight:700;">${texto}</span>`;
+  return texto;
 }
 
 async function cargarClientes(){
@@ -200,6 +229,7 @@ function filaEdicion(c){
             </select>
           </div>
           ${campo('telefono', 'Teléfono', c.telefono)}
+          ${campo('duracion', 'Duración (meses) <small>vacío = 3 por defecto</small>', c.duracion, 'number')}
           <div class="campo">
             <label>Modalidad</label>
             <select id="edit-modalidad">
@@ -230,7 +260,7 @@ function render(){
     return;
   }
   let html = `<div class="tabla-scroll"><table class="tabla-clientes"><thead><tr>
-    <th>Cliente</th><th>Estado</th><th>Modalidad</th><th>Disponibilidad</th><th>Teléfono</th><th>Fecha de nacimiento</th><th></th>
+    <th>Cliente</th><th>Estado</th><th>Modalidad</th><th>Disponibilidad</th><th>Teléfono</th><th>Vence</th><th></th>
   </tr></thead><tbody>`;
   lista.forEach(c => {
     const editando = c.email === correoEditando;
@@ -240,7 +270,7 @@ function render(){
       <td>${escapeHtml(c.modalidad || '—')}</td>
       <td>${escapeHtml(c.disponibilidad || '—')}</td>
       <td>${escapeHtml(c.telefono || '—')}</td>
-      <td>${escapeHtml(c.fechaNacimiento || '—')}</td>
+      <td>${celdaVencimiento(c)}</td>
       <td><button class="btn-fila" data-editar="${escapeHtml(c.email)}">${editando ? 'Cerrar' : 'Editar'}</button></td>
     </tr>`;
     if(editando) html += filaEdicion(c);
@@ -262,6 +292,7 @@ function render(){
       const cliente = TODOS_LOS_CLIENTES.find(c => c.email === correoEditando);
       const campos = {
         estado: document.getElementById('edit-estado').value,
+        duracion: document.getElementById('edit-duracion').value,
         telefono: document.getElementById('edit-telefono').value,
         modalidad: document.getElementById('edit-modalidad').value,
         disponibilidad: document.getElementById('edit-disponibilidad').value,

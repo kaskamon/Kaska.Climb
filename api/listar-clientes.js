@@ -15,7 +15,7 @@ const COL = {
 // real en toda la app (se usa como clave en todos los demás Sheets), así que
 // deliberadamente no es editable aquí; Nombre/Apellidos tampoco, para no
 // arriesgar una fila "huérfana" si alguna vez se usaran para emparejar algo.
-const CAMPOS_EDITABLES = ['estado', 'telefono', 'fechaNacimiento', 'lesion', 'modalidad', 'disponibilidad', 'drive'];
+const CAMPOS_EDITABLES = ['estado', 'duracion', 'telefono', 'fechaNacimiento', 'lesion', 'modalidad', 'disponibilidad', 'drive'];
 
 function authSheets() {
   const auth = new google.auth.GoogleAuth({
@@ -67,6 +67,7 @@ async function manejarGet(req, res, sheets) {
   }
 
   const clientes = filas
+    .slice(1) // saltamos la cabecera (su celda de correo no está vacía: "Correo electrónico")
     .filter(f => (f[COL.correo] || '').trim())
     .map(f => {
       const nombre = (f[COL.nombre] || '').trim();
@@ -92,9 +93,9 @@ async function manejarGet(req, res, sheets) {
   res.status(200).json({ success: true, clientes });
 }
 
-// POST — edita un cliente existente. Body: { correo, campos: { estado, telefono,
-// fechaNacimiento, lesion, modalidad, disponibilidad, drive } } (solo hace
-// falta incluir los campos que se quieran cambiar).
+// POST — edita un cliente existente. Body: { correo, campos: { estado, duracion,
+// telefono, fechaNacimiento, lesion, modalidad, disponibilidad, drive } } (solo
+// hace falta incluir los campos que se quieran cambiar).
 async function manejarPost(req, res, sheets) {
   const { correo, campos } = req.body || {};
   if (!correo || !campos || typeof campos !== 'object') {
@@ -119,7 +120,7 @@ async function manejarPost(req, res, sheets) {
   }
   const filaSheet = indiceFila + 1; // A1: fila 1 = índice 0
 
-  const LETRA_COL = { estado: 'B', telefono: 'F', fechaNacimiento: 'H', lesion: 'I', modalidad: 'J', disponibilidad: 'K', drive: 'L' };
+  const LETRA_COL = { estado: 'B', duracion: 'C', telefono: 'F', fechaNacimiento: 'H', lesion: 'I', modalidad: 'J', disponibilidad: 'K', drive: 'L' };
   const data = CAMPOS_EDITABLES
     .filter(campo => Object.prototype.hasOwnProperty.call(campos, campo))
     .map(campo => ({
