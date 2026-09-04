@@ -105,10 +105,19 @@
     color: var(--chalk);
   }
 
-  .botones-menu { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 14px; 
+  .botones-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  /* Portátil o tablet en horizontal: 2 filas de 4, manteniendo el orden. En
+     móvil (por debajo de este ancho) se queda tal cual, en una columna. */
+  @media (min-width: 768px) {
+    .botones-menu {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+    }
   }
   
   .btn-menu {
@@ -166,8 +175,8 @@
             <a href="Batería test.html" class="btn-menu">Batería test</a>
             <a href="Clientes.html" class="btn-menu">Clientes</a>
             <a href="Seguimiento.html" class="btn-menu">Seguimiento</a>
-            <a href="login.html" class="btn-menu" style="border-color:var(--moss); color:var(--moss-light);">Área de Cliente</a>
-            <a href="alta.html" class="btn-menu" style="border-color:var(--moss); color:var(--moss-light);">Alta de Cliente</a>
+            <a href="login.html" class="btn-menu">Área de Cliente</a>
+            <a href="alta.html" class="btn-menu">Alta de Cliente</a>
         </div>
     </div>
 
