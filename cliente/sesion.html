@@ -475,15 +475,15 @@ function renderParte(parte, ultimaValida){
     html += renderRefFmax(ultimaValida);
   }
 
-  // GYM-FMAX agrupa varios ejercicios sueltos bajo un mismo bloque (press
-  // banca, press militar, dominadas, bloqueos...) — cada uno necesita su
-  // propio check. Pero un día GYM-FMAX puede incluir también un circuito
-  // (p.ej. de antagonistas, como prevención), que está pensado para hacerse
-  // seguido como un único bloque — así que no basta con mirar el mesociclo
-  // del día, hay que mirar el bloque en concreto: si su título contiene
-  // "circuito", se queda con un solo check para todo.
+  // Los bloques de gimnasio agrupan varios ejercicios sueltos bajo un mismo
+  // título (press banca, press militar, dominadas, bloqueos...) — cada uno
+  // necesita su propio check, sea cual sea el mesociclo del día (pueden
+  // aparecer también dentro de una sesión FMAX/REOX normal, no solo en un
+  // día GYM-FMAX). La excepción es un circuito (p.ej. de antagonistas,
+  // prevención), pensado para hacerse seguido como un único bloque: si el
+  // título del bloque contiene "circuito", se queda con un solo check.
   const esCircuito = /circuito/i.test(parte.titulo || '');
-  const unCheckPorEjercicio = MESOCICLO === 'GYM-FMAX' && ejercicios.length > 1 && !esCircuito;
+  const unCheckPorEjercicio = ejercicios.length > 1 && !esCircuito;
 
   if(unCheckPorEjercicio){
     ejercicios.forEach(ej => {
