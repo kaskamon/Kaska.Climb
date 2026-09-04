@@ -1475,17 +1475,39 @@ const LABEL_TO_KEY = {
   boulder:   { 'Fmax agarre':'fmax', 'RFD 200ms':'rfd', 'Anae.':'anaerobico', 'Tracción':'trac' },
 };
 
+// Normaliza para comparar nombres sin que espacios, mayúsculas o acentos
+// den un falso "no coincide" (minúsculas, sin tildes, un solo espacio).
+function normalizarNombre(str){
+  return (str || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
 function publicarPerfil(kind){
   const data = perfilData[kind];
   const estadoEl = $(kind+'-estado-publicar');
   if(!data || !estadoEl) return;
 
-  const cliente = $(kind+'-cliente') ? $(kind+'-cliente').value : '';
+  const selCliente = $(kind+'-cliente');
+  const cliente = selCliente ? selCliente.value : '';
   const fechaVal = $('g-fecha') ? $('g-fecha').value : ''; // yyyy-mm-dd, fecha REAL del test (el campo "Fecha" general de Datos del cliente)
   if(!cliente || !fechaVal){
     estadoEl.textContent = 'Elige un cliente y la fecha (arriba, en Datos del cliente) antes de publicar.';
     estadoEl.className = 'estado-publicar error';
     return;
+  }
+
+  // El nombre de "Datos del cliente" (arriba, texto libre) y el desplegable
+  // de aquí abajo son dos campos independientes — si no coinciden, lo más
+  // probable es que el desplegable se quedara con la selección de un
+  // cliente anterior y no se haya cambiado. Se pide confirmación explícita
+  // en vez de publicar directo, para no colar un perfil en la cuenta que
+  // no toca.
+  const nombreArriba = normalizarNombre($('g-nombre') ? $('g-nombre').value : '');
+  const nombreDesplegable = normalizarNombre(selCliente.options[selCliente.selectedIndex] ? selCliente.options[selCliente.selectedIndex].text : '');
+  if(nombreArriba && nombreDesplegable && !nombreDesplegable.includes(nombreArriba) && !nombreArriba.includes(nombreDesplegable)){
+    const nombreMostrado = selCliente.options[selCliente.selectedIndex].text;
+    const sigue = confirm(`En "Datos del cliente" pone "${$('g-nombre').value}", pero vas a publicar en la cuenta de "${nombreMostrado}". ¿Son la misma persona y quieres continuar?`);
+    if(!sigue) return;
   }
   const [y, m, d] = fechaVal.split('-');
   const fecha = `${d}/${m}/${y}`;
