@@ -486,9 +486,12 @@ function renderParte(parte, ultimaValida){
   // seguido como un único bloque: si el título O la descripción del bloque
   // contiene "circuito" — la palabra no siempre está en el título, a veces
   // solo en la descripción ("Circuito de Fmax de la musculatura
-  // antagonista...") — se queda con un solo check para todo.
+  // antagonista...") — se queda con un solo check para todo. Lo mismo pasa
+  // con "Activación muscular analítica (dedos)": sus ejercicios se hacen
+  // seguidos como calentamiento, así que también van con un único check.
   const esCircuito = /circuito/i.test((parte.titulo || '') + ' ' + (parte.descripcion || ''));
-  const unCheckPorEjercicio = ejercicios.length > 1 && !esCircuito;
+  const esActivacionAnalitica = /activaci[oó]n muscular anal[ií]tica/i.test(parte.titulo || '');
+  const unCheckPorEjercicio = ejercicios.length > 1 && !esCircuito && !esActivacionAnalitica;
 
   if(unCheckPorEjercicio){
     ejercicios.forEach(ej => {
