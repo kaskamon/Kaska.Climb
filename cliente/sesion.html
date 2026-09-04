@@ -475,22 +475,40 @@ function renderParte(parte, ultimaValida){
     html += renderRefFmax(ultimaValida);
   }
 
-  exchkContador++;
-  html += `<div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-${exchkContador}" aria-label="Marcar como hecho">`;
-  if(ejercicios.length === 1){
-    html += `<div class="ex-row"><span class="ex-series full">${escapeHtml(ejercicios[0].series || '')}</span></div>`;
-  } else {
+  // GYM-FMAX agrupa varios ejercicios sueltos bajo un mismo bloque (press
+  // banca, press militar, dominadas, bloqueos...) — cada uno necesita su
+  // propio check. El resto de mesociclos, incluido el circuito de
+  // antagonistas (pensado para hacerse seguido como un único bloque),
+  // mantiene un solo check para todo el bloque.
+  const unCheckPorEjercicio = MESOCICLO === 'GYM-FMAX' && ejercicios.length > 1;
+
+  if(unCheckPorEjercicio){
     ejercicios.forEach(ej => {
+      exchkContador++;
+      html += `<div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-${exchkContador}" aria-label="Marcar como hecho">`;
       html += `<div class="ex-row"><span class="ex-name">${escapeHtml(ej.nombre || '')}</span><span class="ex-arrow">→</span><span class="ex-series">${escapeHtml(ej.series || '')}</span></div>`;
       const nota = limpiarNota(ej.notas);
       if(nota) html += `<div class="ex-subnote">${escapeHtml(nota)}</div>`;
+      html += `</div>`;
     });
-  }
-  html += `</div>`;
+  } else {
+    exchkContador++;
+    html += `<div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-${exchkContador}" aria-label="Marcar como hecho">`;
+    if(ejercicios.length === 1){
+      html += `<div class="ex-row"><span class="ex-series full">${escapeHtml(ejercicios[0].series || '')}</span></div>`;
+    } else {
+      ejercicios.forEach(ej => {
+        html += `<div class="ex-row"><span class="ex-name">${escapeHtml(ej.nombre || '')}</span><span class="ex-arrow">→</span><span class="ex-series">${escapeHtml(ej.series || '')}</span></div>`;
+        const nota = limpiarNota(ej.notas);
+        if(nota) html += `<div class="ex-subnote">${escapeHtml(nota)}</div>`;
+      });
+    }
+    html += `</div>`;
 
-  if(ejercicios.length === 1){
-    const nota = limpiarNota(ejercicios[0].notas);
-    if(nota) html += `<div class="step-note">${escapeHtml(nota)}</div>`;
+    if(ejercicios.length === 1){
+      const nota = limpiarNota(ejercicios[0].notas);
+      if(nota) html += `<div class="step-note">${escapeHtml(nota)}</div>`;
+    }
   }
 
   if(campo){
