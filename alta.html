@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Alta de cliente</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e; --stone-800:#262d28; --stone-700:#333b34;
+    --chalk:#f2ede1; --chalk-dim:#c9c3b4; --chalk-faint:#8d9187;
+    --moss:#7c9070; --moss-light:#a7bd98; --moss-deep:#4d5c46;
+    --amber:#c99a5b; --danger:#c9705b;
+    --line:rgba(242,237,225,0.10); --line-strong:rgba(242,237,225,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; color:var(--chalk); background:var(--stone-900);
+    font-family:'Work Sans', sans-serif; position:relative;
+  }
+  .fondo-logo{
+    position:fixed; top:0; left:0; width:100vw; height:100vh; height:100dvh;
+    background-image:url('/logo.png');
+    background-repeat:no-repeat; background-position:center; background-size:cover;
+    opacity:0.15; z-index:-10;
+  }
+  .fondo{
+    position:fixed; inset:0;
+    background: radial-gradient(120% 90% at 15% 0%, #262d28 0%, var(--stone-900) 55%, #121614 100%);
+    z-index:-11;
+  }
+  h1,h2{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.5px; margin:0; }
+
+  .wrap{ max-width:640px; margin:0 auto; padding:56px 24px 80px; }
+
+  .cabecera{ text-align:center; margin-bottom:36px; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px; font-weight:700; color:var(--moss-light); text-transform:uppercase; margin-bottom:14px; }
+  .eyebrow::before, .eyebrow::after{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .cabecera h1{ font-size:34px; margin-bottom:12px; }
+  .cabecera h1 span{ color:var(--moss); }
+  .cabecera p{ color:var(--chalk-dim); font-size:14px; line-height:1.6; max-width:46ch; margin:0 auto; }
+
+  .card{
+    background:rgba(38,45,40,0.55); border:1px solid var(--line-strong); border-radius:22px;
+    backdrop-filter:blur(8px); padding:34px 32px 32px; box-shadow:0 24px 70px rgba(0,0,0,0.35);
+  }
+
+  .seccion{ margin-bottom:28px; }
+  .seccion:last-of-type{ margin-bottom:0; }
+  .seccion-titulo{
+    font-size:10.5px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--moss-light); margin-bottom:16px; display:flex; align-items:center; gap:10px;
+  }
+  .seccion-titulo::after{ content:""; flex:1; height:1px; background:var(--line-strong); }
+
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .campo{ display:flex; flex-direction:column; gap:7px; margin-bottom:16px; }
+  .campo:last-child{ margin-bottom:0; }
+  .campo label{ font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.4px; color:var(--chalk-dim); }
+  .campo label small{ text-transform:none; font-weight:400; color:var(--chalk-faint); letter-spacing:0; }
+  .campo input, .campo select, .campo textarea{
+    background:var(--stone-800); border:1px solid var(--line-strong); color:var(--chalk);
+    border-radius:10px; padding:12px 14px; font-size:14px; font-family:inherit; width:100%;
+    transition:border-color .15s ease;
+  }
+  .campo input::placeholder, .campo textarea::placeholder{ color:var(--chalk-faint); }
+  .campo input:focus, .campo select:focus, .campo textarea:focus{ outline:none; border-color:var(--moss); }
+  .campo textarea{ resize:vertical; min-height:76px; line-height:1.5; }
+  .campo .error-msg{ display:none; font-size:11.5px; color:var(--danger); }
+  .campo.invalido input, .campo.invalido select{ border-color:var(--danger); }
+  .campo.invalido .error-msg{ display:block; }
+
+  .dias-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .dia-check{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    background:var(--stone-800); border:1px solid var(--line-strong); border-radius:9px;
+    padding:10px 6px; font-size:12px; font-weight:700; color:var(--chalk-dim); cursor:pointer;
+    transition:all .15s ease; user-select:none;
+  }
+  .dia-check.on{ background:rgba(124,144,112,0.18); border-color:var(--moss); color:var(--moss-light); }
+  .dia-check input{ display:none; }
+
+  .modalidad-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .modalidad-opt{
+    background:var(--stone-800); border:1px solid var(--line-strong); border-radius:12px;
+    padding:14px 16px; cursor:pointer; transition:all .15s ease; user-select:none;
+  }
+  .modalidad-opt.on{ background:rgba(124,144,112,0.14); border-color:var(--moss); }
+  .modalidad-opt .t{ font-weight:800; font-size:13.5px; color:var(--chalk); margin-bottom:2px; }
+  .modalidad-opt .d{ font-size:11.5px; color:var(--chalk-faint); }
+
+  .btn-enviar{
+    width:100%; background:var(--moss); color:var(--stone-900); border:none;
+    font-weight:800; font-size:13.5px; letter-spacing:0.5px; text-transform:uppercase;
+    padding:16px; border-radius:12px; cursor:pointer; font-family:inherit; margin-top:8px;
+    transition:background .15s ease;
+  }
+  .btn-enviar:hover{ background:var(--moss-light); }
+  .btn-enviar:disabled{ opacity:0.6; cursor:default; }
+  .nota-legal{ text-align:center; font-size:11.5px; color:var(--chalk-faint); margin-top:14px; line-height:1.5; }
+  .error-general{ display:none; background:rgba(201,112,91,0.14); border:1px solid rgba(201,112,91,0.4); color:var(--chalk); border-radius:10px; padding:12px 14px; font-size:12.5px; margin-bottom:20px; }
+  .error-general.show{ display:block; }
+
+  .exito{ display:none; text-align:center; }
+  .exito.show{ display:block; }
+  .exito .icono{ width:56px; height:56px; border-radius:50%; background:rgba(124,144,112,0.18); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; color:var(--moss-light); }
+  .exito h2{ font-size:24px; margin-bottom:10px; }
+  .exito h2 span{ color:var(--moss); }
+  .exito p{ color:var(--chalk-dim); font-size:13.5px; line-height:1.6; max-width:42ch; margin:0 auto; }
+
+  @media (max-width:560px){
+    .grid2, .modalidad-grid{ grid-template-columns:1fr; }
+    .card{ padding:26px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="fondo"></div>
+<div class="fondo-logo"></div>
+
+<div class="wrap">
+  <div class="cabecera">
+    <div class="eyebrow">Kaska.Climb</div>
+    <h1>Empieza tu <span>entrenamiento</span></h1>
+    <p>Cuéntame un poco sobre ti para preparar tu plan personalizado. Tardarás menos de 2 minutos.</p>
+  </div>
+
+  <div class="card">
+    <div id="vistaFormulario">
+      <div class="error-general" id="errorGeneral"></div>
+      <form id="formAlta" novalidate>
+        <div class="seccion">
+          <div class="seccion-titulo">Datos de contacto</div>
+          <div class="grid2">
+            <div class="campo" id="campo-nombre">
+              <label>Nombre</label>
+              <input type="text" id="nombre" placeholder="Mikel">
+              <span class="error-msg">Obligatorio</span>
+            </div>
+            <div class="campo" id="campo-apellidos">
+              <label>Apellidos</label>
+              <input type="text" id="apellidos" placeholder="García Artieda">
+              <span class="error-msg">Obligatorio</span>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="campo" id="campo-correo">
+              <label>Correo electrónico</label>
+              <input type="email" id="correo" placeholder="mikel@ejemplo.com">
+              <span class="error-msg">Escribe un correo válido</span>
+            </div>
+            <div class="campo">
+              <label>Teléfono <small>(opcional)</small></label>
+              <input type="tel" id="telefono" placeholder="669 131 223">
+            </div>
+          </div>
+          <div class="campo">
+            <label>Fecha de nacimiento <small>(opcional, dd/mm/aaaa)</small></label>
+            <input type="text" id="fechaNacimiento" placeholder="dd/mm/aaaa" style="max-width:200px;">
+          </div>
+        </div>
+
+        <div class="seccion">
+          <div class="seccion-titulo">Tu entrenamiento</div>
+          <div class="campo">
+            <label>Modalidad</label>
+            <div class="modalidad-grid" id="modalidadGrid">
+              <div class="modalidad-opt" data-valor="Deportiva">
+                <div class="t">Deportiva</div>
+                <div class="d">Vías largas, resistencia</div>
+              </div>
+              <div class="modalidad-opt" data-valor="Boulder">
+                <div class="t">Boulder</div>
+                <div class="d">Bloques, potencia</div>
+              </div>
+            </div>
+          </div>
+          <div class="campo">
+            <label>Disponibilidad para entrenar <small>(opcional)</small></label>
+            <div class="dias-grid" id="diasGrid">
+              <label class="dia-check" data-dia="Lunes"><input type="checkbox">Lun</label>
+              <label class="dia-check" data-dia="Martes"><input type="checkbox">Mar</label>
+              <label class="dia-check" data-dia="Miércoles"><input type="checkbox">Mié</label>
+              <label class="dia-check" data-dia="Jueves"><input type="checkbox">Jue</label>
+              <label class="dia-check" data-dia="Viernes"><input type="checkbox">Vie</label>
+              <label class="dia-check" data-dia="Sábado"><input type="checkbox">Sáb</label>
+              <label class="dia-check" data-dia="Domingo"><input type="checkbox">Dom</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="seccion">
+          <div class="seccion-titulo">Salud</div>
+          <div class="campo">
+            <label>¿Sufres alguna lesión, molestia o patología? <small>(opcional)</small></label>
+            <textarea id="lesion" placeholder="Cuéntame lo que deba tener en cuenta al diseñar tu plan..."></textarea>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-enviar" id="btnEnviar">Enviar solicitud</button>
+        <div class="nota-legal">Tus datos se usan solo para preparar tu entrenamiento — nunca se comparten con terceros.</div>
+      </form>
+    </div>
+
+    <div class="exito" id="vistaExito">
+      <div class="icono">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+      </div>
+      <h2>¡Listo, <span>bienvenido/a</span>!</h2>
+      <p>En breve recibirás un correo de bienvenida con el acceso a tu zona personal. Si no lo ves, revisa la carpeta de spam.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.dia-check').forEach(el => {
+  el.addEventListener('click', () => el.classList.toggle('on'));
+});
+document.querySelectorAll('.modalidad-opt').forEach(el => {
+  el.addEventListener('click', () => {
+    document.querySelectorAll('.modalidad-opt').forEach(o => o.classList.remove('on'));
+    el.classList.add('on');
+  });
+});
+
+function marcarError(idCampo, esError){
+  document.getElementById('campo-' + idCampo).classList.toggle('invalido', esError);
+}
+
+document.getElementById('formAlta').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorGeneral = document.getElementById('errorGeneral');
+  errorGeneral.classList.remove('show');
+
+  const nombre = document.getElementById('nombre').value.trim();
+  const apellidos = document.getElementById('apellidos').value.trim();
+  const correo = document.getElementById('correo').value.trim();
+
+  let valido = true;
+  marcarError('nombre', !nombre); if(!nombre) valido = false;
+  marcarError('apellidos', !apellidos); if(!apellidos) valido = false;
+  const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
+  marcarError('correo', !correoValido); if(!correoValido) valido = false;
+  if(!valido) return;
+
+  const modalidadEl = document.querySelector('.modalidad-opt.on');
+  const disponibilidad = Array.from(document.querySelectorAll('.dia-check.on')).map(el => el.dataset.dia);
+
+  const btn = document.getElementById('btnEnviar');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  try{
+    const res = await fetch('/api/listar-clientes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accion: 'alta',
+        nombre, apellidos, correo,
+        telefono: document.getElementById('telefono').value.trim(),
+        fechaNacimiento: document.getElementById('fechaNacimiento').value.trim(),
+        modalidad: modalidadEl ? modalidadEl.dataset.valor : '',
+        disponibilidad,
+        lesion: document.getElementById('lesion').value.trim(),
+      }),
+    });
+    const data = await res.json();
+    if(data.success){
+      document.getElementById('vistaFormulario').style.display = 'none';
+      document.getElementById('vistaExito').classList.add('show');
+    }else{
+      errorGeneral.textContent = data.error || 'No se ha podido enviar la solicitud.';
+      errorGeneral.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'Enviar solicitud';
+    }
+  }catch(err){
+    errorGeneral.textContent = 'Error de red: ' + err.message;
+    errorGeneral.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = 'Enviar solicitud';
+  }
+});
+</script>
+</body>
+</html>

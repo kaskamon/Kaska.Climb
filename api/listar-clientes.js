@@ -152,6 +152,69 @@ async function manejarPost(req, res, sheets) {
   res.status(200).json({ success: true, message: 'Cliente actualizado correctamente.' });
 }
 
+// POST (accion: 'alta') — alta de un cliente nuevo desde alta.html (público,
+// sin contraseña — lo rellena el propio cliente). Body: { accion:'alta',
+// nombre, apellidos, correo, telefono, fechaNacimiento, modalidad,
+// disponibilidad, lesion }. Al aparecer la fila nueva en el Sheet, el Apps
+// Script de altas (onChange) hace el resto solo: crea la carpeta de Drive y
+// manda el correo de bienvenida — no hace falta tocar nada de eso aquí.
+async function manejarAlta(req, res, sheets) {
+  const { nombre, apellidos, correo, telefono, fechaNacimiento, modalidad, disponibilidad, lesion } = req.body || {};
+
+  if (!nombre || !apellidos || !correo || !String(correo).includes('@')) {
+    return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (nombre, apellidos o un correo válido).' });
+  }
+
+  let filas;
+  try {
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${SHEET_NAME}'!A:N`,
+    });
+    filas = resp.data.values || [];
+  } catch (e) {
+    return res.status(500).json({ success: false, error: `No se pudo leer la base de datos de clientes (${e.message}).` });
+  }
+
+  const correoNuevo = correo.trim().toLowerCase();
+  const yaExiste = filas.some(f => (f[COL.correo] || '').trim().toLowerCase() === correoNuevo);
+  if (yaExiste) {
+    return res.status(409).json({
+      success: false,
+      error: 'Ya existe una cuenta con ese correo. Si es un error, contacta directamente con tu entrenador.',
+    });
+  }
+
+  const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
+  const disponibilidadTexto = Array.isArray(disponibilidad) ? disponibilidad.join(', ') : (disponibilidad || '');
+
+  const fila = new Array(14).fill('');
+  fila[COL.marcaTemporal] = marcaTemporal;
+  fila[COL.estado] = 'Activo';
+  fila[COL.nombre] = nombre;
+  fila[COL.apellidos] = apellidos;
+  fila[COL.telefono] = telefono || '';
+  fila[COL.correo] = correo.trim();
+  fila[COL.fechaNacimiento] = fechaNacimiento || '';
+  fila[COL.lesion] = lesion || '';
+  fila[COL.modalidad] = modalidad || '';
+  fila[COL.disponibilidad] = disponibilidadTexto;
+
+  try {
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${SHEET_NAME}'!A:N`,
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      requestBody: { values: [fila] },
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: `No se pudo guardar el alta (${e.message}).` });
+  }
+
+  res.status(200).json({ success: true, message: 'Alta registrada correctamente.' });
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Método no permitido, usa GET o POST.' });
@@ -166,6 +229,7 @@ module.exports = async (req, res) => {
     }
     const sheets = await authSheets();
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
+    if (req.body && req.body.accion === 'alta') return await manejarAlta(req, res, sheets);
     return await manejarPost(req, res, sheets);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

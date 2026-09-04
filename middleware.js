@@ -1,14 +1,16 @@
 // Portero de las herramientas del entrenador (Semanas, Sesiones, Clientes,
 // Seguimiento, Macrociclos, Batería test, index). Pide usuario/contraseña con
 // el popup nativo del navegador (HTTP Basic Auth) antes de servir esas
-// páginas. Las páginas de cliente/, login.html, libs/ y api/ quedan fuera
-// porque las usan los clientes reales sin fricción.
+// páginas. Las páginas de cliente/, login.html, alta.html, libs/ y api/
+// quedan fuera porque las usan clientes reales (o clientes nuevos que aún
+// no existen en el Sheet) sin fricción.
 //
 // La contraseña vive solo en Vercel (variables de entorno TRAINER_USER /
 // TRAINER_PASS), nunca en este archivo ni en el repo.
 
 const RUTAS_PUBLICAS = [
   '/login.html',
+  '/alta.html',
   '/manifest.json',
   '/manifest-cliente.json',
   '/sw.js',
