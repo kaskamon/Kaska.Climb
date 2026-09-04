@@ -226,18 +226,24 @@ function dibujarRadar(svg, capacidades, valoresA, valoresB, colorA){
     svg.appendChild(t);
   });
 
-  function poligono(valores, color, opacidad){
+  function poligono(valores, color, opacidad, marcarBajos){
     if(!valores) return;
     const pts = capacidades.map((c,i) => puntoEnEje(i, (valores[c.key]||0)/MAX_ESCALA));
     svg.appendChild(crear('polygon', { points: pts.map(p=>`${p.x},${p.y}`).join(' '), fill: color, 'fill-opacity': opacidad, stroke: color, 'stroke-width':2.5, 'stroke-linejoin':'round' }));
-    pts.forEach(p => svg.appendChild(crear('circle', { cx:p.x, cy:p.y, r:4.5, fill:'var(--stone-900)', stroke: color, 'stroke-width':2 })));
+    pts.forEach((p,i) => {
+      const bajo = marcarBajos && (capacidades[i] && valores[capacidades[i].key]) < 5;
+      const colorPunto = bajo ? '#c9705b' : color;
+      svg.appendChild(crear('circle', { cx:p.x, cy:p.y, r:bajo?5.5:4.5, fill: bajo ? colorPunto : 'var(--stone-900)', stroke: colorPunto, 'stroke-width':2 }));
+    });
   }
 
   // A siempre se pinta (referencia), B (si existe) se superpone. Sin nada
-  // que comparar, A va en verde (identidad de la app); en cuanto hay un
-  // segundo perfil, pasa a ámbar/gris para diferenciarlos entre sí.
-  poligono(valoresA, colorA, 0.16);
-  if(valoresB) poligono(valoresB, COLOR_GRIS, 0.30);
+  // que comparar, A va en verde (identidad de la app) con los puntos por
+  // debajo de 5 marcados en rojo directamente sobre la araña; en cuanto hay
+  // un segundo perfil, pasa a ámbar/gris para diferenciarlos entre sí (y ya
+  // no se marcan puntos bajos, se compara con la línea B en su lugar).
+  poligono(valoresA, colorA, 0.16, !valoresB);
+  if(valoresB) poligono(valoresB, COLOR_GRIS, 0.30, false);
 }
 
 function renderComparacion(modalidad, perfiles){
