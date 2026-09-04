@@ -223,6 +223,9 @@ select.head-select option {
   font-weight: 700;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   transition: transform 0.15s ease, filter 0.15s ease;
+  /* Sin esto, en tablet/móvil el navegador interpreta el toque como
+     scroll/selección de texto en vez de dejarle el gesto a Sortable. */
+  touch-action: none;
 }
 .sesion:hover {
   filter: brightness(1.08);
@@ -566,7 +569,13 @@ function act() {
   if (window.Sortable) {
     document.querySelectorAll('.dia-sesiones').forEach(d => {
       new Sortable(d, {
-        group: 's'
+        group: 's',
+        // En táctil, un pequeño retraso antes de iniciar el arrastre deja
+        // que un toque normal siga sirviendo para tocar la X o el texto
+        // editable sin que se confunda con querer arrastrar.
+        delay: 150,
+        delayOnTouchOnly: true,
+        touchStartThreshold: 5,
       });
     });
 
@@ -576,7 +585,10 @@ function act() {
         pull: 'clone',
         put: false
       },
-      sort: false
+      sort: false,
+      delay: 150,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 5,
     });
   } else {
     alert("No se ha cargado Sortable.min.js. Revisa que esté en la carpeta libs.");
