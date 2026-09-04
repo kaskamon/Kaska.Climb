@@ -182,7 +182,11 @@ if(!CLIENTE){
   document.getElementById('btnVolver').href = 'semana.html?' + qs.toString();
 })();
 
-function dibujarRadar(svg, capacidades, valoresA, valoresB, etiquetaA, etiquetaB){
+const COLOR_VERDE = '#7c9070';
+const COLOR_AMBAR = '#c99a5b';
+const COLOR_GRIS = '#8d9187';
+
+function dibujarRadar(svg, capacidades, valoresA, valoresB, colorA){
   const CENTRO = 210, RADIO = 150, N = capacidades.length;
   const MAX_ESCALA = 10, ANILLOS = [0,2,4,6,8,10];
 
@@ -229,9 +233,11 @@ function dibujarRadar(svg, capacidades, valoresA, valoresB, etiquetaA, etiquetaB
     pts.forEach(p => svg.appendChild(crear('circle', { cx:p.x, cy:p.y, r:4.5, fill:'var(--stone-900)', stroke: color, 'stroke-width':2 })));
   }
 
-  // A siempre se pinta (referencia), B (si existe) se superpone
-  poligono(valoresA, '#c99a5b', 0.16);
-  if(valoresB) poligono(valoresB, '#8d9187', 0.30);
+  // A siempre se pinta (referencia), B (si existe) se superpone. Sin nada
+  // que comparar, A va en verde (identidad de la app); en cuanto hay un
+  // segundo perfil, pasa a ámbar/gris para diferenciarlos entre sí.
+  poligono(valoresA, colorA, 0.16);
+  if(valoresB) poligono(valoresB, COLOR_GRIS, 0.30);
 }
 
 function renderComparacion(modalidad, perfiles){
@@ -249,11 +255,11 @@ function renderComparacion(modalidad, perfiles){
   contenido.innerHTML = `
     <div class="selectores">
       <div class="campo-fecha">
-        <label><span class="leyenda-fecha"><span class="dot" style="background:#c99a5b;"></span>Fecha A</span></label>
+        <label><span class="leyenda-fecha"><span class="dot" id="dotA"></span>Fecha A</span></label>
         <select id="selFechaA"></select>
       </div>
       <div class="campo-fecha">
-        <label><span class="leyenda-fecha"><span class="dot" style="background:#8d9187;"></span>Fecha B</span></label>
+        <label><span class="leyenda-fecha"><span class="dot" id="dotB" style="background:${COLOR_GRIS};"></span>Fecha B</span></label>
         <select id="selFechaB"></select>
       </div>
     </div>
@@ -276,8 +282,14 @@ function renderComparacion(modalidad, perfiles){
 
   function actualizar(){
     const a = perfiles[Number(selA.value)];
-    const b = perfiles.length >= 2 ? perfiles[Number(selB.value)] : null;
-    dibujarRadar(document.getElementById('radar-svg'), capacidades, a.capacidades, b ? b.capacidades : null);
+    const b = (perfiles.length >= 2 && Number(selB.value) !== Number(selA.value)) ? perfiles[Number(selB.value)] : null;
+    const comparando = !!b;
+    const colorA = comparando ? COLOR_AMBAR : COLOR_VERDE;
+
+    document.getElementById('dotA').style.background = colorA;
+    document.getElementById('dotB').style.background = COLOR_GRIS;
+
+    dibujarRadar(document.getElementById('radar-svg'), capacidades, a.capacidades, b ? b.capacidades : null, colorA);
 
     document.getElementById('tablaComparacion').innerHTML = capacidades.map(c => {
       const va = a.capacidades[c.key];
@@ -289,9 +301,14 @@ function renderComparacion(modalidad, perfiles){
         const signo = d > 0 ? '+' : '';
         deltaHtml = `<span class="delta ${clase}">${signo}${d.toFixed(2)}</span>`;
       }
+      // Sin comparación real, se marca en rojo cualquier nota por debajo de
+      // 5 — es la señal de "punto débil" que de verdad importa cuando no
+      // hay un segundo perfil con el que contrastar.
+      const vaBaja = !comparando && va !== undefined && va < 5;
+      const vaHtml = va !== undefined ? (vaBaja ? `<span class="delta down">${va.toFixed(2)}</span>` : va.toFixed(2)) : '—';
       return `<tr>
         <td>${escapeHtml(c.corto)}</td>
-        <td>${va !== undefined ? va.toFixed(2) : '—'}</td>
+        <td>${vaHtml}</td>
         <td>${vb !== undefined ? vb.toFixed(2) : '—'}</td>
         <td>${deltaHtml}</td>
       </tr>`;

@@ -1218,6 +1218,18 @@ const CC_INT = OT_INT;
   });
 })();
 
+// Es el mismo dato (tiempo al fallo por intensidad) en dos sitios — al
+// rellenar el de "Cálculo del OT" se autocompleta el de "Curva individual",
+// para no tener que escribirlo dos veces. Se copia antes de que corra el
+// recalcAll() del listener global (éste está en 'document', por bubbling
+// se dispara después de este listener, puesto directamente en el input).
+OT_INT.forEach(i=>{
+  const otInput = $('ot-dur-'+i), ccInput = $('cc-t-'+i);
+  if(otInput && ccInput){
+    otInput.addEventListener('input', () => { ccInput.value = otInput.value; });
+  }
+});
+
 // Carga en regleta de trabajo — 1.00 down to 0.10 step .05
 const CARGA_INT = [];
 for(let i=100; i>=10; i-=5){ CARGA_INT.push(Math.round(i)/100); }
