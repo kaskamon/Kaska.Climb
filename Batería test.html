@@ -1499,15 +1499,17 @@ function publicarPerfil(kind){
   // El nombre de "Datos del cliente" (arriba, texto libre) y el desplegable
   // de aquí abajo son dos campos independientes — si no coinciden, lo más
   // probable es que el desplegable se quedara con la selección de un
-  // cliente anterior y no se haya cambiado. Se pide confirmación explícita
-  // en vez de publicar directo, para no colar un perfil en la cuenta que
-  // no toca.
+  // cliente anterior y no se haya cambiado. Se bloquea la publicación por
+  // completo (no solo un aviso que se pueda saltar) hasta que coincidan,
+  // para no poder colar nunca un perfil en la cuenta que no toca.
   const nombreArriba = normalizarNombre($('g-nombre') ? $('g-nombre').value : '');
   const nombreDesplegable = normalizarNombre(selCliente.options[selCliente.selectedIndex] ? selCliente.options[selCliente.selectedIndex].text : '');
   if(nombreArriba && nombreDesplegable && !nombreDesplegable.includes(nombreArriba) && !nombreArriba.includes(nombreDesplegable)){
     const nombreMostrado = selCliente.options[selCliente.selectedIndex].text;
-    const sigue = confirm(`En "Datos del cliente" pone "${$('g-nombre').value}", pero vas a publicar en la cuenta de "${nombreMostrado}". ¿Son la misma persona y quieres continuar?`);
-    if(!sigue) return;
+    alert(`En "Datos del cliente" pone "${$('g-nombre').value}", pero el desplegable tiene seleccionado a "${nombreMostrado}". No se publica hasta que coincidan — corrige el nombre o elige el cliente correcto en el desplegable.`);
+    estadoEl.textContent = 'Publicación bloqueada: el nombre y el cliente elegido no coinciden.';
+    estadoEl.className = 'estado-publicar error';
+    return;
   }
   const [y, m, d] = fechaVal.split('-');
   const fecha = `${d}/${m}/${y}`;
