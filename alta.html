@@ -138,24 +138,24 @@
           <div class="grid2">
             <div class="campo" id="campo-nombre">
               <label>Nombre</label>
-              <input type="text" id="nombre" placeholder="Mikel">
+              <input type="text" id="nombre" placeholder="Tu nombre">
               <span class="error-msg">Obligatorio</span>
             </div>
             <div class="campo" id="campo-apellidos">
               <label>Apellidos</label>
-              <input type="text" id="apellidos" placeholder="García Artieda">
+              <input type="text" id="apellidos" placeholder="Tus apellidos">
               <span class="error-msg">Obligatorio</span>
             </div>
           </div>
           <div class="grid2">
             <div class="campo" id="campo-correo">
               <label>Correo electrónico</label>
-              <input type="email" id="correo" placeholder="mikel@ejemplo.com">
+              <input type="email" id="correo" placeholder="tucorreo@ejemplo.com">
               <span class="error-msg">Escribe un correo válido</span>
             </div>
             <div class="campo">
               <label>Teléfono <small>(opcional)</small></label>
-              <input type="tel" id="telefono" placeholder="669 131 223">
+              <input type="tel" id="telefono" placeholder="600 000 000">
             </div>
           </div>
           <div class="campo">
@@ -171,11 +171,9 @@
             <div class="modalidad-grid" id="modalidadGrid">
               <div class="modalidad-opt" data-valor="Deportiva">
                 <div class="t">Deportiva</div>
-                <div class="d">Vías largas, resistencia</div>
               </div>
               <div class="modalidad-opt" data-valor="Boulder">
                 <div class="t">Boulder</div>
-                <div class="d">Bloques, potencia</div>
               </div>
             </div>
           </div>
@@ -202,7 +200,6 @@
         </div>
 
         <button type="submit" class="btn-enviar" id="btnEnviar">Enviar solicitud</button>
-        <div class="nota-legal">Tus datos se usan solo para preparar tu entrenamiento — nunca se comparten con terceros.</div>
       </form>
     </div>
 
@@ -217,8 +214,10 @@
 </div>
 
 <script>
-document.querySelectorAll('.dia-check').forEach(el => {
-  el.addEventListener('click', () => el.classList.toggle('on'));
+document.querySelectorAll('.dia-check input').forEach(input => {
+  input.addEventListener('change', () => {
+    input.closest('.dia-check').classList.toggle('on', input.checked);
+  });
 });
 document.querySelectorAll('.modalidad-opt').forEach(el => {
   el.addEventListener('click', () => {
