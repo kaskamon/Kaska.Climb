@@ -29,14 +29,8 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { cliente, fecha, mesociclo, sesion, semana, semanaMesociclo } = req.body || {};
+    const { accion, cliente, fecha, mesociclo, sesion, semana, semanaMesociclo } = req.body || {};
 
-    if (!cliente || !fecha || !mesociclo || !sesion) {
-      return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (cliente, fecha, mesociclo o sesion).' });
-    }
-    if (!COLUMNS[mesociclo]) {
-      return res.status(400).json({ success: false, error: `El mesociclo "${mesociclo}" no existe.` });
-    }
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
       return res.status(500).json({
         success: false,
@@ -53,6 +47,49 @@ module.exports = async (req, res) => {
     });
     const authClient = await auth.getClient();
     const sheets = google.sheets({ version: 'v4', auth: authClient });
+
+    // Borra TODA la semana ya publicada de un cliente (los 7 días, sea lo
+    // que sea lo que tengan) — para cuando se publica algo por error y no
+    // hay forma de deshacerlo desde "Limpiar Tabla" (que solo limpia el
+    // borrador local, nunca toca lo ya publicado).
+    if (accion === 'borrarSemana') {
+      if (!cliente || !fecha) {
+        return res.status(400).json({ success: false, error: 'Faltan datos (cliente o fecha) para borrar la semana.' });
+      }
+      const lunesABorrar = lunesDe(parseFechaDDMMYYYY(fecha) || new Date()).getTime();
+
+      const [metaB, respB] = await Promise.all([
+        sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID }),
+        sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NAME}'!A:G` }),
+      ]);
+      const hojaB = metaB.data.sheets.find(s => s.properties.title === SHEET_NAME);
+      const filasB = respB.data.values || [];
+      const indices = [];
+      filasB.forEach((f, i) => {
+        if (f[1] !== cliente) return;
+        const fechaFila = parseFechaDDMMYYYY(f[2]);
+        if (fechaFila && lunesDe(fechaFila).getTime() === lunesABorrar) indices.push(i);
+      });
+
+      if (!indices.length) {
+        return res.status(404).json({ success: false, error: 'Ese cliente no tiene nada publicado esa semana.' });
+      }
+      if (hojaB) {
+        const sheetId = hojaB.properties.sheetId;
+        const requests = indices
+          .sort((a, b) => b - a)
+          .map(i => ({ deleteDimension: { range: { sheetId, dimension: 'ROWS', startIndex: i, endIndex: i + 1 } } }));
+        await sheets.spreadsheets.batchUpdate({ spreadsheetId: SPREADSHEET_ID, requestBody: { requests } });
+      }
+      return res.status(200).json({ success: true, message: `Semana borrada correctamente (${indices.length} día${indices.length === 1 ? '' : 's'}).` });
+    }
+
+    if (!cliente || !fecha || !mesociclo || !sesion) {
+      return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (cliente, fecha, mesociclo o sesion).' });
+    }
+    if (!COLUMNS[mesociclo]) {
+      return res.status(400).json({ success: false, error: `El mesociclo "${mesociclo}" no existe.` });
+    }
 
     // Antes de escribir la versión nueva: (1) borramos cualquier fila que ya
     // hubiera para este mismo cliente+fecha — un día solo puede tener UNA

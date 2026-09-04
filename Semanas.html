@@ -544,6 +544,7 @@ select.head-select option {
       <button class="btn-action" id="btnCargarUltimaSemana" type="button">Cargar último publicado</button>
       <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
       <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
+      <button class="btn-action" id="btnBorrarSemana" type="button">Borrar semana publicada</button>
       <button class="btn-action" onclick="window.location.href='index.html'">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         Inicio
@@ -779,6 +780,36 @@ document.getElementById('btnPublicarSemana').addEventListener('click', async () 
   estadoDiv.innerHTML = resultados.length
     ? resultados.map(r => `<div class="${r.clase}">${r.texto}</div>`).join('')
     : 'No hay ninguna sesión asignada esta semana.';
+});
+
+document.getElementById('btnBorrarSemana').addEventListener('click', async () => {
+  const cliente = inputPublicarClienteSemana.value.trim();
+  const estadoDiv = document.getElementById('estadoPublicarSemana');
+
+  if (!cliente) { alert('Indica el cliente antes de borrar su semana.'); return; }
+  if (!document.getElementById('hiddenDate').value) {
+    alert('Indica primero la fecha del lunes de esta semana (campo "Fecha" arriba), o carga la última publicada.');
+    return;
+  }
+
+  const fechaLunes = fechaParaDiaIndice(0);
+  if (!confirm(`¿Seguro que quieres borrar TODO lo publicado para ${cliente} en la semana del ${fechaLunes}? Esto no se puede deshacer.`)) return;
+
+  estadoDiv.innerHTML = 'Borrando semana...';
+  try {
+    const res = await fetch('/api/publicar-sesion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accion: 'borrarSemana', cliente, fecha: fechaLunes }),
+    });
+    const data = await res.json();
+    estadoDiv.innerHTML = data.success
+      ? `<div class="ok">✓ ${data.message}</div>`
+      : `<div class="error">${data.error}</div>`;
+    if (data.success) limpiarTabla();
+  } catch (e) {
+    estadoDiv.innerHTML = `<div class="error">Error de red: ${e.message}</div>`;
+  }
 });
 
 window.onload = () => {
