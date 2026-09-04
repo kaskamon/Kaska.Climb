@@ -75,6 +75,7 @@
     font-size:11px; font-weight:700; letter-spacing:0.3px; text-transform:uppercase;
     background:transparent; border:1px solid var(--line-strong); color:var(--chalk-dim);
     padding:7px 12px; border-radius:8px; cursor:pointer; transition:all .15s ease; font-family:inherit;
+    display:inline-block; text-decoration:none;
   }
   .btn-fila:hover{ border-color:var(--moss); color:var(--chalk); }
   .btn-fila + .btn-fila{ margin-left:6px; }
@@ -293,6 +294,7 @@ function render(){
       <td>${escapeHtml(c.telefono || '—')}</td>
       <td>${celdaVencimiento(c)}</td>
       <td>
+        <a class="btn-fila" href="cliente/semana.html?${new URLSearchParams({cliente:c.email, nombre:c.nombreCompleto}).toString()}" target="_blank" rel="noopener" title="Abrir su página tal como la ve">Ver como cliente</a>
         <button class="btn-fila" data-sumar="1" data-correo="${escapeHtml(c.email)}" title="Renovación mensual">+1 mes</button>
         <button class="btn-fila" data-editar="${escapeHtml(c.email)}">${editando ? 'Cerrar' : 'Editar'}</button>
       </td>
