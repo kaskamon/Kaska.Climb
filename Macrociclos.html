@@ -270,7 +270,6 @@
         </div>
     </div>
     <div class="controls" id="controles-ui">
-        <select id="selectorCliente"><option value="">Cargando clientes…</option></select>
         <select id="fase">
             <option value="fmax">FMAX</option>
             <option value="desox">DESOX</option>
@@ -282,6 +281,7 @@
             <script>for(let i=1; i<=8; i++) document.write(`<option value="${i}">${i}S</option>`);</script>
         </select>
         <button onclick="agregarBloque()">Añadir</button>
+        <select id="selectorCliente"><option value="">Cargando clientes…</option></select>
         <button onclick="cargarPlanCliente()">Cargar</button>
         <button onclick="publicarPlan()" id="btnPublicar">Publicar</button>
         <button onclick="limpiarPlan()">Limpiar</button>
