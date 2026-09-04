@@ -55,14 +55,16 @@ module.exports = async (req, res) => {
     const sheets = google.sheets({ version: 'v4', auth: authClient });
 
     // Antes de escribir la versión nueva: (1) borramos cualquier fila que ya
-    // hubiera para este mismo cliente+fecha+mesociclo, para no duplicar; y
-    // (2) de paso aprovechamos para podar cualquier fila de este cliente más
-    // vieja que las 2 últimas semanas — así solo queda esa semana en curso y
-    // la anterior (suficiente para que un cliente pueda completar tarde algo
-    // de la semana pasada), sin acumular datos sin límite. La ventana de "2
-    // semanas" se cuenta desde HOY (no desde la fecha que se está
-    // publicando), para que corregir algo antiguo nunca borre la semana
-    // actual por error.
+    // hubiera para este mismo cliente+fecha — un día solo puede tener UNA
+    // cosa programada, sea el mismo mesociclo o no (si había GYM-FMAX ese
+    // día y ahora se publica DESCANSO, el GYM-FMAX debe desaparecer, no
+    // quedarse enquistado); y (2) de paso aprovechamos para podar cualquier
+    // fila de este cliente más vieja que las 2 últimas semanas — así solo
+    // queda esa semana en curso y la anterior (suficiente para que un
+    // cliente pueda completar tarde algo de la semana pasada), sin acumular
+    // datos sin límite. La ventana de "2 semanas" se cuenta desde HOY (no
+    // desde la fecha que se está publicando), para que corregir algo
+    // antiguo nunca borre la semana actual por error.
     const cortePorAntiguedad = lunesDe(new Date());
     cortePorAntiguedad.setDate(cortePorAntiguedad.getDate() - 7);
 
@@ -82,13 +84,13 @@ module.exports = async (req, res) => {
     const indicesABorrar = [];
     filas.forEach((f, i) => {
       if (f[1] !== cliente) return;
-      const esMismoDiaYMeso = f[2] === fecha && f[3] === mesociclo;
+      const esMismoDia = f[2] === fecha;
       const fechaFila = parseFechaDDMMYYYY(f[2]);
       const esAntigua = fechaFila ? lunesDe(fechaFila) < cortePorAntiguedad : false;
       const esOtroMesocicloRealMismaSemana = esSesionReal && f[3] !== mesociclo
         && CATEGORIA_VISUAL[f[3]] && CATEGORIA_VISUAL[f[3]].tipo === 'sesion'
         && fechaFila && lunesDe(fechaFila).getTime() === lunesPublicado;
-      if (esMismoDiaYMeso || esAntigua || esOtroMesocicloRealMismaSemana) indicesABorrar.push(i);
+      if (esMismoDia || esAntigua || esOtroMesocicloRealMismaSemana) indicesABorrar.push(i);
     });
 
     if (hoja && indicesABorrar.length) {
