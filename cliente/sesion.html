@@ -828,7 +828,7 @@ function wireInteractividad(ultimaValida){
       const data = await res.json();
       if(data.success){
         document.getElementById('modalTitle').textContent = '✓ Sesión guardada';
-        document.getElementById('modalDesc').textContent = 'Se ha escrito correctamente en tu Google Sheet. Te llevamos a tu página en unos segundos...';
+        document.getElementById('modalDesc').textContent = (data.message || 'Se ha escrito correctamente en tu Google Sheet.') + ' Te llevamos a tu página en unos segundos...';
         setTimeout(() => { window.location.href = QS_VOLVER; }, 2500);
       }else{
         document.getElementById('modalTitle').textContent = '✗ Error al guardar';

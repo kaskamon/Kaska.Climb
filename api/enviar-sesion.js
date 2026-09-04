@@ -88,17 +88,46 @@ module.exports = async (req, res) => {
       if (n !== undefined) fila[cfg.unico] = n;
     }
 
+    // 0) Si ya hay una entrada para este cliente/fecha/mesociclo exactos, la
+    // sobrescribimos en vez de duplicarla — rellenar la misma sesión dos
+    // veces el mismo día reemplaza los datos, no los suma. Un mesociclo
+    // repetido en otro día (p.ej. la parte analítica varias veces en la
+    // semana) sigue contando como una fila nueva, porque la fecha no coincide.
+    let filaExistente = null;
+    if (correo) {
+      try {
+        const existentes = await sheets.spreadsheets.values.get({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `'${SHEET_NAME}'!A:AI`,
+        });
+        const filas = existentes.data.values || [];
+        const idx = filas.findIndex(f => f[COL_CORREO] === correo && f[2] === fecha && f[3] === mesociclo);
+        if (idx !== -1) filaExistente = idx + 1; // fila real del Sheet (1-based)
+      } catch (e) {
+        // Si falla la búsqueda, seguimos con el comportamiento normal (añadir)
+      }
+    }
+
     // 1) Escritura real en las columnas del Sheet
     let sheetOk = true;
     let sheetError = null;
     try {
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `'${SHEET_NAME}'!A:AI`,
-        valueInputOption: 'USER_ENTERED',
-        insertDataOption: 'INSERT_ROWS',
-        requestBody: { values: [fila] },
-      });
+      if (filaExistente) {
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `'${SHEET_NAME}'!A${filaExistente}:AI${filaExistente}`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: { values: [fila] },
+        });
+      } else {
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `'${SHEET_NAME}'!A:AI`,
+          valueInputOption: 'USER_ENTERED',
+          insertDataOption: 'INSERT_ROWS',
+          requestBody: { values: [fila] },
+        });
+      }
     } catch (e) {
       sheetOk = false;
       sheetError = e.message;
@@ -126,7 +155,12 @@ module.exports = async (req, res) => {
       });
     }
 
-    res.status(200).json({ success: true, message: 'Sesión guardada correctamente en el Sheet.' });
+    res.status(200).json({
+      success: true,
+      message: filaExistente
+        ? 'Ya habías enviado esta sesión hoy — se ha actualizado con los nuevos datos.'
+        : 'Sesión guardada correctamente en el Sheet.',
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
