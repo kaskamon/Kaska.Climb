@@ -152,6 +152,54 @@ async function manejarPost(req, res, sheets) {
   res.status(200).json({ success: true, message: 'Cliente actualizado correctamente.' });
 }
 
+// POST (accion: 'eliminar') — borra por completo la fila de un cliente
+// (limpieza de datos de prueba, altas erróneas...). Body: { accion:'eliminar', correo }.
+async function manejarEliminar(req, res, sheets) {
+  const { correo } = req.body || {};
+  if (!correo) {
+    return res.status(400).json({ success: false, error: 'Falta el correo del cliente a eliminar.' });
+  }
+
+  let meta, resp;
+  try {
+    [meta, resp] = await Promise.all([
+      sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID }),
+      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NAME}'!A:N` }),
+    ]);
+  } catch (e) {
+    return res.status(500).json({ success: false, error: `No se pudo leer la base de datos de clientes (${e.message}).` });
+  }
+
+  const correoBuscado = correo.trim().toLowerCase();
+  const filas = resp.data.values || [];
+  const indiceFila = filas.findIndex(f => (f[COL.correo] || '').trim().toLowerCase() === correoBuscado);
+  if (indiceFila === -1) {
+    return res.status(404).json({ success: false, error: `No se encontró ningún cliente con el correo "${correo}".` });
+  }
+
+  const hoja = meta.data.sheets.find(s => s.properties.title === SHEET_NAME);
+  if (!hoja) {
+    return res.status(500).json({ success: false, error: `No se encontró la pestaña "${SHEET_NAME}".` });
+  }
+
+  try {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        requests: [{
+          deleteDimension: {
+            range: { sheetId: hoja.properties.sheetId, dimension: 'ROWS', startIndex: indiceFila, endIndex: indiceFila + 1 },
+          },
+        }],
+      },
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: `No se pudo eliminar el cliente (${e.message}).` });
+  }
+
+  res.status(200).json({ success: true, message: 'Cliente eliminado correctamente.' });
+}
+
 // POST (accion: 'alta') — alta de un cliente nuevo desde alta.html (público,
 // sin contraseña — lo rellena el propio cliente). Body: { accion:'alta',
 // nombre, apellidos, correo, telefono, fechaNacimiento, modalidad,
@@ -230,6 +278,7 @@ module.exports = async (req, res) => {
     const sheets = await authSheets();
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     if (req.body && req.body.accion === 'alta') return await manejarAlta(req, res, sheets);
+    if (req.body && req.body.accion === 'eliminar') return await manejarEliminar(req, res, sheets);
     return await manejarPost(req, res, sheets);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
