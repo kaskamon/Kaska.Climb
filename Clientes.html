@@ -293,7 +293,6 @@ function render(){
       <td>${escapeHtml(c.telefono || '—')}</td>
       <td>${celdaVencimiento(c)}</td>
       <td>
-        <button class="btn-fila" data-sumar="3" data-correo="${escapeHtml(c.email)}" title="Trimestre inicial obligatorio">+3 meses</button>
         <button class="btn-fila" data-sumar="1" data-correo="${escapeHtml(c.email)}" title="Renovación mensual">+1 mes</button>
         <button class="btn-fila" data-editar="${escapeHtml(c.email)}">${editando ? 'Cerrar' : 'Editar'}</button>
       </td>

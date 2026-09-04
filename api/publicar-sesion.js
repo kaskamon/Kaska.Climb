@@ -108,6 +108,50 @@ module.exports = async (req, res) => {
       requestBody: { values: [[marcaTemporal, cliente, fecha, mesociclo, semana || '', JSON.stringify(sesion), semanaMesociclo || '']] },
     });
 
+    // Arranque automático del contrato: la primera vez que se publica un
+    // mesociclo real (no gym/roca/descanso) para un cliente que todavía no
+    // tiene fecha de inicio en su ficha, se considera que "empieza a
+    // entrenar" hoy — se fija inicio=hoy y fin=hoy+3 meses (trimestre
+    // inicial). Nunca pisa una fecha ya puesta, así que republicar o editar
+    // semanas más adelante no la vuelve a tocar. Si esto falla por lo que
+    // sea, no debe tumbar la publicación real de la sesión (ya guardada).
+    if (esSesionReal) {
+      try {
+        const CLIENTES_SPREADSHEET_ID = '10RasiExEFgUtGuFOeSCvnJWdMhtJZA3i0TSdChmkFv8';
+        const CLIENTES_SHEET_NAME = 'Respuestas de formulario 1';
+        const COL_CORREO = 6, COL_FECHA_INICIO = 12, COL_FECHA_FIN = 13;
+
+        const respClientes = await sheets.spreadsheets.values.get({
+          spreadsheetId: CLIENTES_SPREADSHEET_ID,
+          range: `'${CLIENTES_SHEET_NAME}'!A:N`,
+        });
+        const filasClientes = respClientes.data.values || [];
+        const correoBuscado = cliente.trim().toLowerCase();
+        const indiceCliente = filasClientes.findIndex(f => (f[COL_CORREO] || '').trim().toLowerCase() === correoBuscado);
+
+        if (indiceCliente !== -1 && !(filasClientes[indiceCliente][COL_FECHA_INICIO] || '').trim()) {
+          const formatear = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+          const hoy = new Date();
+          const fin = new Date(hoy);
+          fin.setMonth(fin.getMonth() + 3);
+          const filaSheetClientes = indiceCliente + 1;
+
+          await sheets.spreadsheets.values.batchUpdate({
+            spreadsheetId: CLIENTES_SPREADSHEET_ID,
+            requestBody: {
+              valueInputOption: 'USER_ENTERED',
+              data: [
+                { range: `'${CLIENTES_SHEET_NAME}'!M${filaSheetClientes}`, values: [[formatear(hoy)]] },
+                { range: `'${CLIENTES_SHEET_NAME}'!N${filaSheetClientes}`, values: [[formatear(fin)]] },
+              ],
+            },
+          });
+        }
+      } catch (e) {
+        // Se ignora a propósito: la publicación de la sesión ya se completó.
+      }
+    }
+
     res.status(200).json({ success: true, message: 'Sesión publicada correctamente.' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
