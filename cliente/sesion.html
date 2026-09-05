@@ -366,6 +366,58 @@ function esBloqueRefFmax(titulo){
   return CFG.fmaxReferenceBlock && normalizar(CFG.fmaxReferenceBlock.match) === normalizar(titulo);
 }
 
+/* ---------- Borrador local (autosave) ----------
+   Vas alternando entre esta app y la del Tindeq mientras entrenas, y es fácil
+   que la pantalla se bloquee o el navegador recargue la pestaña de fondo por
+   memoria — sin esto, perderías todo lo ya marcado. Cada input/check se
+   guarda en localStorage al momento, y se recupera solo si vuelves a esta
+   misma sesión (cliente+fecha+mesociclo) antes de haberla enviado. */
+const STORAGE_KEY_BORRADOR = `kaska_borrador_sesion::${CLIENTE}::${FECHA_PARAM}::${MESOCICLO}`;
+let envioExitoso = false;
+
+function guardarBorrador(){
+  try{
+    const datos = {};
+    document.querySelectorAll('#contenedorBloques input[type=number]').forEach(el => { datos[el.id] = el.value; });
+    document.querySelectorAll('#contenedorBloques .ex-check').forEach(el => { datos[el.id] = el.checked; });
+    localStorage.setItem(STORAGE_KEY_BORRADOR, JSON.stringify(datos));
+  }catch(e){ /* localStorage lleno o inaccesible (navegación privada) — no es crítico */ }
+}
+
+function borrarBorrador(){
+  try{ localStorage.removeItem(STORAGE_KEY_BORRADOR); }catch(e){}
+}
+
+function hayDatosSinEnviar(){
+  return Array.from(document.querySelectorAll('#contenedorBloques input[type=number]')).some(el => el.value.trim() !== '')
+    || Array.from(document.querySelectorAll('#contenedorBloques .ex-check')).some(el => el.checked);
+}
+
+function restaurarBorrador(){
+  let datos;
+  try{ datos = JSON.parse(localStorage.getItem(STORAGE_KEY_BORRADOR) || 'null'); }catch(e){ datos = null; }
+  if(!datos) return;
+
+  let huboRestauracion = false;
+  Object.entries(datos).forEach(([id, valor]) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    if(el.type === 'checkbox'){
+      if(el.checked !== valor){ el.checked = valor; huboRestauracion = true; el.dispatchEvent(new Event('change', { bubbles:true })); }
+    } else if(valor !== '' && el.value !== valor){
+      el.value = valor; huboRestauracion = true; el.dispatchEvent(new Event('input', { bubbles:true }));
+    }
+  });
+
+  if(huboRestauracion){
+    const aviso = document.createElement('div');
+    aviso.className = 'recovery-status show info';
+    aviso.style.marginBottom = '20px';
+    aviso.innerHTML = '<span class="dot"></span><span>Hemos recuperado los datos que estabas rellenando — sigue donde lo dejaste.</span>';
+    document.getElementById('contenedorBloques').before(aviso);
+  }
+}
+
 /* ---------- Render de una "parte" (bloque_ejercicios) como .step ---------- */
 let exchkContador = 0;
 
@@ -827,6 +879,8 @@ function wireInteractividad(ultimaValida){
       });
       const data = await res.json();
       if(data.success){
+        envioExitoso = true;
+        borrarBorrador();
         document.getElementById('modalTitle').textContent = '✓ Sesión guardada';
         document.getElementById('modalDesc').textContent = (data.message || 'Se ha escrito correctamente en tu Google Sheet.') + ' Te llevamos a tu página en unos segundos...';
         setTimeout(() => { window.location.href = QS_VOLVER; }, 2500);
@@ -846,6 +900,10 @@ function wireInteractividad(ultimaValida){
   document.getElementById('modalClose').addEventListener('click', () => {
     document.getElementById('modal').classList.remove('open');
   });
+
+  const contenedor = document.getElementById('contenedorBloques');
+  contenedor.addEventListener('input', e => { if(e.target.matches('input[type=number]')) guardarBorrador(); });
+  contenedor.addEventListener('change', e => { if(e.target.matches('.ex-check')) guardarBorrador(); });
 }
 
 /* ---------- Carga de datos y arranque ---------- */
@@ -881,6 +939,7 @@ async function cargar(){
     const semanaFinal = dataSesion.semana || SEMANA_PARAM;
     renderSesion(dataSesion.sesion, ultimaValida, semanaFinal, dataSesion.semanaMesociclo);
     wireInteractividad(ultimaValida);
+    restaurarBorrador();
 
     document.getElementById('estadoCarga').hidden = true;
     document.getElementById('wrap').hidden = false;
@@ -890,6 +949,16 @@ async function cargar(){
 }
 
 cargar();
+
+// Aviso nativo del navegador si se intenta salir (recargar, cerrar, volver
+// atrás) con datos sin enviar — solo cubre la navegación dentro de esta
+// pestaña; cambiar de app o bloquear la pantalla no dispara esto (ni falta
+// que hace, el borrador en localStorage ya cubre esos casos).
+window.addEventListener('beforeunload', e => {
+  if(envioExitoso || !hayDatosSinEnviar()) return;
+  e.preventDefault();
+  e.returnValue = '';
+});
 
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').catch(() => {});
