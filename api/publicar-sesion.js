@@ -105,14 +105,13 @@ module.exports = async (req, res) => {
     const cortePorAntiguedad = lunesDe(new Date());
     cortePorAntiguedad.setDate(cortePorAntiguedad.getDate() - 7);
 
-    // Nunca puede haber 2 días reales de sesión (REOX/AERO/DESOX/FMAX/TAPERING)
-    // en la misma semana de un cliente — si esta publicación es de uno de
-    // ellos, cualquier otra fila real en la misma semana se considera
-    // obsoleta (el trainer cambió de día o de idea) y se borra también. Esto
-    // tiene que valer aunque sea EL MISMO mesociclo en otro día (p.ej.
-    // publicar FMAX el sábado tras haberlo publicado por error el viernes) —
-    // antes solo se comparaba con mesociclos distintos, así que ese caso
-    // dejaba el día viejo huérfano en el Sheet.
+    // Nunca puede haber 2 mesociclos reales DISTINTOS (REOX/AERO/DESOX/FMAX/
+    // TAPERING) en la misma semana de un cliente — si esta publicación es de
+    // uno de ellos, cualquier fila de OTRO mesociclo real en la misma semana
+    // se considera obsoleta (el trainer cambió de idea) y se borra también.
+    // Ojo: el mismo mesociclo SÍ puede repetirse varios días en la misma
+    // semana a propósito (p.ej. 2 días de FMAX), así que eso nunca se borra
+    // aquí — solo lo hace esMismoDia, si es literalmente el mismo día.
     const esSesionReal = CATEGORIA_VISUAL[mesociclo] && CATEGORIA_VISUAL[mesociclo].tipo === 'sesion';
     const lunesPublicado = lunesDe(parseFechaDDMMYYYY(fecha) || new Date()).getTime();
 
@@ -128,10 +127,10 @@ module.exports = async (req, res) => {
       const esMismoDia = f[2] === fecha;
       const fechaFila = parseFechaDDMMYYYY(f[2]);
       const esAntigua = fechaFila ? lunesDe(fechaFila) < cortePorAntiguedad : false;
-      const esOtroDiaRealMismaSemana = esSesionReal && !esMismoDia
+      const esOtroMesocicloRealMismaSemana = esSesionReal && f[3] !== mesociclo
         && CATEGORIA_VISUAL[f[3]] && CATEGORIA_VISUAL[f[3]].tipo === 'sesion'
         && fechaFila && lunesDe(fechaFila).getTime() === lunesPublicado;
-      if (esMismoDia || esAntigua || esOtroDiaRealMismaSemana) indicesABorrar.push(i);
+      if (esMismoDia || esAntigua || esOtroMesocicloRealMismaSemana) indicesABorrar.push(i);
     });
 
     if (hoja && indicesABorrar.length) {
