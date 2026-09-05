@@ -282,7 +282,6 @@
         </select>
         <button onclick="agregarBloque()">Añadir</button>
         <select id="selectorCliente"><option value="">Cargando clientes…</option></select>
-        <button onclick="cargarPlanCliente()">Cargar</button>
         <button onclick="publicarPlan()" id="btnPublicar">Publicar</button>
         <button onclick="limpiarPlan()">Limpiar</button>
     </div>
@@ -374,7 +373,7 @@
     }
 
     async function publicarPlan() {
-        if (!CLIENTE_ACTUAL) { alert('Primero elige un cliente y pulsa Cargar (o elige uno y añade bloques).'); return; }
+        if (!CLIENTE_ACTUAL) { alert('Primero elige un cliente en el desplegable.'); return; }
         const bloques = Array.from(document.querySelectorAll('.bloque')).map(b => ({
             fase: b.className.split(' ')[1],
             semanas: parseInt(b.style.flex)
