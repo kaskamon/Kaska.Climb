@@ -3,10 +3,12 @@
 // Estrategia network-first — nunca sirve una versión vieja en caché mientras
 // haya conexión, así los cambios que subimos se ven al momento. Solo cae a
 // caché si de verdad no hay red.
-const CACHE_NAME = 'kaska-climb-v2';
+// './' y './index.html' son la herramienta del entrenador (protegida con
+// contraseña) — nunca deben estar aquí. Precachearlas dispara el popup nativo
+// de usuario/contraseña del navegador para clientes reales en cuanto el
+// service worker se instala, aunque estén viendo login.html o su propia página.
+const CACHE_NAME = 'kaska-climb-v3';
 const urlsToCache = [
-  './',
-  './index.html',
   './login.html',
   './manifest.json',
   './manifest-cliente.json',
