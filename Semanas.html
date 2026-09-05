@@ -560,7 +560,7 @@ select.head-select option {
 
     <div class="panel-publicar-semana no-print">
       <select id="publicarClienteSemana"><option value="">Cargando clientes...</option></select>
-      <button class="btn-action" id="btnCargarUltimaSemana" type="button">Cargar último publicado</button>
+      <button class="btn-action" id="btnCargarUltimaSemana" type="button">Cargar semana</button>
       <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
       <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
       <button class="btn-action" id="btnBorrarSemana" type="button">Borrar semana publicada</button>
@@ -701,12 +701,18 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
   const cliente = inputPublicarClienteSemana.value.trim();
   const estadoDiv = document.getElementById('estadoPublicarSemana');
 
-  if (!cliente) { alert('Indica el cliente antes de cargar su última semana publicada.'); return; }
+  if (!cliente) { alert('Indica el cliente antes de cargar su semana.'); return; }
 
-  estadoDiv.innerHTML = 'Cargando última semana publicada...';
+  // Si hay una fecha puesta en la cabecera, se carga la semana de ESA fecha
+  // (para poder ver cualquiera de las 2 semanas que un cliente puede tener
+  // programadas a la vez). Sin fecha, se cae al comportamiento de siempre:
+  // la última semana publicada.
+  const fechaBuscada = document.getElementById('hiddenDate').value ? fechaParaDiaIndice(0) : null;
+  estadoDiv.innerHTML = fechaBuscada ? `Cargando la semana del ${fechaBuscada}...` : 'Cargando última semana publicada...';
 
   try {
     const qs = new URLSearchParams({ cliente });
+    if (fechaBuscada) qs.set('fecha', fechaBuscada);
     const res = await fetch('/api/obtener-semana?' + qs.toString());
     const data = await res.json();
 
@@ -715,7 +721,9 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
       return;
     }
     if (!data.sesiones.length) {
-      estadoDiv.innerHTML = `<div class="error">Este cliente todavía no tiene ninguna semana publicada.</div>`;
+      estadoDiv.innerHTML = fechaBuscada
+        ? `<div class="error">Este cliente no tiene nada publicado en la semana del ${fechaBuscada}.</div>`
+        : `<div class="error">Este cliente todavía no tiene ninguna semana publicada.</div>`;
       return;
     }
 
