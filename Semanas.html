@@ -702,17 +702,19 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
   const estadoDiv = document.getElementById('estadoPublicarSemana');
 
   if (!cliente) { alert('Indica el cliente antes de cargar su semana.'); return; }
+  if (!document.getElementById('hiddenDate').value) {
+    alert('Elige primero la fecha de la semana que quieres cargar (campo "Fecha" arriba).');
+    return;
+  }
 
-  // Si hay una fecha puesta en la cabecera, se carga la semana de ESA fecha
-  // (para poder ver cualquiera de las 2 semanas que un cliente puede tener
-  // programadas a la vez). Sin fecha, se cae al comportamiento de siempre:
-  // la última semana publicada.
-  const fechaBuscada = document.getElementById('hiddenDate').value ? fechaParaDiaIndice(0) : null;
-  estadoDiv.innerHTML = fechaBuscada ? `Cargando la semana del ${fechaBuscada}...` : 'Cargando última semana publicada...';
+  // Siempre se carga la semana de la fecha elegida en la cabecera — nunca
+  // "la última publicada" (un cliente puede tener hasta 2 semanas
+  // programadas a la vez, y así se elige cuál de las dos ver).
+  const fechaBuscada = fechaParaDiaIndice(0);
+  estadoDiv.innerHTML = `Cargando la semana del ${fechaBuscada}...`;
 
   try {
-    const qs = new URLSearchParams({ cliente });
-    if (fechaBuscada) qs.set('fecha', fechaBuscada);
+    const qs = new URLSearchParams({ cliente, fecha: fechaBuscada });
     const res = await fetch('/api/obtener-semana?' + qs.toString());
     const data = await res.json();
 
@@ -721,9 +723,7 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
       return;
     }
     if (!data.sesiones.length) {
-      estadoDiv.innerHTML = fechaBuscada
-        ? `<div class="error">Este cliente no tiene nada publicado en la semana del ${fechaBuscada}.</div>`
-        : `<div class="error">Este cliente todavía no tiene ninguna semana publicada.</div>`;
+      estadoDiv.innerHTML = `<div class="error">Este cliente no tiene nada publicado en la semana del ${fechaBuscada}.</div>`;
       return;
     }
 
