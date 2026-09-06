@@ -1,16 +1,18 @@
 const { google } = require('googleapis');
-const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
+const { verificarEntrenador } = require('../libs/sesion-cliente.js');
 
-// Planificación de macrociclo por cliente (Macrociclos.html) — hoja principal,
-// distinta de la de sesiones/historial. Columnas: A marcaTemporal, B correo,
-// C nombre, D fechaInicio, E fechaFin, F bloques (JSON, [{fase,semanas}...]).
-// Un macrociclo por cliente+fechaInicio: si ya existe una fila con esa misma
-// fecha de inicio (p.ej. se retoca el mismo plan y se vuelve a publicar), se
-// sobrescribe en vez de duplicarla — un macrociclo con OTRA fecha de inicio
-// sí crea una fila nueva, para poder comparar macrociclos de años distintos
-// del mismo cliente. "Cargar" siempre trae el más reciente.
+// Batería de test completa (Batería test.html) — sustituye el ir exportando/
+// importando archivos JSON sueltos. Columnas: A marcaTemporal, B correo,
+// C nombre, D fecha (el campo "Fecha" de Datos del cliente — fecha REAL del
+// test), E datos (JSON con el valor de cada input/select del formulario,
+// tal cual el antiguo export a fichero). Un perfil por cliente+fecha: si ya
+// existe una fila con esa misma fecha (p.ej. se retoca el mismo test y se
+// vuelve a publicar), se sobrescribe en vez de duplicarla — un test en OTRA
+// fecha sí crea una fila nueva, para poder ver la evolución del cliente.
+// "Cargar" siempre trae el más reciente. Herramienta solo para el
+// entrenador (igual que Macrociclos.html) — nunca la consulta el cliente.
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
-const SHEET_NAME = 'Macrociclos_Cliente';
+const SHEET_NAME = 'Bateria_Test';
 
 function authSheets() {
   const auth = new google.auth.GoogleAuth({
@@ -23,22 +25,22 @@ function authSheets() {
   return auth.getClient().then(authClient => google.sheets({ version: 'v4', auth: authClient }));
 }
 
-// GET ?cliente=correo — el macrociclo más reciente de ese cliente.
+// GET ?cliente=correo — el perfil de batería más reciente de ese cliente (o null si no tiene).
 async function manejarGet(req, res, sheets) {
+  const acceso = verificarEntrenador(req);
+  if (!acceso.ok) {
+    return res.status(401).json({ success: false, error: acceso.error });
+  }
   const { cliente } = req.query || {};
   if (!cliente) {
     return res.status(400).json({ success: false, error: 'Falta el parámetro cliente.' });
-  }
-  const acceso = verificarAccesoCliente(req, cliente);
-  if (!acceso.ok) {
-    return res.status(401).json({ success: false, error: acceso.error });
   }
 
   let filas;
   try {
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `'${SHEET_NAME}'!A:F`,
+      range: `'${SHEET_NAME}'!A:E`,
     });
     filas = resp.data.values || [];
   } catch (e) {
@@ -48,73 +50,69 @@ async function manejarGet(req, res, sheets) {
     });
   }
 
+  // g-fecha es un <input type="date"> (yyyy-mm-dd), así que compararlas como
+  // texto ya da el orden cronológico correcto — sin parsear nada.
   const correoBuscado = cliente.trim().toLowerCase();
   let filaEncontrada = null;
-  for (let i = filas.length - 1; i >= 0; i--) {
-    if ((filas[i][1] || '').trim().toLowerCase() === correoBuscado) {
-      filaEncontrada = filas[i];
-      break;
-    }
-  }
+  filas.forEach(f => {
+    if ((f[1] || '').trim().toLowerCase() !== correoBuscado) return;
+    if (!filaEncontrada || (f[3] || '') > (filaEncontrada[3] || '')) filaEncontrada = f;
+  });
 
   if (!filaEncontrada) {
-    return res.status(200).json({ success: true, plan: null });
+    return res.status(200).json({ success: true, datos: null });
   }
 
-  let bloques = [];
+  let datos;
   try {
-    bloques = JSON.parse(filaEncontrada[5] || '[]');
+    datos = JSON.parse(filaEncontrada[4] || '{}');
   } catch (e) {
-    return res.status(500).json({ success: false, error: 'El plan guardado tiene un JSON inválido.' });
+    return res.status(500).json({ success: false, error: 'El perfil guardado tiene un JSON inválido.' });
   }
 
-  res.status(200).json({
-    success: true,
-    plan: {
-      nombre: filaEncontrada[2] || '',
-      inicio: filaEncontrada[3] || '',
-      fin: filaEncontrada[4] || '',
-      bloques,
-    },
-  });
+  res.status(200).json({ success: true, datos, fecha: filaEncontrada[3] || '', marcaTemporal: filaEncontrada[0] || '' });
 }
 
-// POST — publica (añade) un macrociclo nuevo para un cliente.
+// POST — publica (sobrescribe) el perfil de batería de un cliente para una fecha.
 async function manejarPost(req, res, sheets) {
   const acceso = verificarEntrenador(req);
   if (!acceso.ok) {
     return res.status(401).json({ success: false, error: acceso.error });
   }
-  const { correo, nombre, inicio, fin, bloques } = req.body || {};
-  if (!correo || !nombre || !Array.isArray(bloques)) {
-    return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (correo, nombre o bloques).' });
+  const { correo, nombre, datos } = req.body || {};
+  if (!correo || !datos || typeof datos !== 'object') {
+    return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (correo o datos).' });
+  }
+  const fecha = datos['g-fecha'] || '';
+  if (!fecha) {
+    return res.status(400).json({ success: false, error: 'Rellena la fecha (en Datos del cliente) antes de publicar.' });
   }
 
   const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
   const correoNorm = correo.trim().toLowerCase();
-  const fila = [marcaTemporal, correo.trim(), nombre, inicio || '', fin || '', JSON.stringify(bloques)];
+  const fila = [marcaTemporal, correo.trim(), nombre || '', fecha, JSON.stringify(datos)];
 
   try {
     let filaExistente = null;
     const existentes = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `'${SHEET_NAME}'!A:F`,
+      range: `'${SHEET_NAME}'!A:E`,
     });
     const filas = existentes.data.values || [];
-    const idx = filas.findIndex(f => (f[1] || '').trim().toLowerCase() === correoNorm && (f[3] || '') === (inicio || ''));
+    const idx = filas.findIndex(f => (f[1] || '').trim().toLowerCase() === correoNorm && (f[3] || '') === fecha);
     if (idx !== -1) filaExistente = idx + 1; // fila real del Sheet (1-based)
 
     if (filaExistente) {
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: `'${SHEET_NAME}'!A${filaExistente}:F${filaExistente}`,
+        range: `'${SHEET_NAME}'!A${filaExistente}:E${filaExistente}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [fila] },
       });
     } else {
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
-        range: `'${SHEET_NAME}'!A:F`,
+        range: `'${SHEET_NAME}'!A:E`,
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
         requestBody: { values: [fila] },
@@ -123,11 +121,11 @@ async function manejarPost(req, res, sheets) {
   } catch (e) {
     return res.status(500).json({
       success: false,
-      error: `No se pudo publicar el macrociclo (${e.message}). ¿Existe la pestaña "${SHEET_NAME}" en el Sheet?`,
+      error: `No se pudo publicar el perfil (${e.message}). ¿Existe la pestaña "${SHEET_NAME}" en el Sheet?`,
     });
   }
 
-  res.status(200).json({ success: true, message: 'Macrociclo publicado correctamente.' });
+  res.status(200).json({ success: true, message: 'Perfil de batería publicado correctamente.' });
 }
 
 module.exports = async (req, res) => {

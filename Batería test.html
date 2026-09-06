@@ -408,8 +408,8 @@
       <button data-tab="boulder">Perfil Boulder</button>
     </nav>
     <div class="toolbar">
-      <button class="icon-btn" id="btnExport">Exportar</button>
-      <button class="icon-btn" id="btnImport">Importar</button>
+      <select class="tb-select" id="selectorClienteBateria" style="width:170px;"><option value="">Cargando clientes...</option></select>
+      <button class="icon-btn" id="btnPublicarBateria">Publicar</button>
       <button class="icon-btn danger" id="btnReset">Nuevo test</button>
       <a class="icon-btn" href="index.html">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
@@ -421,6 +421,8 @@
 </div>
 
 <div class="wrap">
+
+  <div id="estadoBateria" class="estado-publicar" style="text-align:right; margin:-12px 0 16px;"></div>
 
   <!-- ============ DATOS DEL CLIENTE (compartidos) ============ -->
   <div class="client-panel">
@@ -940,7 +942,6 @@
 
 </div>
 
-<input type="file" id="fileImport" accept=".json,*/*" style="display:none;">
 <div id="export-stage" style="position:fixed; top:-100000px; left:-100000px; z-index:-1;"></div>
 
 <script>
@@ -1332,7 +1333,6 @@ function buildPerfil(kind){
           <h3 class="profile-title"><span class="profile-main">PERFIL FISIOLÓGICO</span> - <span class="profile-mode">${isDep ? "DEPORTIVA" : "BOULDER"}</span></h3>
         </div>
         <div class="profile-toolbar">
-          <select id="${kind}-cliente" class="tb-select" aria-label="Cliente"><option value="">Cargando clientes...</option></select>
           <button class="icon-btn" onclick="publicarPerfil('${kind}')">Publicar</button>
           <button class="icon-btn" onclick="exportarPerfilPNG('${kind}')">Exportar</button>
           <span class="estado-publicar" id="${kind}-estado-publicar"></span>
@@ -1487,26 +1487,25 @@ function publicarPerfil(kind){
   const estadoEl = $(kind+'-estado-publicar');
   if(!data || !estadoEl) return;
 
-  const selCliente = $(kind+'-cliente');
-  const cliente = selCliente ? selCliente.value : '';
+  const cliente = CLIENTE_BATERIA_ACTUAL;
   const fechaVal = $('g-fecha') ? $('g-fecha').value : ''; // yyyy-mm-dd, fecha REAL del test (el campo "Fecha" general de Datos del cliente)
   if(!cliente || !fechaVal){
-    estadoEl.textContent = 'Elige un cliente y la fecha (arriba, en Datos del cliente) antes de publicar.';
+    estadoEl.textContent = 'Elige un cliente (arriba, en la barra superior) y la fecha (en Datos del cliente) antes de publicar.';
     estadoEl.className = 'estado-publicar error';
     return;
   }
 
-  // El nombre de "Datos del cliente" (arriba, texto libre) y el desplegable
-  // de aquí abajo son dos campos independientes — si no coinciden, lo más
-  // probable es que el desplegable se quedara con la selección de un
-  // cliente anterior y no se haya cambiado. Se bloquea la publicación por
+  // El nombre de "Datos del cliente" (arriba, texto libre) y el cliente
+  // elegido en la barra superior son dos campos independientes — si no
+  // coinciden, lo más probable es que el nombre se haya escrito a mano sin
+  // actualizarlo tras cambiar de cliente. Se bloquea la publicación por
   // completo (no solo un aviso que se pueda saltar) hasta que coincidan,
   // para no poder colar nunca un perfil en la cuenta que no toca.
   const nombreArriba = normalizarNombre($('g-nombre') ? $('g-nombre').value : '');
-  const nombreDesplegable = normalizarNombre(selCliente.options[selCliente.selectedIndex] ? selCliente.options[selCliente.selectedIndex].text : '');
-  if(nombreArriba && nombreDesplegable && !nombreDesplegable.includes(nombreArriba) && !nombreArriba.includes(nombreDesplegable)){
-    const nombreMostrado = selCliente.options[selCliente.selectedIndex].text;
-    alert(`En "Datos del cliente" pone "${$('g-nombre').value}", pero el desplegable tiene seleccionado a "${nombreMostrado}". No se publica hasta que coincidan — corrige el nombre o elige el cliente correcto en el desplegable.`);
+  const nombreElegido = normalizarNombre(nombreClienteBateriaSeleccionado());
+  if(nombreArriba && nombreElegido && !nombreElegido.includes(nombreArriba) && !nombreArriba.includes(nombreElegido)){
+    const nombreMostrado = nombreClienteBateriaSeleccionado();
+    alert(`En "Datos del cliente" pone "${$('g-nombre').value}", pero arriba tienes elegido a "${nombreMostrado}". No se publica hasta que coincidan — corrige el nombre o elige el cliente correcto en la barra superior.`);
     estadoEl.textContent = 'Publicación bloqueada: el nombre y el cliente elegido no coinciden.';
     estadoEl.className = 'estado-publicar error';
     return;
@@ -1954,82 +1953,102 @@ function loadState(){
   }catch(e){ console.warn('No se pudo cargar el estado guardado', e); return null; }
 }
 
-$('btnExport').addEventListener('click', async ()=>{
-  const data = {}; ALL_IDS().forEach(id=>{ data[id] = $(id).value; });
-  const nombre = ($('g-nombre').value || 'test').replace(/[^a-z0-9]+/gi,'_');
-  const filename = `${nombre}_${($('g-fecha').value||'sin_fecha')}.json`;
-  const jsonText = JSON.stringify(data,null,2);
+/* ============================================================
+   BATERÍA POR CLIENTE (Sheet "Bateria_Test" — un perfil por cliente,
+   sustituye a exportar/importar archivos sueltos)
+   ============================================================ */
+let CLIENTE_BATERIA_ACTUAL = '';
 
-  // En móvil (Android/iOS), usar el panel nativo de compartir: permite guardar
-  // en Drive/Dropbox/Archivos eligiendo carpeta y nombre. Muchos navegadores
-  // Android solo permiten compartir ciertos tipos de archivo "seguros" y
-  // rechazan application/json en silencio, así que probamos también con
-  // text/plain (el contenido sigue siendo el mismo JSON válido, solo cambia
-  // la etiqueta de tipo para que el sistema lo acepte). En escritorio, donde
-  // esta API normalmente no aplica a archivos, cae automáticamente a la descarga normal.
-  const tryShare = async (mime) => {
-    try{
-      const file = new File([jsonText], filename, {type: mime});
-      if(navigator.canShare && navigator.canShare({files:[file]})){
-        await navigator.share({files:[file], title: filename});
-        return 'shared';
-      }
-    }catch(err){
-      if(err && err.name === 'AbortError') return 'cancelled'; // el usuario canceló el panel, no descargar también
-      // si falla por otro motivo, probamos el siguiente tipo / la descarga normal
-    }
-    return false;
-  };
+function nombreClienteBateriaSeleccionado(){
+  const sel = $('selectorClienteBateria');
+  return (sel && sel.selectedIndex >= 0 && sel.options[sel.selectedIndex]) ? sel.options[sel.selectedIndex].text : '';
+}
 
-  const r1 = await tryShare('application/json');
-  if(r1==='shared'){ notifyExport(filename, 'Compartido correctamente'); return; }
-  if(r1==='cancelled') return;
-
-  const r2 = await tryShare('text/plain');
-  if(r2==='shared'){ notifyExport(filename, 'Compartido correctamente'); return; }
-  if(r2==='cancelled') return;
-
-  const blob = new Blob([jsonText], {type:'application/json'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  notifyExport(filename, 'Guardado en Descargas');
-});
-$('btnImport').addEventListener('click', ()=> $('fileImport').click());
-$('fileImport').addEventListener('change', e=>{
-  const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev=>{
-    try{
-      const data = JSON.parse(ev.target.result);
-      Object.keys(data).forEach(id=>{ const el=$(id); if(el) el.value = data[id]; });
-      poblarGradosNativos();
-      ['g-gradoRP-nativo','g-gradoObj-nativo'].forEach(id=>{
-        if(data[id] !== undefined && $(id)) $(id).value = data[id];
-      });
-      recalcAll(); saveState();
-    }catch(err){ alert('El archivo no es un JSON de batería válido.'); }
-  };
-  reader.readAsText(file);
-});
-$('btnReset').addEventListener('click', ()=>{
-  if(!confirm('Esto borrará todos los datos del test actual. ¿Continuar?')) return;
-  localStorage.removeItem('kaska_bateria_test');
+function limpiarCamposBateria(){
   document.querySelectorAll('input').forEach(el=> el.value='');
   document.querySelectorAll('select').forEach(el=> el.selectedIndex=0);
   $('ot-final').dataset.auto = 'true';
   document.querySelectorAll('[id^="guion-d"]').forEach(el=> el.dataset.auto = 'true');
+}
+
+async function cargarBateriaCliente(){
+  const sel = $('selectorClienteBateria');
+  const email = sel ? sel.value : '';
+  const estado = $('estadoBateria');
+  if(!email) return;
+  CLIENTE_BATERIA_ACTUAL = email;
+  estado.textContent = 'Cargando...'; estado.className = 'estado-publicar';
+  try{
+    const res = await fetch('/api/bateria-test?' + new URLSearchParams({ cliente: email }));
+    const data = await res.json();
+    if(!data.success){ estado.textContent = ''; alert(data.error || 'No se pudo cargar.'); return; }
+
+    limpiarCamposBateria();
+    if(data.datos){
+      Object.keys(data.datos).forEach(id=>{ const el = $(id); if(el) el.value = data.datos[id]; });
+      poblarGradosNativos();
+      ['g-gradoRP-nativo','g-gradoObj-nativo'].forEach(id=>{
+        if(data.datos[id] !== undefined && $(id)) $(id).value = data.datos[id];
+      });
+      const [fy, fm, fd] = (data.fecha || '').split('-');
+      const fechaLegible = (fy && fm && fd) ? `${fd}/${fm}/${fy}` : '?';
+      estado.textContent = 'Perfil cargado (test del ' + fechaLegible + ') — ' + nombreClienteBateriaSeleccionado() + '.';
+      estado.className = 'estado-publicar ok';
+    } else {
+      estado.textContent = nombreClienteBateriaSeleccionado() + ' todavía no tiene batería publicada — puedes rellenar una nueva.';
+      estado.className = 'estado-publicar';
+    }
+    recalcAll(); saveState();
+  }catch(e){
+    estado.textContent = '';
+    alert('Error de red: ' + e.message);
+  }
+}
+
+async function publicarBateria(){
+  if(!CLIENTE_BATERIA_ACTUAL){ alert('Elige primero un cliente en el desplegable.'); return; }
+  if(!$('g-fecha').value){ alert('Rellena la fecha (en Datos del cliente) antes de publicar.'); return; }
+  const datos = {}; ALL_IDS().forEach(id=>{ datos[id] = $(id).value; });
+  const btn = $('btnPublicarBateria');
+  const estado = $('estadoBateria');
+  btn.disabled = true; btn.textContent = 'Publicando...';
+  try{
+    const res = await fetch('/api/bateria-test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ correo: CLIENTE_BATERIA_ACTUAL, nombre: nombreClienteBateriaSeleccionado(), datos }),
+    });
+    const data = await res.json();
+    estado.textContent = data.success ? ('✓ Publicado — ' + nombreClienteBateriaSeleccionado() + '.') : ('✗ ' + (data.error || 'No se pudo publicar.'));
+    estado.className = 'estado-publicar ' + (data.success ? 'ok' : 'error');
+  }catch(e){
+    estado.textContent = '✗ Error de red: ' + e.message;
+    estado.className = 'estado-publicar error';
+  }
+  btn.disabled = false; btn.textContent = 'Publicar';
+}
+
+$('btnPublicarBateria').addEventListener('click', publicarBateria);
+
+(async function initSelectorBateria(){
+  const sel = $('selectorClienteBateria');
+  if(!sel) return;
+  await cargarSelectorClientes(sel);
+  sel.addEventListener('change', ()=>{ if(sel.value) cargarBateriaCliente(); });
+})();
+
+$('btnReset').addEventListener('click', ()=>{
+  if(!confirm('Esto borrará todos los datos del test actual. ¿Continuar?')) return;
+  localStorage.removeItem('kaska_bateria_test');
+  limpiarCamposBateria();
+  CLIENTE_BATERIA_ACTUAL = '';
+  $('estadoBateria').textContent = '';
   recalcAll();
 });
 
 /* init */
 const _datosGuardados = loadState();
 poblarGradosNativos();
-['deportiva','boulder'].forEach(kind=>{
-  const sel = $(kind+'-cliente');
-  if(sel) cargarSelectorClientes(sel);
-});
 if(_datosGuardados){
   ['g-gradoRP-nativo','g-gradoObj-nativo'].forEach(id=>{
     if(_datosGuardados[id] !== undefined && $(id)) $(id).value = _datosGuardados[id];

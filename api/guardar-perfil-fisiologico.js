@@ -6,6 +6,10 @@ const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 // realización del test, la introduce el entrenador a mano — nunca la de
 // guardado/exportación), D modalidad ("deportiva" | "boulder"),
 // E capacidades (JSON: {fmax, rfd, ...}, las claves cambian según modalidad).
+// Un perfil por cliente+fecha+modalidad: si ya existe una fila para esa
+// combinación (p.ej. se publica dos veces el mismo test), se sobrescribe en
+// vez de duplicarla — un test en otra fecha sí crea una fila nueva, porque
+// eso es historial real para las comparativas de progreso.
 const SHEET_NAME = 'Perfiles_Fisiologicos';
 
 module.exports = async (req, res) => {
@@ -37,14 +41,33 @@ module.exports = async (req, res) => {
     const sheets = google.sheets({ version: 'v4', auth: authClient });
 
     const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
+    const fila = [marcaTemporal, cliente, fecha, modalidad, JSON.stringify(capacidades)];
 
-    await sheets.spreadsheets.values.append({
+    let filaExistente = null;
+    const existentes = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: `'${SHEET_NAME}'!A:E`,
-      valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
-      requestBody: { values: [[marcaTemporal, cliente, fecha, modalidad, JSON.stringify(capacidades)]] },
     });
+    const filas = existentes.data.values || [];
+    const idx = filas.findIndex(f => f[1] === cliente && f[2] === fecha && f[3] === modalidad);
+    if (idx !== -1) filaExistente = idx + 1; // fila real del Sheet (1-based)
+
+    if (filaExistente) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `'${SHEET_NAME}'!A${filaExistente}:E${filaExistente}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [fila] },
+      });
+    } else {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `'${SHEET_NAME}'!A:E`,
+        valueInputOption: 'USER_ENTERED',
+        insertDataOption: 'INSERT_ROWS',
+        requestBody: { values: [fila] },
+      });
+    }
 
     res.status(200).json({ success: true, message: 'Perfil fisiológico guardado correctamente.' });
   } catch (error) {
