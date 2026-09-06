@@ -1968,7 +1968,7 @@ function nombreClienteBateriaSeleccionado(){
 
 function limpiarCamposBateria(){
   document.querySelectorAll('input').forEach(el=> el.value='');
-  document.querySelectorAll('select').forEach(el=> el.selectedIndex=0);
+  document.querySelectorAll('select:not(#selectorClienteBateria)').forEach(el=> el.selectedIndex=0);
   $('ot-final').dataset.auto = 'true';
   document.querySelectorAll('[id^="guion-d"]').forEach(el=> el.dataset.auto = 'true');
 }
@@ -2067,6 +2067,7 @@ $('btnReset').addEventListener('click', ()=>{
   if(!confirm('Esto borrará todos los datos del test actual. ¿Continuar?')) return;
   localStorage.removeItem('kaska_bateria_test');
   limpiarCamposBateria();
+  $('selectorClienteBateria').selectedIndex = 0;
   CLIENTE_BATERIA_ACTUAL = '';
   $('estadoBateria').textContent = '';
   recalcAll();
