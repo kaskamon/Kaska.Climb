@@ -535,10 +535,17 @@ select.head-select option {
         </div>
       </div>
 
-      <div class="sesion gym" data-tipo="gym">
+      <div class="sesion gym" data-tipo="gym-fmax">
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">GYM/ANTAGONISTAS</span>
+          <span class="sesion-text" contenteditable="true">GYM-FMAX</span>
+        </div>
+      </div>
+
+      <div class="sesion gym" data-tipo="gym-antagonistas">
+        <div class="sesion-contenido">
+          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
+          <span class="sesion-text" contenteditable="true">GYM-ANTAGONISTAS</span>
         </div>
       </div>
 
@@ -561,7 +568,6 @@ select.head-select option {
       <select id="publicarClienteSemana"><option value="">Cargando clientes...</option></select>
       <button class="btn-action" id="btnCargarUltimaSemana" type="button">Cargar semana</button>
       <button class="btn-action" id="btnDisenarSesion" type="button" disabled>Diseñar sesión de este mesociclo</button>
-      <button class="btn-action" id="btnDisenarGym" type="button" disabled>Diseñar sesión de gym</button>
       <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
       <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
       <button class="btn-action" id="btnBorrarSemana" type="button">Borrar semana publicada</button>
@@ -666,12 +672,14 @@ document.addEventListener('click', e => {
   }
 });
 
-// El banco solo tiene 4 tipos de caja (Sesión Roco / Gym-Antagonistas /
-// Roca-Roco / Descanso) — el mesociclo real (REOX/AERO/DESOX/FMAX y cuál de
-// los 2 GYM) ya no se elige a mano: se calcula solo a partir del macrociclo
-// publicado del cliente (ver recalcularMesocicloDesdeMacrociclo), para que
-// nunca pueda quedar mal atado a la fecha/cliente equivocados.
-const GYM_POR_MESOCICLO = { FMAX: 'GYM-FMAX', REOX: 'GYM-ANTAGONISTAS', AERO: 'GYM-ANTAGONISTAS', DESOX: 'GYM-ANTAGONISTAS', TAPERING: 'GYM-ANTAGONISTAS' };
+// El banco tiene 5 tipos de caja fija (Sesión Roco / Gym-Fmax /
+// Gym-Antagonistas / Roca-Roco / Descanso) — el mesociclo real de la
+// "SESIÓN (ROCO)" (REOX/AERO/DESOX/FMAX/TAPERING) ya no se elige a mano: se
+// calcula solo a partir del macrociclo publicado del cliente (ver
+// recalcularMesocicloDesdeMacrociclo), para que nunca pueda quedar mal atado
+// a la fecha/cliente equivocados. Los 2 tipos de gym, en cambio, sí se
+// eligen a mano arrastrando la caja que toque — no dependen de qué
+// mesociclo tenga esa semana, así que no hace falta calcularlos.
 
 // Macrociclos.html guarda cada bloque con una clave de fase en minúsculas
 // (fmax/desox/reox/aero/tap) distinta de la clave de mesociclo en mayúsculas
@@ -682,7 +690,8 @@ let MESOCICLO_ACTUAL = null; // se rellena solo desde el macrociclo real del cli
 
 function resolverMesocicloCaja(tipo) {
   if (tipo === 'sesion') return MESOCICLO_ACTUAL;
-  if (tipo === 'gym') return GYM_POR_MESOCICLO[MESOCICLO_ACTUAL] || 'GYM-ANTAGONISTAS';
+  if (tipo === 'gym-fmax') return 'GYM-FMAX';
+  if (tipo === 'gym-antagonistas') return 'GYM-ANTAGONISTAS';
   if (tipo === 'roca') return 'ROCA';
   if (tipo === 'descanso') return 'DESCANSO';
   return null;
@@ -730,12 +739,10 @@ async function recalcularMesocicloDesdeMacrociclo() {
   const estado = document.getElementById('estadoMacrociclo');
   const h1 = document.getElementById('h1'), h3 = document.getElementById('h3'), h4 = document.getElementById('h4');
   const btnDisenar = document.getElementById('btnDisenarSesion');
-  const btnDisenarGym = document.getElementById('btnDisenarGym');
 
   MESOCICLO_ACTUAL = null;
   h1.innerText = '—'; h3.innerText = '—'; h4.innerText = '—';
   btnDisenar.disabled = true;
-  btnDisenarGym.disabled = true;
   estado.textContent = ''; estado.className = 'estado-macrociclo no-print';
 
   if (!cliente || !fechaLunes) return;
@@ -769,7 +776,6 @@ async function recalcularMesocicloDesdeMacrociclo() {
     h3.innerText = calc.mesociclo;
     h4.innerText = `${calc.semanaEnBloque}/${calc.semanasBloque}`;
     btnDisenar.disabled = false;
-    btnDisenarGym.disabled = false;
     estado.textContent = `✓ Semana ${calc.semanaEnBloque} de ${calc.semanasBloque} de ${calc.mesociclo} (según el macrociclo de ${data.plan.nombre || cliente}).`;
     estado.classList.add('ok');
   } catch (e) {
@@ -802,14 +808,6 @@ document.getElementById('btnDisenarSesion').addEventListener('click', () => {
   const cliente = inputPublicarClienteSemana.value.trim();
   if (!cliente || !MESOCICLO_ACTUAL) return;
   const qs = new URLSearchParams({ cliente, mesociclo: MESOCICLO_ACTUAL });
-  window.open('Sesiones.html?' + qs.toString(), '_blank');
-});
-
-document.getElementById('btnDisenarGym').addEventListener('click', () => {
-  const cliente = inputPublicarClienteSemana.value.trim();
-  if (!cliente || !MESOCICLO_ACTUAL) return;
-  const mesocicloGym = GYM_POR_MESOCICLO[MESOCICLO_ACTUAL] || 'GYM-ANTAGONISTAS';
-  const qs = new URLSearchParams({ cliente, mesociclo: mesocicloGym });
   window.open('Sesiones.html?' + qs.toString(), '_blank');
 });
 
@@ -866,7 +864,8 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
       data.sesiones.filter(s => s.fecha === fechaDia).forEach(s => {
         let tipo = null;
         if (MESOCICLOS_SEMANA.includes(s.mesociclo)) tipo = 'sesion';
-        else if (s.mesociclo === 'GYM-FMAX' || s.mesociclo === 'GYM-ANTAGONISTAS') tipo = 'gym';
+        else if (s.mesociclo === 'GYM-FMAX') tipo = 'gym-fmax';
+        else if (s.mesociclo === 'GYM-ANTAGONISTAS') tipo = 'gym-antagonistas';
         else if (s.mesociclo === 'ROCA') tipo = 'roca';
         else if (s.mesociclo === 'DESCANSO') tipo = 'descanso';
         if (!tipo) return;
