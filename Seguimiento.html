@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="libs/clientes-selector.js"></script>
+<script src="libs/mesociclos-config.js"></script>
 <style>
   :root{
     --stone-900:#1c211e; --stone-800:#262d28; --stone-700:#333b34;
@@ -126,6 +127,10 @@
         <button class="tab-meso" data-meso="DESOX" style="--c:var(--meso-desox);">DESOX</button>
         <button class="tab-meso" data-meso="FMAX" style="--c:var(--meso-fmax);">FMAX</button>
       </div>
+      <div class="selector-cliente">
+        <label>Variable</label>
+        <select id="selectorVariable"></select>
+      </div>
     </div>
 
     <div id="panelDatos"><div class="estado-panel">Elige un cliente para ver su progresión.</div></div>
@@ -147,6 +152,97 @@ const VARIABLES = {
 };
 const VARIABLES_ACTIVAS = { pfInicial: true, fmaxDer: true, fmaxIzq: true };
 let HISTORIAL_ACTUAL = null;
+
+// Además de la fuerza (siempre disponible), cada mesociclo lleva sus propios
+// "campos" secundarios (series de suspensiones, campus, pegues bloque/trave,
+// tiempo de escalada continua en AERO...) — mismo mapeo que ya usa
+// cliente/sesion.html para pintar el formulario, así no hay que duplicarlo.
+// VARIABLE_ACTIVA vale 'fuerza' o 'campo:<índice>' (índice dentro de
+// FIELD_MAP[meso].campos, que coincide con el índice del array historial.campos).
+let VARIABLE_ACTIVA = 'fuerza';
+
+function camposDelMesoActivo(){
+  const cfg = window.MESOCICLOS_CONFIG && window.MESOCICLOS_CONFIG.FIELD_MAP[MESO_ACTIVO];
+  return (cfg && Array.isArray(cfg.campos)) ? cfg.campos : [];
+}
+
+function poblarSelectorVariable(){
+  const sel = document.getElementById('selectorVariable');
+  const opciones = ['<option value="fuerza">Fuerza (PFinicial / Fmax)</option>'];
+  camposDelMesoActivo().forEach((c, i) => {
+    opciones.push(`<option value="campo:${i}">${escapeHtml(c.label)} (${escapeHtml(c.match)})</option>`);
+  });
+  sel.innerHTML = opciones.join('');
+  VARIABLE_ACTIVA = 'fuerza';
+  sel.value = 'fuerza';
+}
+
+// Los campos de tipo 'tiempo' se guardan en segundos totales (cliente/sesion.html
+// los manda como min*60+seg) — aquí se formatean de vuelta a mm:ss para leerlos.
+function formatCampoValor(v, tipo){
+  if(v === undefined || v === null) return null;
+  if(tipo === 'tiempo'){
+    const m = Math.floor(v / 60), s = Math.round(v % 60);
+    return `${m}:${String(s).padStart(2,'0')}`;
+  }
+  // Series/pegues/campus son siempre recuentos enteros — redondeamos solo
+  // las medias/ejes calculados, los valores tal cual introducidos no cambian.
+  return String(Math.round(v * 10) / 10);
+}
+
+// Gráfica de una sola variable secundaria (series, pegues, campus, tiempo…) —
+// misma factura visual que dibujarGrafica, pero sin las 3 líneas fijas de
+// fuerza ni el eje en "N", ya que aquí la unidad cambia según el campo.
+function dibujarGraficaCampo(svg, historial, indice, color, tipo){
+  const M = { left:44, right:14, top:16, bottom:30 };
+  const W = 640, H = 260;
+  const plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
+
+  const valores = historial.map(h => (h.campos || [])[indice]).filter(v => v !== undefined && v !== null);
+  const hayValores = valores.length > 0;
+  const rawMin = hayValores ? Math.min(...valores) : 0;
+  const rawMax = hayValores ? Math.max(...valores) : 10;
+  const margen = Math.max(tipo === 'tiempo' ? 5 : 1, (rawMax - rawMin) * 0.15);
+  const yMin = Math.max(0, rawMin - margen);
+  const yMax = rawMax + margen;
+
+  const n = historial.length;
+  const x = i => M.left + (n > 1 ? (i / (n - 1)) * plotW : plotW / 2);
+  const y = v => M.top + plotH - ((v - yMin) / (yMax - yMin || 1)) * plotH;
+
+  let svgStr = '';
+  const pasosY = 4;
+  for(let p = 0; p <= pasosY; p++){
+    const valor = yMin + (yMax - yMin) * (p / pasosY);
+    const yy = y(valor);
+    svgStr += `<line class="grid-linea" x1="${M.left}" y1="${yy.toFixed(1)}" x2="${W - M.right}" y2="${yy.toFixed(1)}"/>`;
+    svgStr += `<text class="eje-label" x="${M.left - 8}" y="${yy.toFixed(1)}" text-anchor="end" dominant-baseline="middle">${escapeHtml(formatCampoValor(valor, tipo))}</text>`;
+  }
+
+  const salto = Math.max(1, Math.ceil(n / 8));
+  historial.forEach((h, i) => {
+    if(i % salto !== 0 && i !== n - 1) return;
+    svgStr += `<text class="eje-label" x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${escapeHtml(h.fecha)}</text>`;
+  });
+
+  const pts = [];
+  historial.forEach((h, i) => {
+    const v = (h.campos || [])[indice];
+    if(v !== undefined && v !== null) pts.push([x(i), y(v)]);
+  });
+  if(pts.length >= 2){
+    const area = `${M.left},${(M.top+plotH).toFixed(1)} ` + pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ') + ` ${pts[pts.length-1][0].toFixed(1)},${(M.top+plotH).toFixed(1)}`;
+    svgStr += `<polygon points="${area}" fill="${color}" fill-opacity="0.14"/>`;
+    svgStr += `<polyline points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  pts.forEach(([px,py], idx) => {
+    const esUltimo = idx === pts.length - 1;
+    svgStr += `<circle class="${esUltimo?'punto-final':''}" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${esUltimo?4.5:3}" fill="${color}"/>`;
+  });
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = svgStr;
+}
 
 function escapeHtml(str){
   return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -218,7 +314,7 @@ function dibujarGrafica(svg, historial, colorPrincipal){
 }
 
 document.querySelectorAll('.tab-meso').forEach(tab => {
-  tab.addEventListener('click', () => { MESO_ACTIVO = tab.dataset.meso; pintarTabs(); pintarDatos(); });
+  tab.addEventListener('click', () => { MESO_ACTIVO = tab.dataset.meso; pintarTabs(); poblarSelectorVariable(); pintarDatos(); });
 });
 function pintarTabs(){
   document.querySelectorAll('.tab-meso').forEach(tab => {
@@ -257,6 +353,11 @@ function pintarDatos(){
     return;
   }
 
+  if(VARIABLE_ACTIVA === 'fuerza') pintarPanelFuerza(panel, historial);
+  else pintarPanelCampo(panel, historial, Number(VARIABLE_ACTIVA.split(':')[1]));
+}
+
+function pintarPanelFuerza(panel, historial){
   const ultimo = historial[historial.length - 1];
   const primero = historial[0];
   const media = Math.round(historial.reduce((s,h) => s + h.pfInicial, 0) / historial.length);
@@ -308,7 +409,66 @@ function pintarDatos(){
   });
 }
 
+// Panel para una variable secundaria (series de suspensiones, campus, pegues
+// bloque/trave, tiempo de escalada continua…) — un valor por sesión entrenada,
+// no siempre presente (p.ej. en DESOX travesías/multibloque son alternativas,
+// así que huecos sueltos son normales y no un error).
+function pintarPanelCampo(panel, historial, indice){
+  const cfgCampo = camposDelMesoActivo()[indice];
+  if(!cfgCampo){ panel.innerHTML = '<div class="estado-panel">Variable no disponible para este mesociclo.</div>'; return; }
+  const tipo = cfgCampo.tipo;
+  const color = MESO_COLORS[MESO_ACTIVO];
+
+  const conValor = historial
+    .map(h => ({ fecha: h.fecha, valor: (h.campos || [])[indice] }))
+    .filter(x => x.valor !== undefined && x.valor !== null);
+
+  if(!conValor.length){
+    panel.innerHTML = `<div class="estado-panel">Este cliente todavía no tiene datos de "${escapeHtml(cfgCampo.label)} (${escapeHtml(cfgCampo.match)})".</div>`;
+    return;
+  }
+
+  const ultimo = conValor[conValor.length - 1];
+  const primero = conValor[0];
+  const media = conValor.reduce((s,x) => s + x.valor, 0) / conValor.length;
+  const tendencia = primero.valor ? ((ultimo.valor - primero.valor) / primero.valor * 100) : 0;
+
+  panel.innerHTML = `
+    <div class="stat-tiles">
+      <div class="stat-tile"><div class="k">${escapeHtml(cfgCampo.label)} media</div><div class="v">${escapeHtml(formatCampoValor(media, tipo))}</div></div>
+      <div class="stat-tile">
+        <div class="k">Tendencia (${conValor.length} ses.)</div>
+        <div class="v" style="color:${tendencia>=0?'var(--moss-light)':'var(--danger)'};">${tendencia>=0?'+':''}${tendencia.toFixed(1)}<small>%</small></div>
+        <div class="delta ${tendencia>=0?'up':'down'}">${tendencia>=0?'↑ progresando':'↓ en descenso'}</div>
+      </div>
+      <div class="stat-tile"><div class="k">Último valor</div><div class="v">${escapeHtml(formatCampoValor(ultimo.valor, tipo))}</div></div>
+      <div class="stat-tile"><div class="k">Sesiones con dato</div><div class="v">${conValor.length}<small>/${historial.length}</small></div></div>
+    </div>
+    <div class="chart-shell">
+      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
+    </div>
+    <div class="tabla-datos-wrap">
+      <table class="tabla-datos">
+        <thead><tr><th>Fecha</th><th>${escapeHtml(cfgCampo.label)}</th><th>Sesión</th></tr></thead>
+        <tbody>${historial.map(h => {
+          const v = (h.campos || [])[indice];
+          return v !== undefined && v !== null
+            ? `<tr><td>${escapeHtml(h.fecha)}</td><td>${escapeHtml(formatCampoValor(v, tipo))}</td><td>Entrenada</td></tr>`
+            : `<tr><td>${escapeHtml(h.fecha)}</td><td class="no-entrenada">—</td><td class="no-entrenada">Sin dato</td></tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`;
+
+  dibujarGraficaCampo(document.getElementById('chartPF'), historial, indice, color, tipo);
+}
+
+document.getElementById('selectorVariable').addEventListener('change', (e) => {
+  VARIABLE_ACTIVA = e.target.value;
+  pintarDatos();
+});
+
 (async function init(){
+  poblarSelectorVariable();
   const sel = document.getElementById('selectorCliente');
   await cargarSelectorClientes(sel);
   sel.addEventListener('change', () => cargarCliente(sel.value));
