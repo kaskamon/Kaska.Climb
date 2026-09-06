@@ -1,5 +1,6 @@
 const { google } = require('googleapis');
 const { verificarAccesoCliente } = require('../libs/sesion-cliente.js');
+const { CATEGORIA_VISUAL } = require('../libs/mesociclos-config.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Sesiones_Programadas';
@@ -68,7 +69,7 @@ module.exports = async (req, res) => {
     try {
       const resp = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `'${SHEET_NAME}'!A:F`,
+        range: `'${SHEET_NAME}'!A:G`,
       });
       filas = resp.data.values || [];
     } catch (e) {
@@ -98,10 +99,23 @@ module.exports = async (req, res) => {
     // la publicación más reciente (las filas van en orden de inserción, así que
     // sobreescribir según avanzamos ya nos deja la última).
     const porDiaYMeso = new Map();
+    // Nunca hay 2 mesociclos reales (tipo "sesion") distintos en la misma
+    // semana de un cliente — con que aparezca uno, ya sabemos el de toda la
+    // semana, junto con la "Semana" y "Semana del mesociclo" que se
+    // calcularon y publicaron con él (Semanas.html las calcula solas a
+    // partir del macrociclo, ver esa página).
+    let semanaGlobal = null, semanaMesociclo = null, mesocicloSemana = null;
     filas.forEach(f => {
       const filaCliente = f[1], filaFecha = f[2], filaMesociclo = f[3];
       if (filaCliente !== cliente || !dias.includes(filaFecha)) return;
       porDiaYMeso.set(filaFecha + '|' + filaMesociclo, { fecha: filaFecha, mesociclo: filaMesociclo });
+
+      const esSesionReal = CATEGORIA_VISUAL[filaMesociclo] && CATEGORIA_VISUAL[filaMesociclo].tipo === 'sesion';
+      if (esSesionReal) {
+        mesocicloSemana = filaMesociclo;
+        semanaGlobal = f[4] || null;
+        semanaMesociclo = f[6] || null;
+      }
     });
 
     // esEntrenador: para que el front pueda mostrar cosas que solo tienen
@@ -110,7 +124,15 @@ module.exports = async (req, res) => {
     // la misma página — lo calcula verificarAccesoCliente según si la
     // petición llegó con la Basic Auth del entrenador o con el token propio
     // del cliente.
-    res.status(200).json({ success: true, dias, sesiones: Array.from(porDiaYMeso.values()), esEntrenador: !!acceso.esEntrenador });
+    res.status(200).json({
+      success: true,
+      dias,
+      sesiones: Array.from(porDiaYMeso.values()),
+      esEntrenador: !!acceso.esEntrenador,
+      mesociclo: mesocicloSemana,
+      semana: semanaGlobal,
+      semanaMesociclo,
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
