@@ -150,7 +150,6 @@
     <div class="meso-info" id="mesoInfoTxt" hidden></div>
     <div class="rango-fila">
       <span class="rango"><b>Fecha:</b> <span id="rangoTxt"></span></span>
-      <span class="semana-meso" id="semanaMesoWrap" hidden><b>Semana del mesociclo:</b> <span id="semanaMesoTxt">—</span></span>
       <button type="button" class="btn-cambiar-semana" id="btnCambiarSemana" hidden></button>
     </div>
   </div>
@@ -282,19 +281,15 @@ async function cargar(){
     // semana tiene un mesociclo real (no todo son días de gimnasio/roca/
     // descanso) y si viene de una publicación ya hecha con el cálculo nuevo.
     const mesoInfo = document.getElementById('mesoInfoTxt');
-    const semanaMesoWrap = document.getElementById('semanaMesoWrap');
     if(data.mesociclo){
+      const partes = [];
+      if(data.semana) partes.push(`Semana ${data.semana}`);
+      partes.push(`Mesociclo ${data.mesociclo}`);
+      if(data.semanaMesociclo) partes.push(`Semana del mesociclo: ${data.semanaMesociclo}`);
+      mesoInfo.textContent = partes.join(' · ');
       mesoInfo.hidden = false;
-      mesoInfo.textContent = `Mesociclo ${data.mesociclo}` + (data.semana ? ` · Semana ${data.semana}` : '');
-      if(data.semanaMesociclo){
-        document.getElementById('semanaMesoTxt').textContent = data.semanaMesociclo;
-        semanaMesoWrap.hidden = false;
-      } else {
-        semanaMesoWrap.hidden = true;
-      }
     } else {
       mesoInfo.hidden = true;
-      semanaMesoWrap.hidden = true;
     }
 
     const hoyStrActual = fechaHoyDDMMYYYY();
