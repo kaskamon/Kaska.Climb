@@ -410,7 +410,6 @@
     <div class="toolbar">
       <select class="tb-select" id="selectorClienteBateria" style="width:170px;"><option value="">Cargando clientes...</option></select>
       <button class="icon-btn" id="btnPublicarBateria">Publicar</button>
-      <button class="icon-btn" id="btnImportarViejo" title="Solo para migrar archivos .json exportados antes de que existiera el selector de cliente">Importar (antiguo)</button>
       <button class="icon-btn danger" id="btnReset">Nuevo test</button>
       <a class="icon-btn" href="index.html">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
@@ -943,7 +942,6 @@
 
 </div>
 
-<input type="file" id="fileImportViejo" accept=".json,*/*" style="display:none;">
 <div id="export-stage" style="position:fixed; top:-100000px; left:-100000px; z-index:-1;"></div>
 
 <script>
@@ -2031,30 +2029,6 @@ async function publicarBateria(){
 }
 
 $('btnPublicarBateria').addEventListener('click', publicarBateria);
-
-// Solo para migrar los .json que se exportaban con el antiguo botón
-// "Exportar" (antes de que existiera el selector de cliente): rellena el
-// formulario, pero NO publica — elige el cliente arriba y pulsa "Publicar"
-// después de importar.
-$('btnImportarViejo').addEventListener('click', ()=> $('fileImportViejo').click());
-$('fileImportViejo').addEventListener('change', e=>{
-  const file = e.target.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = ev=>{
-    try{
-      const data = JSON.parse(ev.target.result);
-      limpiarCamposBateria();
-      Object.keys(data).forEach(id=>{ const el=$(id); if(el) el.value = data[id]; });
-      poblarGradosNativos();
-      ['g-gradoRP-nativo','g-gradoObj-nativo'].forEach(id=>{
-        if(data[id] !== undefined && $(id)) $(id).value = data[id];
-      });
-      recalcAll(); saveState();
-    }catch(err){ alert('El archivo no es un JSON de batería válido.'); }
-  };
-  reader.readAsText(file);
-  e.target.value = '';
-});
 
 (async function initSelectorBateria(){
   const sel = $('selectorClienteBateria');
