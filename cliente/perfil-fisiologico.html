@@ -341,7 +341,7 @@ async function cargar(){
     const modalidad = (dataCliente.cliente.modalidad || 'deportiva').trim().toLowerCase();
     document.getElementById('subTxt').textContent = `Modalidad: ${dataCliente.cliente.modalidad || '—'}`;
 
-    const resPerfiles = await fetch('/api/obtener-perfiles-fisiologicos?' + new URLSearchParams({ cliente: CLIENTE, modalidad, token: TOKEN }).toString());
+    const resPerfiles = await fetch('/api/perfil-fisiologico?' + new URLSearchParams({ cliente: CLIENTE, modalidad, token: TOKEN }).toString());
     if(resPerfiles.status === 401){ manejarSesionInvalida(); return; }
     const dataPerfiles = await resPerfiles.json();
     if(!dataPerfiles.success){
