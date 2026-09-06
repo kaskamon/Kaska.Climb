@@ -104,7 +104,13 @@ module.exports = async (req, res) => {
       porDiaYMeso.set(filaFecha + '|' + filaMesociclo, { fecha: filaFecha, mesociclo: filaMesociclo });
     });
 
-    res.status(200).json({ success: true, dias, sesiones: Array.from(porDiaYMeso.values()) });
+    // esEntrenador: para que el front pueda mostrar cosas que solo tienen
+    // sentido para el entrenador (p.ej. el botón "Siguiente semana" en
+    // cliente/semana.html) y nunca para el cliente real, aunque ambos usen
+    // la misma página — lo calcula verificarAccesoCliente según si la
+    // petición llegó con la Basic Auth del entrenador o con el token propio
+    // del cliente.
+    res.status(200).json({ success: true, dias, sesiones: Array.from(porDiaYMeso.values()), esEntrenador: !!acceso.esEntrenador });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

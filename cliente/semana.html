@@ -144,7 +144,7 @@
     <h1 id="nombreTxt">— <span id="apellidoSpan"></span></h1>
     <div class="rango-fila">
       <div class="rango" id="rangoTxt"></div>
-      <button type="button" class="btn-cambiar-semana" id="btnCambiarSemana"></button>
+      <button type="button" class="btn-cambiar-semana" id="btnCambiarSemana" hidden></button>
     </div>
   </div>
 
@@ -318,9 +318,16 @@ async function cargar(){
     document.getElementById('estadoCarga').hidden = true;
     document.getElementById('wrap').hidden = false;
 
+    // El botón para ver la semana siguiente es solo para el entrenador
+    // (usando "Ver como cliente") — el cliente real ni siquiera debe verlo.
     const btnCambiar = document.getElementById('btnCambiarSemana');
-    btnCambiar.textContent = viendoSemanaSiguiente ? '← Semana actual' : 'Semana que viene →';
-    btnCambiar.disabled = false;
+    if(data.esEntrenador){
+      btnCambiar.hidden = false;
+      btnCambiar.textContent = viendoSemanaSiguiente ? '← Semana actual' : 'Siguiente semana';
+      btnCambiar.disabled = false;
+    } else {
+      btnCambiar.hidden = true;
+    }
   }catch(err){
     mostrarError('Error de red al cargar tu semana: ' + err.message);
   }
