@@ -1734,19 +1734,32 @@ function recalcAll(){
 
   const frpc = (peso!==null && lastre!==null) ? (((peso+lastre)/peso)-1)*100 : null;
   out('ot-frpc', frpc, 1);
-  let sugFrpc = null, sugFrpcVal = null;
-  if(frpc!==null){ if(frpc<30){ sugFrpc='75%'; sugFrpcVal=75; } else if(frpc<=50){ sugFrpc='65%'; sugFrpcVal=65; } else { sugFrpc='55%'; sugFrpcVal=55; } }
+  let sugFrpc = null;
+  if(frpc!==null){ sugFrpc = frpc<30 ? '75%' : (frpc<=50 ? '65%' : '55%'); }
   if($('ot-sug-frpc')) $('ot-sug-frpc').textContent = sugFrpc || '–';
 
-  // Auto-suggest final OT if user hasn't touched it manually
+  // Umbral de oclusión final = la moda (valor que más se repite) entre los 5
+  // métodos (pares, R² sumatorio, R² lineal, fuerza relativa y visualización).
+  // En empate, se queda con el valor más bajo (más conservador).
+  const otVizVal = num('ot-final-viz');
+  const sugerenciasOT = [sugPares, sugR2, sugR2lin, sugFrpc]
+    .map(s => s!==null ? parseInt(s, 10) : null)
+    .concat([otVizVal])
+    .filter(v => v!==null && !isNaN(v));
+  let modaOT = null;
+  if(sugerenciasOT.length){
+    const conteo = {};
+    sugerenciasOT.forEach(v=>{ conteo[v] = (conteo[v]||0)+1; });
+    const maxCount = Math.max(...Object.values(conteo));
+    const empatados = Object.keys(conteo).filter(v=>conteo[v]===maxCount).map(Number);
+    modaOT = Math.min(...empatados);
+  }
   const otFinalEl = $('ot-final');
-  if(otFinalEl && otFinalEl.dataset.auto !== 'false' && sugFrpcVal!==null){
-    if(document.activeElement !== otFinalEl){ otFinalEl.value = sugFrpcVal; }
+  if(otFinalEl && otFinalEl.dataset.auto !== 'false' && modaOT!==null){
+    if(document.activeElement !== otFinalEl){ otFinalEl.value = modaOT; }
   }
   const otFinal = num('ot-final');
   out('ot-final-out', otFinal, 0, otFinal!==null ? '% de tu fuerza máxima de agarre' : '');
-  const otVizEl = $('ot-final-viz');
-  if(otVizEl && document.activeElement !== otVizEl){ otVizEl.value = otFinal!==null ? Math.round(otFinal) : ''; }
 
   /* ---------- CURVA & CARGA ---------- */
   const ccXsRaw = [], ccYs = [];
@@ -1910,10 +1923,6 @@ function recalcAll(){
    ============================================================ */
 document.addEventListener('input', e=>{
   if(e.target.id==='ot-final'){ e.target.dataset.auto='false'; }
-  if(e.target.id==='ot-final-viz'){
-    const master = $('ot-final');
-    if(master){ master.value = e.target.value; master.dataset.auto='false'; }
-  }
   if(e.target.id && e.target.id.startsWith('guion-d')){ e.target.dataset.auto='false'; }
   recalcAll(); saveState();
 });
