@@ -168,7 +168,10 @@ function camposDelMesoActivo(){
 
 function poblarSelectorVariable(){
   const sel = document.getElementById('selectorVariable');
-  const opciones = ['<option value="fuerza">Fuerza (PFinicial / Fmax)</option>'];
+  const opciones = [
+    '<option value="fuerza">Fuerza (PFinicial / Fmax)</option>',
+    '<option value="pfpct">PFinicial en % (control de carga)</option>',
+  ];
   camposDelMesoActivo().forEach((c, i) => {
     opciones.push(`<option value="campo:${i}">${escapeHtml(c.label)} (${escapeHtml(c.match)})</option>`);
   });
@@ -354,6 +357,7 @@ function pintarDatos(){
   }
 
   if(VARIABLE_ACTIVA === 'fuerza') pintarPanelFuerza(panel, historial);
+  else if(VARIABLE_ACTIVA === 'pfpct') pintarPanelPfPct(panel, historial);
   else pintarPanelCampo(panel, historial, Number(VARIABLE_ACTIVA.split(':')[1]));
 }
 
@@ -460,6 +464,105 @@ function pintarPanelCampo(panel, historial, indice){
     </div>`;
 
   dibujarGraficaCampo(document.getElementById('chartPF'), historial, indice, color, tipo);
+}
+
+// PFinicial en % — variación de la fuerza de partida respecto a la sesión
+// entrenada anterior de este mismo mesociclo. Mismo cálculo que ya hace
+// cliente/sesion.html para decidir si la sesión se bloquea por no estar
+// recuperado (perdida = (anterior-actual)/anterior*100, sesión bloqueada si
+// perdida > umbralControl) — aquí en positivo cuando hay GANANCIA respecto a
+// la sesión de antes, en negativo cuando hay pérdida, para verlo en el tiempo.
+function pintarPanelPfPct(panel, historial){
+  const cfg = window.MESOCICLOS_CONFIG && window.MESOCICLOS_CONFIG.FIELD_MAP[MESO_ACTIVO];
+  const umbralControl = cfg ? cfg.umbralControl : undefined;
+  const color = MESO_COLORS[MESO_ACTIVO];
+
+  const puntos = [];
+  for(let i = 1; i < historial.length; i++){
+    const anterior = historial[i-1].pfInicial, actual = historial[i].pfInicial;
+    if(!anterior) continue;
+    puntos.push({ fecha: historial[i].fecha, valor: ((actual - anterior) / anterior) * 100 });
+  }
+
+  if(!puntos.length){
+    panel.innerHTML = '<div class="estado-panel">Hace falta al menos 2 sesiones entrenadas de este mesociclo para calcular la variación.</div>';
+    return;
+  }
+
+  const media = puntos.reduce((s,p) => s + p.valor, 0) / puntos.length;
+  const ultimo = puntos[puntos.length - 1].valor;
+  const sobreUmbral = umbralControl !== undefined ? puntos.filter(p => -p.valor > umbralControl).length : null;
+
+  panel.innerHTML = `
+    <div class="stat-tiles">
+      <div class="stat-tile"><div class="k">Variación media</div><div class="v" style="color:${media>=0?'var(--moss-light)':'var(--danger)'};">${media>=0?'+':''}${media.toFixed(1)}<small>%</small></div></div>
+      <div class="stat-tile">
+        <div class="k">Última variación</div>
+        <div class="v" style="color:${ultimo>=0?'var(--moss-light)':'var(--danger)'};">${ultimo>=0?'+':''}${ultimo.toFixed(1)}<small>%</small></div>
+        <div class="delta ${ultimo>=0?'up':'down'}">${ultimo>=0?'↑ ganancia':'↓ pérdida'} vs. sesión anterior</div>
+      </div>
+      <div class="stat-tile"><div class="k">Pérdida &gt; umbral</div><div class="v">${sobreUmbral ?? '—'}<small>/${puntos.length}</small></div></div>
+      <div class="stat-tile"><div class="k">Umbral de control</div><div class="v">${umbralControl ?? '—'}<small>%</small></div></div>
+    </div>
+    <div class="chart-shell">
+      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
+    </div>
+    <div class="tabla-datos-wrap">
+      <table class="tabla-datos">
+        <thead><tr><th>Fecha</th><th>Variación PFinicial</th></tr></thead>
+        <tbody>${puntos.map(p => `<tr><td>${escapeHtml(p.fecha)}</td><td style="color:${p.valor>=0?'var(--moss-light)':'var(--danger)'};">${p.valor>=0?'+':''}${p.valor.toFixed(1)}%</td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+
+  dibujarGraficaValores(document.getElementById('chartPF'), puntos, color);
+}
+
+// Gráfica genérica de una serie de puntos {fecha, valor} ya calculada (sin
+// huecos que respetar, a diferencia de dibujarGraficaCampo) — admite valores
+// negativos (variación en %) y dibuja una línea de referencia en el cero.
+function dibujarGraficaValores(svg, puntos, color){
+  const M = { left:44, right:14, top:16, bottom:30 };
+  const W = 640, H = 260;
+  const plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
+
+  const valores = puntos.map(p => p.valor);
+  const rawMin = Math.min(0, ...valores), rawMax = Math.max(0, ...valores);
+  const margen = Math.max(2, (rawMax - rawMin) * 0.15);
+  const yMin = rawMin - margen, yMax = rawMax + margen;
+
+  const n = puntos.length;
+  const x = i => M.left + (n > 1 ? (i / (n - 1)) * plotW : plotW / 2);
+  const y = v => M.top + plotH - ((v - yMin) / (yMax - yMin || 1)) * plotH;
+
+  let svgStr = '';
+  const pasosY = 4;
+  for(let p = 0; p <= pasosY; p++){
+    const valor = yMin + (yMax - yMin) * (p / pasosY);
+    const yy = y(valor);
+    svgStr += `<line class="grid-linea" x1="${M.left}" y1="${yy.toFixed(1)}" x2="${W - M.right}" y2="${yy.toFixed(1)}"/>`;
+    svgStr += `<text class="eje-label" x="${M.left - 8}" y="${yy.toFixed(1)}" text-anchor="end" dominant-baseline="middle">${valor.toFixed(0)}%</text>`;
+  }
+  if(yMin < 0 && yMax > 0){
+    svgStr += `<line x1="${M.left}" y1="${y(0).toFixed(1)}" x2="${W-M.right}" y2="${y(0).toFixed(1)}" stroke="rgba(242,237,225,0.25)" stroke-width="1.5" stroke-dasharray="3,3"/>`;
+  }
+
+  const salto = Math.max(1, Math.ceil(n / 8));
+  puntos.forEach((p, i) => {
+    if(i % salto !== 0 && i !== n - 1) return;
+    svgStr += `<text class="eje-label" x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${escapeHtml(p.fecha)}</text>`;
+  });
+
+  const pts = puntos.map((p, i) => [x(i), y(p.valor)]);
+  if(pts.length >= 2){
+    svgStr += `<polyline points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  pts.forEach(([px,py], idx) => {
+    const esUltimo = idx === pts.length - 1;
+    svgStr += `<circle class="${esUltimo?'punto-final':''}" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${esUltimo?4.5:3}" fill="${color}"/>`;
+  });
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.innerHTML = svgStr;
 }
 
 document.getElementById('selectorVariable').addEventListener('change', (e) => {
