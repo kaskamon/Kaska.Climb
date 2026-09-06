@@ -334,6 +334,7 @@
             padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px;
             background: #ffffff; color: var(--stone-900);
         }
+        .panel-publicar[hidden] { display: none; }
         .panel-desox-alt { display: flex; gap: 12px; align-items: center; font-size: 12px; color: var(--stone-900); }
         .panel-desox-alt[hidden] { display: none; }
         .panel-desox-alt label { display: flex; align-items: center; gap: 4px; font-weight: 600; cursor: pointer; }
@@ -394,23 +395,13 @@
                 </a>
             </div>
 
-            <div class="panel-publicar no-print">
-                <div class="campo-publicar">
-                    <label>Cliente</label>
-                    <select id="publicarCliente"><option value="">Cargando clientes...</option></select>
-                </div>
-                <div class="campo-publicar">
-                    <label>Mesociclo</label>
-                    <select id="publicarMesociclo">
-                        <option value="">— Elegir —</option>
-                        <option value="REOX">REOX</option>
-                        <option value="AERO">AERO</option>
-                        <option value="DESOX">DESOX</option>
-                        <option value="FMAX">FMAX</option>
-                        <option value="GYM-FMAX">GYM-FMAX</option>
-                        <option value="GYM-ANTAGONISTAS">GYM-ANTAGONISTAS</option>
-                        <option value="TAPERING">TAPERING</option>
-                    </select>
+            <div class="panel-publicar no-print" id="avisoSinContexto" hidden style="color:#b3564a; font-weight:700;">
+                Abre esta página desde Semanas.html (elige cliente y semana ahí, y pulsa "Diseñar sesión de este mesociclo") — así siempre queda atada al cliente y mesociclo correctos.
+            </div>
+            <div class="panel-publicar no-print" id="panelPublicarSesion">
+                <div class="campo-publicar" id="campoDisenandoPara">
+                    <label>Diseñando para</label>
+                    <div id="disenandoPara" style="font-weight:700; padding:7px 0;">—</div>
                 </div>
                 <div class="panel-desox-alt" id="panelDesoxAlternativa" hidden>
                     <span style="font-weight:800; text-transform:uppercase; font-size:10px; letter-spacing:0.06em; color:var(--chalk-dim);">Bloque integrado:</span>
@@ -427,7 +418,6 @@
         </div>
     </div>
 
-    <script src="libs/clientes-selector.js"></script>
     <script>
         // Comprobamos si la página se está viendo dentro de una vista previa (iframe),
         // ya que en ese caso el navegador bloquea window.print() por seguridad y no pasa nada al pulsar el botón.
@@ -699,16 +689,25 @@
         });
 
         /* ================= PUBLICAR EN LA NUBE (para el motor genérico de sesión) ================= */
-        const inputPublicarCliente = document.getElementById('publicarCliente');
-        const selectPublicarMesociclo = document.getElementById('publicarMesociclo');
+        // Cliente y mesociclo ya NO se eligen aquí — llegan fijados por la
+        // URL (Semanas.html los calcula solo a partir del macrociclo real del
+        // cliente y abre esta página con ellos puestos). Así esta plantilla
+        // nunca puede quedar guardada bajo un cliente/mesociclo distinto del
+        // que de verdad toca esa semana.
+        const parametrosURL = new URLSearchParams(window.location.search);
+        const CLIENTE = (parametrosURL.get('cliente') || '').trim();
+        const MESOCICLO = (parametrosURL.get('mesociclo') || '').trim().toUpperCase();
+
         const panelDesoxAlt = document.getElementById('panelDesoxAlternativa');
         const estadoPublicar = document.getElementById('estadoPublicar');
 
-        cargarSelectorClientes(inputPublicarCliente);
-
-        selectPublicarMesociclo.addEventListener('change', () => {
-            panelDesoxAlt.hidden = selectPublicarMesociclo.value !== 'DESOX';
-        });
+        if (!CLIENTE || !MESOCICLO) {
+            document.getElementById('avisoSinContexto').hidden = false;
+            document.getElementById('panelPublicarSesion').hidden = true;
+        } else {
+            document.getElementById('disenandoPara').textContent = `${CLIENTE} — ${MESOCICLO}`;
+            panelDesoxAlt.hidden = MESOCICLO !== 'DESOX';
+        }
 
         function mostrarEstadoPublicar(texto, clase) {
             estadoPublicar.textContent = texto;
@@ -717,12 +716,8 @@
         }
 
         document.getElementById('btn-cargar-ultimo').addEventListener('click', async () => {
-            const cliente = inputPublicarCliente.value.trim();
-            const mesociclo = selectPublicarMesociclo.value;
-            if (!cliente || !mesociclo) {
-                alert('Indica el cliente y el mesociclo antes de cargar la última versión publicada.');
-                return;
-            }
+            const cliente = CLIENTE, mesociclo = MESOCICLO;
+            if (!cliente || !mesociclo) return;
             mostrarEstadoPublicar('Cargando última versión publicada...', null);
             try {
                 const qs = new URLSearchParams({ cliente, mesociclo });
@@ -741,12 +736,8 @@
         });
 
         document.getElementById('btn-publicar').addEventListener('click', async () => {
-            const cliente = inputPublicarCliente.value.trim();
-            const mesociclo = selectPublicarMesociclo.value;
-            if (!cliente || !mesociclo) {
-                alert('Indica cliente y mesociclo antes de publicar.');
-                return;
-            }
+            const cliente = CLIENTE, mesociclo = MESOCICLO;
+            if (!cliente || !mesociclo) return;
             // La fecha no se usa para enlazar con Semanas.html (eso va por
             // cliente+mesociclo, gana siempre la versión más reciente) — se
             // manda solo porque la columna la exige, con la fecha de hoy.

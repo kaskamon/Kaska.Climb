@@ -667,6 +667,7 @@ function wireInteractividad(ultimaValida){
 
   let sesionBloqueada = false;
   let umbralParadaActual = null;
+  let pfInicialHoyActual = null; // PFinicial de hoy, para poder mostrar el % de caída del PFfinal (no solo en N)
 
   const pfInicialInput = document.getElementById('pf-inicial');
   if(pfInicialInput && CFG.pfInicial){
@@ -689,10 +690,12 @@ function wireInteractividad(ultimaValida){
             recoveryBox.classList.remove('show', 'info');
             if(refPfFinalUmbral) refPfFinalUmbral.textContent = '— N';
             umbralParadaActual = null;
+            pfInicialHoyActual = null;
             return;
           }
           recoveryBox.classList.add('show', 'info');
           recoveryBox.innerHTML = '<span class="dot"></span><span>Primera vez que registras este mesociclo — sin referencia previa para calcular recuperación. <b>Continúa con la sesión.</b></span>';
+          pfInicialHoyActual = v;
           if(CFG.pfFinal && refPfFinalUmbral){
             const umbralParada = v * (1 - CFG.umbralIntegrado / 100);
             umbralParadaActual = umbralParada;
@@ -711,9 +714,11 @@ function wireInteractividad(ultimaValida){
           laterBlocks.forEach(b => b.classList.remove('blocked'));
           if(refPfFinalUmbral) refPfFinalUmbral.textContent = '— N';
           umbralParadaActual = null;
+          pfInicialHoyActual = null;
           if(btnSendQuick) btnSendQuick.classList.remove('show');
           return;
         }
+        pfInicialHoyActual = v;
         if(CFG.pfFinal && refPfFinalUmbral){
           const umbralParada = v * (1 - CFG.umbralIntegrado / 100);
           umbralParadaActual = umbralParada;
@@ -741,17 +746,24 @@ function wireInteractividad(ultimaValida){
   if(pfFinalInput && pfFinalWarning){
     pfFinalInput.addEventListener('input', () => {
       const v = parseFloat(pfFinalInput.value);
-      if(isNaN(v) || pfFinalInput.value.trim() === '' || umbralParadaActual === null){
+      if(isNaN(v) || pfFinalInput.value.trim() === '' || umbralParadaActual === null || !pfInicialHoyActual){
         pfFinalWarning.classList.remove('show', 'ok', 'warn');
         return;
       }
+      // % de caída respecto al PFinicial de HOY (no de la sesión anterior) —
+      // es la fatiga real de esta sesión. Se compara directamente en % contra
+      // CFG.umbralIntegrado (el umbral de parada de este mesociclo) — v y
+      // umbralParadaActual (en N) son la misma comparación, pero traducida a
+      // Newtons, se dejan solo como referencia entre paréntesis.
+      const caida = ((pfInicialHoyActual - v) / pfInicialHoyActual) * 100;
+      const suficiente = caida >= CFG.umbralIntegrado;
       pfFinalWarning.classList.remove('ok', 'warn');
-      if(v > umbralParadaActual){
+      if(!suficiente){
         pfFinalWarning.classList.add('show', 'warn');
-        pfFinalWarning.innerHTML = `<span class="dot"></span><span>Este valor (${v} N) todavía está <b>por encima del umbral de parada</b> (${umbralParadaActual.toFixed(0)} N). Si de verdad es tu último test, revísalo — no debería haberse acabado la sesión todavía con esta cifra.</span>`;
+        pfFinalWarning.innerHTML = `<span class="dot"></span><span>Caída del <b>${caida.toFixed(1)}%</b> respecto a tu PFinicial de hoy — todavía <b>por debajo del ${CFG.umbralIntegrado}%</b> necesario (${v} N, umbral en ${umbralParadaActual.toFixed(0)} N). Si de verdad es tu último test, revísalo — no debería haberse acabado la sesión todavía con esta cifra.</span>`;
       }else{
         pfFinalWarning.classList.add('show', 'ok');
-        pfFinalWarning.innerHTML = `<span class="dot"></span><span>Correcto — por debajo del umbral de parada (${umbralParadaActual.toFixed(0)} N).</span>`;
+        pfFinalWarning.innerHTML = `<span class="dot"></span><span>Caída del <b>${caida.toFixed(1)}%</b> respecto a tu PFinicial de hoy — correcto, ya has superado el ${CFG.umbralIntegrado}% de parada (${v} N, umbral en ${umbralParadaActual.toFixed(0)} N).</span>`;
       }
     });
   }

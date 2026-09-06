@@ -366,6 +366,10 @@ select.head-select option {
 .estado-publicar-semana div.ok { color: var(--moss-light); }
 .estado-publicar-semana div.error { color: #d99a8f; }
 
+.estado-macrociclo { font-size: 10.5px; color: var(--chalk-dim); line-height: 1.4; margin: -4px 0 10px; }
+.estado-macrociclo.error { color: #d99a8f; font-weight: 700; }
+.estado-macrociclo.ok { color: var(--moss-light); }
+
 @media screen and (max-width: 820px) {
   body {
     align-items: flex-start;
@@ -458,7 +462,7 @@ select.head-select option {
       <div class="head-item">
         Semana:
         <br>
-        <span class="head-val" contenteditable="true" id="h1">01</span>
+        <span class="head-val" id="h1">—</span>
       </div>
 
       <div class="head-item">
@@ -471,21 +475,16 @@ select.head-select option {
       <div class="head-item">
         Mesociclo:
         <br>
-        <select class="head-val head-select" id="h3">
-          <option value="REOX">REOX</option>
-          <option value="AERO">AERO</option>
-          <option value="DESOX">DESOX</option>
-          <option value="FMAX">FMAX</option>
-          <option value="TAPERING">TAPERING</option>
-        </select>
+        <span class="head-val" id="h3">—</span>
       </div>
 
       <div class="head-item">
         Sem. Meso.:
         <br>
-        <span class="head-val" contenteditable="true" id="h4">1/4</span>
+        <span class="head-val" id="h4">—</span>
       </div>
     </div>
+    <div class="estado-macrociclo no-print" id="estadoMacrociclo"></div>
 
     <div class="semana-grid" id="grid">
       <div class="dia-columna" id="d1">
@@ -561,6 +560,7 @@ select.head-select option {
     <div class="panel-publicar-semana no-print">
       <select id="publicarClienteSemana"><option value="">Cargando clientes...</option></select>
       <button class="btn-action" id="btnCargarUltimaSemana" type="button">Cargar semana</button>
+      <button class="btn-action" id="btnDisenarSesion" type="button" disabled>Diseñar sesión de este mesociclo</button>
       <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
       <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
       <button class="btn-action" id="btnBorrarSemana" type="button">Borrar semana publicada</button>
@@ -645,6 +645,8 @@ function actualizarFecha(val) {
   const ddStr = String(d).padStart(2, '0');
   const mmStr = String(m).padStart(2, '0');
   document.getElementById('displayDate').innerText = `${ddStr}/${mmStr}/${y}`;
+
+  if (typeof recalcularMesocicloDesdeMacrociclo === 'function') recalcularMesocicloDesdeMacrociclo();
 }
 
 function limpiarTabla() {
@@ -665,17 +667,111 @@ document.addEventListener('click', e => {
 
 // El banco solo tiene 4 tipos de caja (Sesión Roco / Gym-Antagonistas /
 // Roca-Roco / Descanso) — el mesociclo real (REOX/AERO/DESOX/FMAX y cuál de
-// los 2 GYM) se resuelve a partir del "Mesociclo" de la cabecera de esta
-// semana, no se elige por caja.
+// los 2 GYM) ya no se elige a mano: se calcula solo a partir del macrociclo
+// publicado del cliente (ver recalcularMesocicloDesdeMacrociclo), para que
+// nunca pueda quedar mal atado a la fecha/cliente equivocados.
 const GYM_POR_MESOCICLO = { FMAX: 'GYM-FMAX', REOX: 'GYM-ANTAGONISTAS', AERO: 'GYM-ANTAGONISTAS', DESOX: 'GYM-ANTAGONISTAS', TAPERING: 'GYM-ANTAGONISTAS' };
 
+// Macrociclos.html guarda cada bloque con una clave de fase en minúsculas
+// (fmax/desox/reox/aero/tap) distinta de la clave de mesociclo en mayúsculas
+// que usa el resto de la app (FMAX/DESOX/REOX/AERO/TAPERING) — se traduce aquí.
+const FASE_A_MESOCICLO = { fmax: 'FMAX', desox: 'DESOX', reox: 'REOX', aero: 'AERO', tap: 'TAPERING' };
+
+let MESOCICLO_ACTUAL = null; // se rellena solo desde el macrociclo real del cliente
+
 function resolverMesocicloCaja(tipo) {
-  const mesocicloSemana = document.getElementById('h3').value;
-  if (tipo === 'sesion') return mesocicloSemana;
-  if (tipo === 'gym') return GYM_POR_MESOCICLO[mesocicloSemana] || 'GYM-ANTAGONISTAS';
+  if (tipo === 'sesion') return MESOCICLO_ACTUAL;
+  if (tipo === 'gym') return GYM_POR_MESOCICLO[MESOCICLO_ACTUAL] || 'GYM-ANTAGONISTAS';
   if (tipo === 'roca') return 'ROCA';
   if (tipo === 'descanso') return 'DESCANSO';
   return null;
+}
+
+// Dado el macrociclo real de un cliente (inicio + bloques [{fase,semanas}])
+// y el lunes de una semana (dd/mm/aaaa), calcula en qué bloque cae esa
+// semana y qué número de semana es dentro de ese bloque. Devuelve
+// fueraDeRango si la fecha es anterior al inicio o posterior al final del
+// macrociclo publicado.
+function calcularFaseYSemana(inicioISO, bloques, fechaLunesDDMMYYYY) {
+  const [yI, mI, dI] = inicioISO.split('-').map(Number);
+  const inicio = new Date(yI, mI - 1, dI);
+  const [dL, mL, yL] = fechaLunesDDMMYYYY.split('/').map(Number);
+  const lunes = new Date(yL, mL - 1, dL);
+
+  const diffDias = Math.round((lunes - inicio) / 86400000);
+  if (diffDias < 0) return { fueraDeRango: true, motivo: 'antes' };
+
+  const semanaGlobal = Math.floor(diffDias / 7) + 1;
+  let acumulado = 0;
+  for (const b of (bloques || [])) {
+    const semanasBloque = Number(b.semanas) || 0;
+    if (semanaGlobal <= acumulado + semanasBloque) {
+      return {
+        fueraDeRango: false,
+        mesociclo: FASE_A_MESOCICLO[b.fase] || String(b.fase || '').toUpperCase(),
+        semanaEnBloque: semanaGlobal - acumulado,
+        semanasBloque,
+        semanaGlobal,
+      };
+    }
+    acumulado += semanasBloque;
+  }
+  return { fueraDeRango: true, motivo: 'despues', semanaGlobal, totalSemanas: acumulado };
+}
+
+// Se ejecuta cada vez que cambia el cliente elegido o la fecha (lunes) de la
+// cabecera — vuelve a leer el macrociclo real de ese cliente y rellena
+// Semana / Mesociclo / Sem. Meso. solos, en vez de que el entrenador tenga
+// que teclearlos o elegirlos a mano.
+async function recalcularMesocicloDesdeMacrociclo() {
+  const cliente = inputPublicarClienteSemana.value.trim();
+  const fechaLunes = fechaParaDiaIndice(0);
+  const estado = document.getElementById('estadoMacrociclo');
+  const h1 = document.getElementById('h1'), h3 = document.getElementById('h3'), h4 = document.getElementById('h4');
+  const btnDisenar = document.getElementById('btnDisenarSesion');
+
+  MESOCICLO_ACTUAL = null;
+  h1.innerText = '—'; h3.innerText = '—'; h4.innerText = '—';
+  btnDisenar.disabled = true;
+  estado.textContent = ''; estado.className = 'estado-macrociclo no-print';
+
+  if (!cliente || !fechaLunes) return;
+
+  estado.textContent = 'Consultando el macrociclo del cliente...';
+  try {
+    const res = await fetch('/api/macrociclo?' + new URLSearchParams({ cliente }).toString());
+    const data = await res.json();
+    if (!data.success) {
+      estado.textContent = data.error || 'No se pudo consultar el macrociclo.';
+      estado.classList.add('error');
+      return;
+    }
+    if (!data.plan) {
+      estado.textContent = 'Este cliente no tiene ningún macrociclo publicado — publícalo primero en Macrociclos.html.';
+      estado.classList.add('error');
+      return;
+    }
+
+    const calc = calcularFaseYSemana(data.plan.inicio, data.plan.bloques, fechaLunes);
+    if (calc.fueraDeRango) {
+      estado.textContent = calc.motivo === 'antes'
+        ? `El macrociclo de ${data.plan.nombre || cliente} empieza el ${data.plan.inicio.split('-').reverse().join('/')} — esta semana es anterior.`
+        : `El macrociclo de ${data.plan.nombre || cliente} termina tras ${calc.totalSemanas} semanas — esta fecha ya cae fuera de él.`;
+      estado.classList.add('error');
+      return;
+    }
+
+    MESOCICLO_ACTUAL = calc.mesociclo;
+    h1.innerText = String(calc.semanaGlobal).padStart(2, '0');
+    h3.innerText = calc.mesociclo;
+    h4.innerText = `${calc.semanaEnBloque}/${calc.semanasBloque}`;
+    btnDisenar.disabled = false;
+    estado.textContent = `✓ Semana ${calc.semanaEnBloque} de ${calc.semanasBloque} de ${calc.mesociclo} (según el macrociclo de ${data.plan.nombre || cliente}).`;
+    estado.classList.add('ok');
+  } catch (e) {
+    estado.textContent = 'Error de red al consultar el macrociclo: ' + e.message;
+    estado.classList.add('error');
+  }
 }
 
 // La "Fecha" de la cabecera representa el lunes de esta semana. Cada columna de
@@ -694,8 +790,16 @@ function fechaParaDiaIndice(indiceDia) {
 /* ================= PUBLICAR SEMANA COMPLETA ================= */
 const inputPublicarClienteSemana = document.getElementById('publicarClienteSemana');
 cargarSelectorClientes(inputPublicarClienteSemana);
+inputPublicarClienteSemana.addEventListener('change', () => recalcularMesocicloDesdeMacrociclo());
 
 const MESOCICLOS_SEMANA = ['REOX', 'AERO', 'DESOX', 'FMAX', 'TAPERING'];
+
+document.getElementById('btnDisenarSesion').addEventListener('click', () => {
+  const cliente = inputPublicarClienteSemana.value.trim();
+  if (!cliente || !MESOCICLO_ACTUAL) return;
+  const qs = new URLSearchParams({ cliente, mesociclo: MESOCICLO_ACTUAL });
+  window.open('Sesiones.html?' + qs.toString(), '_blank');
+});
 
 document.getElementById('btnCargarUltimaSemana').addEventListener('click', async () => {
   const cliente = inputPublicarClienteSemana.value.trim();
@@ -734,6 +838,9 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
     const [ddL, mmL, yyyyL] = fechaLunes.split('/');
     document.getElementById('hiddenDate').value = `${yyyyL}-${mmL}-${ddL}`;
     actualizarFecha(`${yyyyL}-${mmL}-${ddL}`);
+    // actualizarFecha ya dispara el recálculo, pero es async — lo esperamos
+    // aquí explícitamente para poder comparar contra lo ya publicado.
+    await recalcularMesocicloDesdeMacrociclo();
 
     limpiarTabla();
 
@@ -741,7 +848,6 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
     // los 4 en cualquier sesión encontrada, ya sabemos el de toda la semana.
     let mesocicloSemana = null;
     data.sesiones.forEach(s => { if (MESOCICLOS_SEMANA.includes(s.mesociclo)) mesocicloSemana = s.mesociclo; });
-    if (mesocicloSemana) document.getElementById('h3').value = mesocicloSemana;
 
     data.dias.forEach((fechaDia, i) => {
       const columna = document.getElementById('d' + (i + 1)).querySelector('.dia-sesiones');
@@ -757,21 +863,17 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
       });
     });
 
-    // "Semana" y "Sem. Meso." de la cabecera — se leen de la fila real de
-    // cualquiera de las sesiones encontradas (misma fecha+mesociclo+cliente
-    // que ya sabemos que existe).
-    const primera = data.sesiones[0];
-    try {
-      const qsSesion = new URLSearchParams({ cliente, fecha: primera.fecha, mesociclo: primera.mesociclo });
-      const resSesion = await fetch('/api/obtener-sesion?' + qsSesion.toString());
-      const dataSesion = await resSesion.json();
-      if (dataSesion.success) {
-        if (dataSesion.semana) document.getElementById('h1').innerText = dataSesion.semana;
-        if (dataSesion.semanaMesociclo) document.getElementById('h4').innerText = dataSesion.semanaMesociclo;
-      }
-    } catch (e) { /* si falla, se dejan los valores que hubiera en la cabecera */ }
+    // "Semana" / "Mesociclo" / "Sem. Meso." de la cabecera ya se han
+    // recalculado solos (arriba) a partir del macrociclo real — si lo que
+    // había publicado no coincide, se avisa en vez de pisar uno con otro en
+    // silencio (podría ser que el macrociclo se corrigiera después de
+    // publicar esta semana).
+    let aviso = '';
+    if (mesocicloSemana && MESOCICLO_ACTUAL && mesocicloSemana !== MESOCICLO_ACTUAL) {
+      aviso = `<div class="error">⚠ Lo publicado esa semana era ${mesocicloSemana}, pero el macrociclo actual dice ${MESOCICLO_ACTUAL} — revisa cuál es correcto antes de volver a publicar.</div>`;
+    }
 
-    estadoDiv.innerHTML = `<div class="ok">✓ Cargada la semana del ${fechaLunes} para ${cliente}.</div>`;
+    estadoDiv.innerHTML = `<div class="ok">✓ Cargada la semana del ${fechaLunes} para ${cliente}.</div>` + aviso;
   } catch (e) {
     estadoDiv.innerHTML = `<div class="error">Error de red: ${e.message}</div>`;
   }
@@ -787,12 +889,19 @@ document.getElementById('btnPublicarSemana').addEventListener('click', async () 
     return;
   }
 
-  // Los mismos valores que ya rellenas a mano en la cabecera de arriba —
-  // se publican tal cual, sin recalcular nada.
+  const dias = Array.from(document.querySelectorAll('.dia-columna'));
+  const hayCajaDeSesion = dias.some(d => d.querySelector('.sesion[data-tipo="sesion"]'));
+  if (hayCajaDeSesion && !MESOCICLO_ACTUAL) {
+    alert('No se ha podido determinar el mesociclo de esta semana a partir del macrociclo del cliente — revisa el aviso de arriba antes de publicar.');
+    return;
+  }
+
+  // "Semana" y "Sem. Meso." ya vienen calculados solos a partir del
+  // macrociclo real (ver recalcularMesocicloDesdeMacrociclo) — se publican
+  // tal cual, sin volver a tocarlos aquí.
   const semana = document.getElementById('h1').innerText.trim();
   const semanaMesociclo = document.getElementById('h4').innerText.trim();
 
-  const dias = Array.from(document.querySelectorAll('.dia-columna'));
   const resultados = [];
   estadoDiv.innerHTML = 'Publicando...';
 
