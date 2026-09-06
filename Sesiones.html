@@ -400,8 +400,12 @@
             </div>
             <div class="panel-publicar no-print" id="panelPublicarSesion">
                 <div class="campo-publicar" id="campoDisenandoPara">
-                    <label>Diseñando para</label>
+                    <label>Cliente</label>
                     <div id="disenandoPara" style="font-weight:700; padding:7px 0;">—</div>
+                </div>
+                <div class="campo-publicar">
+                    <label>Mesociclo</label>
+                    <select id="selectMesociclo"></select>
                 </div>
                 <div class="panel-desox-alt" id="panelDesoxAlternativa" hidden>
                     <span style="font-weight:800; text-transform:uppercase; font-size:10px; letter-spacing:0.06em; color:var(--chalk-dim);">Bloque integrado:</span>
@@ -696,17 +700,33 @@
         // que de verdad toca esa semana.
         const parametrosURL = new URLSearchParams(window.location.search);
         const CLIENTE = (parametrosURL.get('cliente') || '').trim();
-        const MESOCICLO = (parametrosURL.get('mesociclo') || '').trim().toUpperCase();
+        const MESOCICLO_INICIAL = (parametrosURL.get('mesociclo') || '').trim().toUpperCase();
+        // Sigue sin poder abrirse suelto (hace falta llegar con cliente+
+        // mesociclo desde Semanas.html), pero una vez dentro sí se puede
+        // cambiar libremente entre la cualidad de esa semana y los 2 tipos
+        // de gym — son solo 3 opciones de bajo riesgo (nunca las 7 de
+        // antes), y el propio entrenador decide cuál toca sin que la app
+        // tenga que adivinarlo.
+        let MESOCICLO = MESOCICLO_INICIAL;
 
         const panelDesoxAlt = document.getElementById('panelDesoxAlternativa');
         const estadoPublicar = document.getElementById('estadoPublicar');
+        const selectMesociclo = document.getElementById('selectMesociclo');
 
-        if (!CLIENTE || !MESOCICLO) {
+        if (!CLIENTE || !MESOCICLO_INICIAL) {
             document.getElementById('avisoSinContexto').hidden = false;
             document.getElementById('panelPublicarSesion').hidden = true;
         } else {
-            document.getElementById('disenandoPara').textContent = `${CLIENTE} — ${MESOCICLO}`;
+            document.getElementById('disenandoPara').textContent = CLIENTE;
+            const OPCIONES_MESOCICLO = Array.from(new Set([MESOCICLO_INICIAL, 'GYM-FMAX', 'GYM-ANTAGONISTAS']));
+            selectMesociclo.innerHTML = OPCIONES_MESOCICLO.map(m => `<option value="${m}">${m}</option>`).join('');
+            selectMesociclo.value = MESOCICLO_INICIAL;
             panelDesoxAlt.hidden = MESOCICLO !== 'DESOX';
+            selectMesociclo.addEventListener('change', () => {
+                MESOCICLO = selectMesociclo.value;
+                panelDesoxAlt.hidden = MESOCICLO !== 'DESOX';
+                mostrarEstadoPublicar('', null);
+            });
         }
 
         function mostrarEstadoPublicar(texto, clase) {
