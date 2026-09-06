@@ -568,6 +568,10 @@ select.head-select option {
       <select id="publicarClienteSemana"><option value="">Cargando clientes...</option></select>
       <button class="btn-action" id="btnCargarUltimaSemana" type="button">Cargar semana</button>
       <button class="btn-action" id="btnDisenarSesion" type="button" disabled>Diseñar sesión de este mesociclo</button>
+      <div id="wrapCalidadTapering" class="no-print" hidden style="font-size:0.85em; margin-top:4px;">
+        Tapering de:
+        <select id="selectorCalidadTapering"></select>
+      </div>
       <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
       <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
       <button class="btn-action" id="btnBorrarSemana" type="button">Borrar semana publicada</button>
@@ -687,9 +691,22 @@ document.addEventListener('click', e => {
 const FASE_A_MESOCICLO = { fmax: 'FMAX', desox: 'DESOX', reox: 'REOX', aero: 'AERO', tap: 'TAPERING' };
 
 let MESOCICLO_ACTUAL = null; // se rellena solo desde el macrociclo real del cliente
+let MESOCICLO_ORIGEN_TAPERING = null; // cualidad del bloque anterior, solo si esta semana es TAPERING
+
+// Durante una semana de TAPERING, el entrenador puede elegir etiquetar la
+// caja de "sesión" como el TAPERING genérico o como la cualidad de la que
+// viene (ver #selectorCalidadTapering) — para el resto de tipos de caja no
+// hay elección posible, siempre se resuelven solos.
+function mesocicloParaSesion() {
+  const selector = document.getElementById('selectorCalidadTapering');
+  if (MESOCICLO_ACTUAL === 'TAPERING' && selector && !document.getElementById('wrapCalidadTapering').hidden) {
+    return selector.value || MESOCICLO_ACTUAL;
+  }
+  return MESOCICLO_ACTUAL;
+}
 
 function resolverMesocicloCaja(tipo) {
-  if (tipo === 'sesion') return MESOCICLO_ACTUAL;
+  if (tipo === 'sesion') return mesocicloParaSesion();
   if (tipo === 'gym-fmax') return 'GYM-FMAX';
   if (tipo === 'gym-antagonistas') return 'GYM-ANTAGONISTAS';
   if (tipo === 'roca') return 'ROCA';
@@ -713,12 +730,26 @@ function calcularFaseYSemana(inicioISO, bloques, fechaLunesDDMMYYYY) {
 
   const semanaGlobal = Math.floor(diffDias / 7) + 1;
   let acumulado = 0;
-  for (const b of (bloques || [])) {
+  const lista = bloques || [];
+  for (let idx = 0; idx < lista.length; idx++) {
+    const b = lista[idx];
     const semanasBloque = Number(b.semanas) || 0;
     if (semanaGlobal <= acumulado + semanasBloque) {
+      const mesociclo = FASE_A_MESOCICLO[b.fase] || String(b.fase || '').toUpperCase();
+      // Un tapering es una descarga del ciclo de calidad del que viene — si el
+      // bloque anterior es FMAX/REOX/DESOX/AERO, se ofrece como alternativa al
+      // "TAPERING" genérico para diseñar/publicar esa semana (ver
+      // recalcularMesocicloDesdeMacrociclo y #selectorCalidadTapering).
+      let origenTapering = null;
+      if (mesociclo === 'TAPERING' && idx > 0) {
+        const anterior = lista[idx - 1];
+        const mesocicloAnterior = FASE_A_MESOCICLO[anterior.fase] || String(anterior.fase || '').toUpperCase();
+        if (['FMAX', 'REOX', 'DESOX', 'AERO'].includes(mesocicloAnterior)) origenTapering = mesocicloAnterior;
+      }
       return {
         fueraDeRango: false,
-        mesociclo: FASE_A_MESOCICLO[b.fase] || String(b.fase || '').toUpperCase(),
+        mesociclo,
+        origenTapering,
         semanaEnBloque: semanaGlobal - acumulado,
         semanasBloque,
         semanaGlobal,
@@ -739,10 +770,13 @@ async function recalcularMesocicloDesdeMacrociclo() {
   const estado = document.getElementById('estadoMacrociclo');
   const h1 = document.getElementById('h1'), h3 = document.getElementById('h3'), h4 = document.getElementById('h4');
   const btnDisenar = document.getElementById('btnDisenarSesion');
+  const wrapTapering = document.getElementById('wrapCalidadTapering');
 
   MESOCICLO_ACTUAL = null;
+  MESOCICLO_ORIGEN_TAPERING = null;
   h1.innerText = '—'; h3.innerText = '—'; h4.innerText = '—';
   btnDisenar.disabled = true;
+  wrapTapering.hidden = true;
   estado.textContent = ''; estado.className = 'estado-macrociclo no-print';
 
   if (!cliente || !fechaLunes) return;
@@ -772,10 +806,20 @@ async function recalcularMesocicloDesdeMacrociclo() {
     }
 
     MESOCICLO_ACTUAL = calc.mesociclo;
+    MESOCICLO_ORIGEN_TAPERING = calc.origenTapering || null;
     h1.innerText = String(calc.semanaGlobal).padStart(2, '0');
     h3.innerText = calc.mesociclo === 'TAPERING' ? 'TAP' : calc.mesociclo; // solo para mostrar — MESOCICLO_ACTUAL sigue siendo 'TAPERING'
     h4.innerText = `${calc.semanaEnBloque}/${calc.semanasBloque}`;
     btnDisenar.disabled = false;
+
+    if (MESOCICLO_ORIGEN_TAPERING) {
+      const selector = document.getElementById('selectorCalidadTapering');
+      selector.innerHTML = `<option value="TAPERING">TAP genérico</option><option value="${MESOCICLO_ORIGEN_TAPERING}">${MESOCICLO_ORIGEN_TAPERING} (descarga)</option>`;
+      selector.value = 'TAPERING';
+      wrapTapering.hidden = false;
+    } else {
+      wrapTapering.hidden = true;
+    }
     estado.textContent = `✓ Semana ${calc.semanaEnBloque} de ${calc.semanasBloque} de ${calc.mesociclo} (según el macrociclo de ${data.plan.nombre || cliente}).`;
     estado.classList.add('ok');
   } catch (e) {
@@ -807,7 +851,7 @@ const MESOCICLOS_SEMANA = ['REOX', 'AERO', 'DESOX', 'FMAX', 'TAPERING'];
 document.getElementById('btnDisenarSesion').addEventListener('click', () => {
   const cliente = inputPublicarClienteSemana.value.trim();
   if (!cliente || !MESOCICLO_ACTUAL) return;
-  const qs = new URLSearchParams({ cliente, mesociclo: MESOCICLO_ACTUAL });
+  const qs = new URLSearchParams({ cliente, mesociclo: mesocicloParaSesion() });
   window.open('Sesiones.html?' + qs.toString(), '_blank');
 });
 
@@ -879,8 +923,17 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
     // había publicado no coincide, se avisa en vez de pisar uno con otro en
     // silencio (podría ser que el macrociclo se corrigiera después de
     // publicar esta semana).
+    // Si esta semana es TAPERING y lo publicado usaba la cualidad de origen
+    // (ver MESOCICLO_ORIGEN_TAPERING), no es un desajuste real — solo hace
+    // falta reflejar esa misma elección en el selector.
+    const esOrigenTapering = MESOCICLO_ACTUAL === 'TAPERING' && mesocicloSemana === MESOCICLO_ORIGEN_TAPERING;
+    if (esOrigenTapering) {
+      const selector = document.getElementById('selectorCalidadTapering');
+      if (selector) selector.value = MESOCICLO_ORIGEN_TAPERING;
+    }
+
     let aviso = '';
-    if (mesocicloSemana && MESOCICLO_ACTUAL && mesocicloSemana !== MESOCICLO_ACTUAL) {
+    if (mesocicloSemana && MESOCICLO_ACTUAL && mesocicloSemana !== MESOCICLO_ACTUAL && !esOrigenTapering) {
       aviso = `<div class="error">⚠ Lo publicado esa semana era ${mesocicloSemana}, pero el macrociclo actual dice ${MESOCICLO_ACTUAL} — revisa cuál es correcto antes de volver a publicar.</div>`;
     }
 
