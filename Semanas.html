@@ -773,7 +773,7 @@ async function recalcularMesocicloDesdeMacrociclo() {
 
     MESOCICLO_ACTUAL = calc.mesociclo;
     h1.innerText = String(calc.semanaGlobal).padStart(2, '0');
-    h3.innerText = calc.mesociclo;
+    h3.innerText = calc.mesociclo === 'TAPERING' ? 'TAP' : calc.mesociclo; // solo para mostrar — MESOCICLO_ACTUAL sigue siendo 'TAPERING'
     h4.innerText = `${calc.semanaEnBloque}/${calc.semanasBloque}`;
     btnDisenar.disabled = false;
     estado.textContent = `✓ Semana ${calc.semanaEnBloque} de ${calc.semanasBloque} de ${calc.mesociclo} (según el macrociclo de ${data.plan.nombre || cliente}).`;

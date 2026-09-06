@@ -27,9 +27,10 @@
     'GYM-ANTAGONISTAS': {},            // sin columnas de datos, solo queda registrada la fila
     ROCA:               {},            // día libre de roca/roco — sin datos, solo queda registrado el día
     DESCANSO:           {},            // día de descanso — sin datos, solo queda registrado el día
-    TAPERING:           {},            // ciclo de tapering/descarga (2-3 semanas) — cargas muy cerradas y
-                                        // progresivas que no queremos que distorsionen el resto de datos,
-                                        // así que tampoco lleva columnas — solo queda registrada la sesión
+    TAPERING:           { pfInicial: 5 }, // ciclo de tapering/descarga (2-3 semanas) — sí guarda PFinicial
+                                          // (da información real de carga aunque el bloque sea de descarga),
+                                          // pero no Fmax/campos/PFfinal — la carga es deliberadamente ligera
+                                          // y esos datos no aportan aquí.
   };
 
   // Qué "parte" del JSON de sesión (el mismo formato que exporta Sesiones.html:
@@ -100,7 +101,10 @@
       unico: { match: 'Fmax tracción', id: 'dominadas', label: 'Series completadas (Dominadas con lastre)' },
     },
     'GYM-ANTAGONISTAS': {},
-    TAPERING: {},
+    TAPERING: {
+      pfInicial: { match: 'Test PFinicial' },
+      umbralControl: 7,
+    },
   };
 
   // Título visible en la cabecera de la sesión — el mesociclo interno (clave del

@@ -20,11 +20,14 @@ function extraerHistorialDeMesociclo(filas, cliente, mesociclo, max) {
     .map(f => {
       // Si ese día se registró algo más allá del PFinicial (p.ej. la Fmax), la
       // sesión se entrenó de verdad. Si no, fue un día bloqueado por no estar
-      // recuperado, y no cuenta como referencia para sesiones futuras.
+      // recuperado, y no cuenta como referencia para sesiones futuras. Los
+      // mesociclos que ni siquiera miden Fmax (TAPERING) no tienen esa señal
+      // — ahí cualquier fila con PFinicial ya cuenta como entrenada, porque
+      // no hay forma de distinguir un día bloqueado sin el test de Fmax.
       const fmaxIzq = cfg.fmaxIzq !== undefined ? f[cfg.fmaxIzq] : undefined;
       const fmaxDer = cfg.fmaxDer !== undefined ? f[cfg.fmaxDer] : undefined;
       const pfFinalRaw = cfg.pfFinal !== undefined && cfg.pfFinal !== null ? f[cfg.pfFinal] : undefined;
-      const entrenada = fmaxIzq !== undefined && fmaxIzq !== '';
+      const entrenada = cfg.fmaxIzq !== undefined ? (fmaxIzq !== undefined && fmaxIzq !== '') : true;
       const campos = Array.isArray(cfg.campos)
         ? cfg.campos.map(col => (f[col] !== undefined && f[col] !== '' ? Number(f[col]) : undefined))
         : undefined;
