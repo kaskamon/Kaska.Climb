@@ -6,7 +6,10 @@ const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 // B cliente, C fecha (dd/mm/aaaa), D mesociclo, E semana (la del macrociclo
 // completo, tal cual la escribe el entrenador en Semanas.html), F json (el
 // objeto {tituloPrincipal, partes} tal cual lo exporta Sesiones.html),
-// G semanaMesociclo (p.ej. "3/6" — "Sem. Meso." de Semanas.html).
+// G semanaMesociclo (p.ej. "3/6" — "Sem. Meso." de Semanas.html), H
+// origenTapering (solo cuando mesociclo es TAPERING genérico: la cualidad
+// real de la que viene esa descarga — FMAX/REOX/DESOX/AERO — para que
+// cliente/sesion.html use los umbrales de esa cualidad en vez de uno fijo).
 const SHEET_NAME = 'Sesiones_Programadas';
 
 function parseFechaDDMMYYYY(s) {
@@ -29,7 +32,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { accion, cliente, fecha, mesociclo, sesion, semana, semanaMesociclo } = req.body || {};
+    const { accion, cliente, fecha, mesociclo, sesion, semana, semanaMesociclo, origenTapering } = req.body || {};
 
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
       return res.status(500).json({
@@ -117,7 +120,7 @@ module.exports = async (req, res) => {
 
     const [meta, resp] = await Promise.all([
       sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID }),
-      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NAME}'!A:G` }),
+      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NAME}'!A:H` }),
     ]);
     const hoja = meta.data.sheets.find(s => s.properties.title === SHEET_NAME);
     const filas = resp.data.values || [];
@@ -145,10 +148,10 @@ module.exports = async (req, res) => {
 
     await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
-      range: `'${SHEET_NAME}'!A:G`,
+      range: `'${SHEET_NAME}'!A:H`,
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
-      requestBody: { values: [[marcaTemporal, cliente, fecha, mesociclo, semana || '', JSON.stringify(sesion), semanaMesociclo || '']] },
+      requestBody: { values: [[marcaTemporal, cliente, fecha, mesociclo, semana || '', JSON.stringify(sesion), semanaMesociclo || '', origenTapering || '']] },
     });
 
     // Arranque automático del contrato: la primera vez que se publica un

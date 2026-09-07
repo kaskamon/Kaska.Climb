@@ -6,7 +6,7 @@ const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 // Pestaña nueva (hay que crearla a mano en el Sheet) donde Semanas.html / Sesiones.html
 // publican el guion de cada sesión concreta. Columnas: A marcaTemporal, B cliente,
 // C fecha (dd/mm/aaaa), D mesociclo, E semana, F json (el objeto {tituloPrincipal, partes}
-// tal cual lo exporta Sesiones.html, en texto).
+// tal cual lo exporta Sesiones.html, en texto), G semanaMesociclo, H origenTapering.
 const SHEET_NAME = 'Sesiones_Programadas';
 
 module.exports = async (req, res) => {
@@ -48,7 +48,7 @@ module.exports = async (req, res) => {
     try {
       const resp = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `'${SHEET_NAME}'!A:G`,
+        range: `'${SHEET_NAME}'!A:H`,
       });
       filas = resp.data.values || [];
     } catch (e) {
@@ -88,6 +88,7 @@ module.exports = async (req, res) => {
       sesion,
       semana: filaEncontrada[4] || null,
       semanaMesociclo: filaEncontrada[6] || null,
+      origenTapering: filaEncontrada[7] || null,
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

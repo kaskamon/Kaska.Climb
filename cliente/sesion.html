@@ -340,6 +340,12 @@ if(!FIELD_MAP || !FIELD_MAP[MESOCICLO]){
 }
 
 const CFG = FIELD_MAP[MESOCICLO];
+// Un TAPERING genérico (no la cualidad de origen elegida a mano en el popup)
+// no tiene un umbral propio — es una descarga del ciclo del que viene, así
+// que sus umbrales de control/parada son los de esa cualidad (FMAX/REOX/
+// DESOX/AERO). Se rellena en cargar(), con el origenTapering que devuelve
+// /api/obtener-sesion — hasta entonces, usa los de CFG (TAPERING) tal cual.
+let CFG_UMBRALES = CFG;
 
 /* ---------- Fecha a mostrar / a enviar (dd/mm/aaaa desde la URL) ---------- */
 let HOY = new Date();
@@ -718,7 +724,7 @@ function wireInteractividad(ultimaValida){
           recoveryBox.innerHTML = '<span class="dot"></span><span>Primera vez que registras este mesociclo — sin referencia previa para calcular recuperación. <b>Continúa con la sesión.</b></span>';
           pfInicialHoyActual = v;
           if(CFG.pfFinal && refPfFinalUmbral){
-            const umbralParada = v * (1 - CFG.umbralIntegrado / 100);
+            const umbralParada = v * (1 - CFG_UMBRALES.umbralIntegrado / 100);
             umbralParadaActual = umbralParada;
             refPfFinalUmbral.textContent = umbralParada.toFixed(0) + ' N';
           }
@@ -741,16 +747,16 @@ function wireInteractividad(ultimaValida){
         }
         pfInicialHoyActual = v;
         if(CFG.pfFinal && refPfFinalUmbral){
-          const umbralParada = v * (1 - CFG.umbralIntegrado / 100);
+          const umbralParada = v * (1 - CFG_UMBRALES.umbralIntegrado / 100);
           umbralParadaActual = umbralParada;
           refPfFinalUmbral.textContent = umbralParada.toFixed(0) + ' N';
         }
         const perdida = ((REF_PF - v) / REF_PF) * 100;
-        sesionBloqueada = perdida > CFG.umbralControl;
+        sesionBloqueada = perdida > CFG_UMBRALES.umbralControl;
         recoveryBox.classList.remove('ok', 'warn', 'info');
         recoveryBox.classList.add('show', sesionBloqueada ? 'warn' : 'ok');
         if(sesionBloqueada){
-          recoveryBox.innerHTML = `<span class="dot"></span><span>Pérdida del <b>${perdida.toFixed(1)}%</b> respecto a tu última sesión entrenada (${escapeHtml(REF_FECHA)}) — por encima del ${CFG.umbralControl}%. <b>No estás recuperado, hoy no entrenamos.</b> Envía este resultado y descansa; retómalo en la próxima sesión.</span>`;
+          recoveryBox.innerHTML = `<span class="dot"></span><span>Pérdida del <b>${perdida.toFixed(1)}%</b> respecto a tu última sesión entrenada (${escapeHtml(REF_FECHA)}) — por encima del ${CFG_UMBRALES.umbralControl}%. <b>No estás recuperado, hoy no entrenamos.</b> Envía este resultado y descansa; retómalo en la próxima sesión.</span>`;
         }else if(perdida <= 0){
           recoveryBox.innerHTML = `<span class="dot"></span><span>Ganancia del <b>${Math.abs(perdida).toFixed(1)}%</b> respecto a tu última sesión entrenada. <b>Estás recuperado</b>, continúa con la sesión.</span>`;
         }else{
@@ -773,18 +779,19 @@ function wireInteractividad(ultimaValida){
       }
       // % de caída respecto al PFinicial de HOY (no de la sesión anterior) —
       // es la fatiga real de esta sesión. Se compara directamente en % contra
-      // CFG.umbralIntegrado (el umbral de parada de este mesociclo) — v y
+      // CFG_UMBRALES.umbralIntegrado (el umbral de parada de este mesociclo,
+      // o el de la cualidad de origen si es un TAPERING genérico) — v y
       // umbralParadaActual (en N) son la misma comparación, pero traducida a
       // Newtons, se dejan solo como referencia entre paréntesis.
       const caida = ((pfInicialHoyActual - v) / pfInicialHoyActual) * 100;
-      const suficiente = caida >= CFG.umbralIntegrado;
+      const suficiente = caida >= CFG_UMBRALES.umbralIntegrado;
       pfFinalWarning.classList.remove('ok', 'warn');
       if(!suficiente){
         pfFinalWarning.classList.add('show', 'warn');
-        pfFinalWarning.innerHTML = `<span class="dot"></span><span>Caída del <b>${caida.toFixed(1)}%</b> respecto a tu PFinicial de hoy — todavía <b>por debajo del ${CFG.umbralIntegrado}%</b> necesario (${v} N, umbral en ${umbralParadaActual.toFixed(0)} N). Si de verdad es tu último test, revísalo — no debería haberse acabado la sesión todavía con esta cifra.</span>`;
+        pfFinalWarning.innerHTML = `<span class="dot"></span><span>Caída del <b>${caida.toFixed(1)}%</b> respecto a tu PFinicial de hoy — todavía <b>por debajo del ${CFG_UMBRALES.umbralIntegrado}%</b> necesario (${v} N, umbral en ${umbralParadaActual.toFixed(0)} N). Si de verdad es tu último test, revísalo — no debería haberse acabado la sesión todavía con esta cifra.</span>`;
       }else{
         pfFinalWarning.classList.add('show', 'ok');
-        pfFinalWarning.innerHTML = `<span class="dot"></span><span>Caída del <b>${caida.toFixed(1)}%</b> respecto a tu PFinicial de hoy — correcto, ya has superado el ${CFG.umbralIntegrado}% de parada (${v} N, umbral en ${umbralParadaActual.toFixed(0)} N).</span>`;
+        pfFinalWarning.innerHTML = `<span class="dot"></span><span>Caída del <b>${caida.toFixed(1)}%</b> respecto a tu PFinicial de hoy — correcto, ya has superado el ${CFG_UMBRALES.umbralIntegrado}% de parada (${v} N, umbral en ${umbralParadaActual.toFixed(0)} N).</span>`;
       }
     });
   }
@@ -968,6 +975,12 @@ async function cargar(){
       return;
     }
     SESION_JSON_ACTUAL = JSON.stringify(dataSesion.sesion);
+
+    // Tapering genérico: los umbrales de control/parada pasan a ser los de
+    // la cualidad de la que viene esa descarga, no los fijos de TAPERING.
+    if(MESOCICLO === 'TAPERING' && dataSesion.origenTapering && FIELD_MAP[dataSesion.origenTapering]){
+      CFG_UMBRALES = FIELD_MAP[dataSesion.origenTapering];
+    }
 
     // El "Mesociclo" que se muestra es siempre el de la semana (FMAX/REOX/
     // DESOX/AERO/TAP) — nunca el tipo de esta caja en concreto.

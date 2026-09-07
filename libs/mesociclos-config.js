@@ -51,8 +51,8 @@
         { match: 'Boulder Max',  id: 'boulder-max',    label: 'Nº de pegues totales' },
       ],
       pfFinal: { match: 'Test PFfinal' },
-      umbralControl: 7,
-      umbralIntegrado: 15,
+      umbralControl: 5,
+      umbralIntegrado: 10,
     },
     REOX: {
       pfInicial: { match: 'Test PFinicial' },
@@ -93,7 +93,7 @@
         { match: 'Escalada continua', id: 'escalada', label: 'Tiempo escalado', tipo: 'tiempo' },
       ],
       pfFinal: null, // AERO no mide Test PFfinal
-      umbralControl: 7,
+      umbralControl: 10,
     },
     'GYM-FMAX': {
       // Dominadas con lastre es el único ejercicio con dato real dentro del

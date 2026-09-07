@@ -1070,7 +1070,7 @@ document.getElementById('modalBtnPublicar').addEventListener('click', async () =
     const res = await fetch('/api/publicar-sesion', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cliente, fecha, mesociclo, sesion: datos, semana, semanaMesociclo }),
+      body: JSON.stringify({ cliente, fecha, mesociclo, sesion: datos, semana, semanaMesociclo, origenTapering: mesociclo === 'TAPERING' ? MESOCICLO_ORIGEN_TAPERING : undefined }),
     });
     const data = await res.json();
     if (data.success) {
@@ -1239,7 +1239,7 @@ document.getElementById('btnPublicarSemana').addEventListener('click', async () 
       const resPub = await fetch('/api/publicar-sesion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cliente, fecha, mesociclo, sesion: sesionAPublicar, semana, semanaMesociclo }),
+        body: JSON.stringify({ cliente, fecha, mesociclo, sesion: sesionAPublicar, semana, semanaMesociclo, origenTapering: mesociclo === 'TAPERING' ? MESOCICLO_ORIGEN_TAPERING : undefined }),
       });
       const dataPub = await resPub.json();
 
