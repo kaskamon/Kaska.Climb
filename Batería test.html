@@ -84,7 +84,8 @@
   }
   .icon-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
   .icon-btn.danger:hover{ background:var(--danger); border-color:var(--danger); }
-  #btnGuion{ text-transform:none; }
+  #btnGuion, #btnFormulas{ text-transform:none; }
+  .tabs-extra{ display:flex; gap:8px; }
   .icon-btn.active{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
 
   /* ---------- LAYOUT ---------- */
@@ -422,8 +423,10 @@
         Inicio
       </a>
     </div>
-    <button class="icon-btn" id="btnFormulas" data-tab="formulas">Fórmulas</button>
-    <button class="icon-btn" id="btnGuion" data-tab="guion">Guión</button>
+    <div class="tabs-extra">
+      <button class="icon-btn" id="btnFormulas" data-tab="formulas">Fórmulas</button>
+      <button class="icon-btn" id="btnGuion" data-tab="guion">Guión</button>
+    </div>
   </div>
 </div>
 
@@ -881,6 +884,11 @@
     <div class="card">
       <h3>AERO</h3>
       <div class="field"><textarea id="formula-aero" rows="8" placeholder="Fórmulas de SuspInt (CF), Escalada continua, lastres a usar..."></textarea></div>
+    </div>
+
+    <div class="card">
+      <h3>TAP</h3>
+      <div class="field"><textarea id="formula-tap" rows="8" placeholder="Fórmulas de la descarga: lastres/intensidades a usar según la cualidad de la que viene..."></textarea></div>
     </div>
   </section>
 
