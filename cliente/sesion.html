@@ -475,7 +475,7 @@ function renderCampoInput(campo, ultimaValida){
   if(campo.tipo === 'pfFinal'){
     return `
       <div class="ref-row">
-        <span class="k">Para cuando bajes de <span class="unit">(<span id="umbralIntegradoTxt">${CFG.umbralIntegrado}</span>% de hoy)</span></span>
+        <span class="k">Para cuando bajes de</span>
         <span class="v" id="refPfFinalUmbral">— N</span>
       </div>
       <div class="field">
@@ -578,7 +578,7 @@ function renderParte(parte, ultimaValida){
     exchkContador++;
     html += `<div class="ex-box"><input type="checkbox" class="ex-check" id="exchk-${exchkContador}" aria-label="Marcar como hecho">`;
     if(ejercicios.length === 1){
-      html += `<div class="ex-row"><span class="ex-series full">${escapeHtml(ejercicios[0].series || '')}</span></div>`;
+      html += `<div class="ex-row"><span class="ex-name">${escapeHtml(ejercicios[0].nombre || '')}</span><span class="ex-arrow">→</span><span class="ex-series">${escapeHtml(ejercicios[0].series || '')}</span></div>`;
     } else {
       ejercicios.forEach(ej => {
         html += `<div class="ex-row"><span class="ex-name">${escapeHtml(ej.nombre || '')}</span><span class="ex-arrow">→</span><span class="ex-series">${escapeHtml(ej.series || '')}</span></div>`;

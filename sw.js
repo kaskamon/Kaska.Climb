@@ -7,7 +7,7 @@
 // contraseña) — nunca deben estar aquí. Precachearlas dispara el popup nativo
 // de usuario/contraseña del navegador para clientes reales en cuanto el
 // service worker se instala, aunque estén viendo login.html o su propia página.
-const CACHE_NAME = 'kaska-climb-v3';
+const CACHE_NAME = 'kaska-climb-v4';
 const urlsToCache = [
   './login.html',
   './manifest.json',
@@ -36,8 +36,13 @@ self.addEventListener('fetch', event => {
   // van siempre directos a la red, nunca a través de la caché).
   if (event.request.method !== 'GET') return;
 
+  // cache: 'no-store' fuerza a que este fetch() vaya de verdad a la red,
+  // ignorando la caché HTTP normal del propio navegador — sin esto, un
+  // Cache-Control del servidor podía hacer que "ir a la red" sirviera en
+  // realidad una copia en disco ya caducada, aunque el service worker
+  // creyera que estaba pidiendo la versión más reciente.
   event.respondWith(
-    fetch(event.request)
+    fetch(new Request(event.request, { cache: 'no-store' }))
       .then(response => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone)).catch(() => {});
