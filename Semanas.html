@@ -1028,8 +1028,20 @@ document.getElementById('modalBtnCargarUltimo').addEventListener('click', async 
 document.getElementById('modalBtnPublicar').addEventListener('click', async () => {
   const cliente = MODAL_CLIENTE, mesociclo = MODAL_MESOCICLO;
   if (!cliente || !mesociclo) return;
-  const hoy = new Date();
-  const fecha = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
+  // OJO: nunca usar la fecha de hoy aquí. Esta fila es solo la plantilla del
+  // mesociclo (Publicar semana completa la busca por cliente+mesociclo, no
+  // por fecha) — pero si dos plantillas de mesociclos distintos se publican
+  // el mismo día real (lo normal: diseñas REOX y GYM-ANTAGONISTAS los dos
+  // "hoy"), la limpieza de "un día solo puede tener una cosa" de
+  // api/publicar-sesion.js las trata como si fueran el mismo día programado
+  // y la segunda borra la primera. Cada mesociclo usa su propia fecha fija y
+  // lejana en el futuro — distinta entre sí para que dos plantillas nunca
+  // choquen entre ellas, y ninguna coincide jamás con un día real publicado.
+  const FECHA_PLANTILLA_POR_MESOCICLO = {
+    FMAX: '01/01/2099', REOX: '02/01/2099', DESOX: '03/01/2099', AERO: '04/01/2099',
+    TAPERING: '05/01/2099', 'GYM-FMAX': '06/01/2099', 'GYM-ANTAGONISTAS': '07/01/2099',
+  };
+  const fecha = FECHA_PLANTILLA_POR_MESOCICLO[mesociclo] || '01/01/2099';
 
   let datos = obtenerDatosEstructura();
 
