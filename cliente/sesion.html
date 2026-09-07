@@ -284,7 +284,7 @@ const FECHA_PARAM = params.get('fecha');   // dd/mm/aaaa
 const MESOCICLO = params.get('mesociclo');
 const SEMANA_PARAM = params.get('semana');
 
-const { COLUMNS, FIELD_MAP, TITULOS } = window.MESOCICLOS_CONFIG || {};
+const { COLUMNS, FIELD_MAP, TITULOS, CATEGORIA_VISUAL } = window.MESOCICLOS_CONFIG || {};
 
 // El botón "Semana" y la redirección tras enviar mantienen la identidad del
 // cliente al volver a su semana.
@@ -935,19 +935,25 @@ async function cargar(){
   try{
     const qsSesion = new URLSearchParams({ cliente: CLIENTE, fecha: FECHA_PARAM, mesociclo: MESOCICLO, token: TOKEN });
     const necesitaHistorial = !!CFG.pfInicial;
-    const qsSemana = new URLSearchParams({ cliente: CLIENTE, fecha: FECHA_PARAM, token: TOKEN });
-    const peticiones = [
-      fetch('/api/obtener-sesion?' + qsSesion.toString()),
-      fetch('/api/obtener-semana?' + qsSemana.toString()),
-    ];
-    if(necesitaHistorial){
-      const qsHist = new URLSearchParams({ cliente: CLIENTE, mesociclo: MESOCICLO, limite: '10', token: TOKEN });
-      peticiones.push(fetch('/api/obtener-historial?' + qsHist.toString()));
-    }
+    // Si esta caja YA es un mesociclo real (FMAX/REOX/DESOX/AERO/TAPERING),
+    // ese es el "Mesociclo" de la semana — no hace falta preguntarle nada a
+    // /api/obtener-semana. Solo se consulta para las cajas que no lo son
+    // (GYM-FMAX, GYM-ANTAGONISTAS, ROCA, DESCANSO), y nunca a la vez que se
+    // pide el historial de PFinicial (piden lo mismo — mejor no duplicar
+    // peticiones concurrentes contra el mismo Sheet).
+    const esMesocicloReal = CATEGORIA_VISUAL && CATEGORIA_VISUAL[MESOCICLO] && CATEGORIA_VISUAL[MESOCICLO].tipo === 'sesion';
 
-    const respuestas = await Promise.all(peticiones);
-    if(respuestas[0].status === 401){ manejarSesionInvalida(); return; }
-    const dataSesion = await respuestas[0].json();
+    // Los 3 fetch se lanzan todos ya (fetch() arranca la petición al momento,
+    // el await es solo para leer la respuesta) — promSemana/promHistorial
+    // quedan null cuando no hacen falta, así no dependemos de la posición de
+    // cada uno dentro de un array.
+    const promSesion = fetch('/api/obtener-sesion?' + qsSesion.toString());
+    const promSemana = esMesocicloReal ? null : fetch('/api/obtener-semana?' + new URLSearchParams({ cliente: CLIENTE, fecha: FECHA_PARAM, token: TOKEN }));
+    const promHistorial = necesitaHistorial ? fetch('/api/obtener-historial?' + new URLSearchParams({ cliente: CLIENTE, mesociclo: MESOCICLO, limite: '10', token: TOKEN })) : null;
+
+    const respSesion = await promSesion;
+    if(respSesion.status === 401){ manejarSesionInvalida(); return; }
+    const dataSesion = await respSesion.json();
     if(!dataSesion.success){
       mostrarError(dataSesion.error || 'No se encontró ninguna sesión programada para hoy.');
       return;
@@ -955,16 +961,18 @@ async function cargar(){
     SESION_JSON_ACTUAL = JSON.stringify(dataSesion.sesion);
 
     // El "Mesociclo" que se muestra es siempre el de la semana (FMAX/REOX/
-    // DESOX/AERO/TAP) — nunca el tipo de esta caja en concreto (GYM-FMAX,
-    // GYM-ANTAGONISTAS, ROCA, DESCANSO no son mesociclos reales).
-    const dataSemana = await respuestas[1].json();
-    const mesocicloRealSemana = dataSemana.success && dataSemana.mesociclo
-      ? (dataSemana.mesociclo === 'TAPERING' ? 'TAP' : dataSemana.mesociclo)
-      : null;
+    // DESOX/AERO/TAP) — nunca el tipo de esta caja en concreto.
+    let mesocicloRealSemana = esMesocicloReal ? (MESOCICLO === 'TAPERING' ? 'TAP' : MESOCICLO) : null;
+    if(promSemana){
+      const dataSemana = await promSemana.then(r => r.json());
+      mesocicloRealSemana = dataSemana.success && dataSemana.mesociclo
+        ? (dataSemana.mesociclo === 'TAPERING' ? 'TAP' : dataSemana.mesociclo)
+        : null;
+    }
 
     let ultimaValida = null;
-    if(necesitaHistorial){
-      const dataHist = await respuestas[2].json();
+    if(promHistorial){
+      const dataHist = await promHistorial.then(r => r.json());
       if(dataHist.success && Array.isArray(dataHist.historial)){
         ultimaValida = [...dataHist.historial].reverse().find(h => h.entrenada) || null;
       }
