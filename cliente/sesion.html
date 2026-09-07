@@ -583,7 +583,7 @@ function renderParte(parte, ultimaValida){
 }
 
 /* ---------- Render de toda la sesión ---------- */
-function renderSesion(sesion, ultimaValida, semanaFinal, semanaMesocicloFinal){
+function renderSesion(sesion, ultimaValida, semanaFinal, semanaMesocicloFinal, mesocicloRealSemana){
   const partes = sesion.partes || [];
 
   const bloques = [];
@@ -613,9 +613,10 @@ function renderSesion(sesion, ultimaValida, semanaFinal, semanaMesocicloFinal){
   });
   document.getElementById('contenedorBloques').innerHTML = bloquesHtml;
 
-  // Cabecera
+  // Cabecera — "Mesociclo" es siempre el de la semana (FMAX/REOX/DESOX/
+  // AERO/TAP), nunca el tipo de esta caja (ver mesocicloRealSemana arriba).
   document.getElementById('eyebrowTxt').textContent =
-    `${NOMBRE_DISPLAY} · Mesociclo ${MESOCICLO}${semanaFinal ? ' · Semana ' + semanaFinal : ''}`;
+    `${NOMBRE_DISPLAY}${mesocicloRealSemana ? ' · Mesociclo ' + mesocicloRealSemana : ''}${semanaFinal ? ' · Semana ' + semanaFinal : ''}`;
   const titulo = (TITULOS && TITULOS[MESOCICLO]) || MESOCICLO;
   document.getElementById('sessionTitleTxt').innerHTML =
     titulo.replace(/\s*\(([^)]+)\)\s*$/, ' <span>($1)</span>');
@@ -923,7 +924,11 @@ async function cargar(){
   try{
     const qsSesion = new URLSearchParams({ cliente: CLIENTE, fecha: FECHA_PARAM, mesociclo: MESOCICLO, token: TOKEN });
     const necesitaHistorial = !!CFG.pfInicial;
-    const peticiones = [ fetch('/api/obtener-sesion?' + qsSesion.toString()) ];
+    const qsSemana = new URLSearchParams({ cliente: CLIENTE, fecha: FECHA_PARAM, token: TOKEN });
+    const peticiones = [
+      fetch('/api/obtener-sesion?' + qsSesion.toString()),
+      fetch('/api/obtener-semana?' + qsSemana.toString()),
+    ];
     if(necesitaHistorial){
       const qsHist = new URLSearchParams({ cliente: CLIENTE, mesociclo: MESOCICLO, limite: '10', token: TOKEN });
       peticiones.push(fetch('/api/obtener-historial?' + qsHist.toString()));
@@ -937,9 +942,17 @@ async function cargar(){
       return;
     }
 
+    // El "Mesociclo" que se muestra es siempre el de la semana (FMAX/REOX/
+    // DESOX/AERO/TAP) — nunca el tipo de esta caja en concreto (GYM-FMAX,
+    // GYM-ANTAGONISTAS, ROCA, DESCANSO no son mesociclos reales).
+    const dataSemana = await respuestas[1].json();
+    const mesocicloRealSemana = dataSemana.success && dataSemana.mesociclo
+      ? (dataSemana.mesociclo === 'TAPERING' ? 'TAP' : dataSemana.mesociclo)
+      : null;
+
     let ultimaValida = null;
     if(necesitaHistorial){
-      const dataHist = await respuestas[1].json();
+      const dataHist = await respuestas[2].json();
       if(dataHist.success && Array.isArray(dataHist.historial)){
         ultimaValida = [...dataHist.historial].reverse().find(h => h.entrenada) || null;
       }
@@ -949,7 +962,7 @@ async function cargar(){
     // de la cabecera de Semanas.html) — si por lo que sea no vino, caemos al
     // ?semana= de la URL como último recurso.
     const semanaFinal = dataSesion.semana || SEMANA_PARAM;
-    renderSesion(dataSesion.sesion, ultimaValida, semanaFinal, dataSesion.semanaMesociclo);
+    renderSesion(dataSesion.sesion, ultimaValida, semanaFinal, dataSesion.semanaMesociclo, mesocicloRealSemana);
     wireInteractividad(ultimaValida);
     restaurarBorrador();
 
