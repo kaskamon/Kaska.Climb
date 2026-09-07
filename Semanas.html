@@ -1059,12 +1059,19 @@ document.getElementById('modalBtnPublicar').addEventListener('click', async () =
     }
   }
 
+  // Misma Semana/Sem. Meso. que usa "Publicar semana completa" (ya
+  // calculadas solas a partir del macrociclo) — si no se mandan aquí, esta
+  // fila queda sin ellas y, al ser la más reciente, puede tapar las de
+  // otros días de la misma semana en cliente/semana.html.
+  const semana = document.getElementById('h1').innerText.trim();
+  const semanaMesociclo = document.getElementById('h4').innerText.trim();
+
   mostrarEstadoPublicarModal('Publicando...', null);
   try {
     const res = await fetch('/api/publicar-sesion', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cliente, fecha, mesociclo, sesion: datos }),
+      body: JSON.stringify({ cliente, fecha, mesociclo, sesion: datos, semana, semanaMesociclo }),
     });
     const data = await res.json();
     if (data.success) {
