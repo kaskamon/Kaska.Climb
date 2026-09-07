@@ -313,35 +313,6 @@
         .btn-eliminar-parte { background-color: rgba(255, 255, 255, 0.7); color: var(--chalk-dim); border: 1px solid var(--line); }
         .btn-eliminar-parte:hover { background-color: #f6e3e0; color: #b3564a; border-color: #f0d0cb; }
 
-        .panel-publicar {
-            background: rgba(124, 144, 112, 0.08);
-            border: 1px solid var(--line);
-            border-radius: 12px;
-            padding: 14px 16px;
-            margin-bottom: 25px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            align-items: flex-end;
-        }
-        .campo-publicar { display: flex; flex-direction: column; gap: 4px; }
-        .campo-publicar label {
-            font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em;
-            color: var(--chalk-dim);
-        }
-        .campo-publicar input, .campo-publicar select {
-            font-family: 'Work Sans', sans-serif; font-size: 12.5px;
-            padding: 7px 9px; border: 1px solid var(--line); border-radius: 6px;
-            background: #ffffff; color: var(--stone-900);
-        }
-        .panel-publicar[hidden] { display: none; }
-        .panel-desox-alt { display: flex; gap: 12px; align-items: center; font-size: 12px; color: var(--stone-900); }
-        .panel-desox-alt[hidden] { display: none; }
-        .panel-desox-alt label { display: flex; align-items: center; gap: 4px; font-weight: 600; cursor: pointer; }
-        .estado-publicar { flex-basis: 100%; font-size: 12px; color: var(--chalk-dim); min-height: 16px; }
-        .estado-publicar.ok { color: var(--moss-deep); font-weight: 700; }
-        .estado-publicar.error { color: #b3564a; font-weight: 700; }
-
         @page { size: A4 portrait; margin: 8mm 15mm 15mm 15mm; }
 
         @media print {
@@ -395,33 +366,12 @@
                 </a>
             </div>
 
-            <div class="panel-publicar no-print" id="avisoSinContexto" hidden style="color:#b3564a; font-weight:700;">
-                Abre esta página desde Semanas.html (elige cliente y semana ahí, y pulsa "Diseñar sesión de este mesociclo") — así siempre queda atada al cliente y mesociclo correctos.
-            </div>
-            <div class="panel-publicar no-print" id="panelPublicarSesion">
-                <div class="campo-publicar" id="campoDisenandoPara">
-                    <label>Cliente</label>
-                    <div id="disenandoPara" style="font-weight:700; padding:7px 0;">—</div>
-                </div>
-                <div class="campo-publicar">
-                    <label>Mesociclo</label>
-                    <select id="selectMesociclo"></select>
-                </div>
-                <div class="panel-desox-alt" id="panelDesoxAlternativa" hidden>
-                    <span style="font-weight:800; text-transform:uppercase; font-size:10px; letter-spacing:0.06em; color:var(--chalk-dim);">Bloque integrado:</span>
-                    <label><input type="radio" name="desoxAlternativa" value="traves" checked> Traves sin sueltas</label>
-                    <label><input type="radio" name="desoxAlternativa" value="multibloque"> Multibloque</label>
-                </div>
-                <button id="btn-cargar-ultimo" class="btn-principal" type="button">Cargar último publicado</button>
-                <button id="btn-publicar" class="btn-principal" type="button">Publicar sesión</button>
-                <div class="estado-publicar" id="estadoPublicar"></div>
-            </div>
-
             <div id="contenedor-partes"></div>
 		
         </div>
     </div>
 
+    <script src="libs/editor-sesion.js"></script>
     <script>
         // Comprobamos si la página se está viendo dentro de una vista previa (iframe),
         // ya que en ese caso el navegador bloquea window.print() por seguridad y no pasa nada al pulsar el botón.
@@ -435,8 +385,6 @@
         }
 
         const btnNuevaParte = document.getElementById('btn-nueva-parte');
-        const contenedorPartes = document.getElementById('contenedor-partes');
-        const inputTituloPrincipal = document.getElementById('titulo-entreno-principal');
         const btnDescargarJson = document.getElementById('btn-descargar-json');
         const inputCargarJson = document.getElementById('input-cargar-json');
         const btnCargarVisual = document.getElementById('btn-cargar-visual');
@@ -445,179 +393,10 @@
         const btnConfigLogo = document.getElementById('btn-config-logo');
         const inputCambiarLogo = document.getElementById('input-cambiar-logo');
 
-        let contadorPartes = 0;
-        
         // Función centralizada para Auto-Guardado en LocalStorage
         function autoGuardar() {
             const datosEntreno = obtenerDatosEstructura();
             localStorage.setItem('kaska_sesion_auto', JSON.stringify(datosEntreno));
-        }
-
-        // Detecta cualquier cambio de escritura en los inputs y celdas editables para autoguardar
-        document.addEventListener('input', (e) => {
-            if (e.target.matches('.celda-editable, .celda-cabecera-editable, .input-titulo-gran-formato, .input-titulo, .input-descripcion')) {
-                autoGuardar();
-            }
-        });
-
-        function obtenerDatosEstructura() {
-            const datosEntreno = { tituloPrincipal: inputTituloPrincipal.value, partes: [] };
-            const elementos = contenedorPartes.querySelectorAll('.bloque-parte, .cabecera-principal-empresa');
-            
-            elementos.forEach(el => {
-                if (el.classList.contains('cabecera-principal-empresa')) {
-                    datosEntreno.partes.push({
-                        tipo: 'cabecera_separadora',
-                        tituloPrincipal: el.querySelector('.input-titulo-gran-formato').value
-                    });
-                } else {
-                    const ejercicios = [];
-                    el.querySelectorAll('.cuerpo-tabla-ejercicios tr').forEach(fila => {
-                        const celdas = fila.querySelectorAll('.celda-editable');
-                        if(celdas.length >= 3) {
-                            ejercicios.push({
-                                nombre: celdas[0].innerText,
-                                series: celdas[1].innerText,
-                                notas: celdas[2].innerText
-                            });
-                        }
-                    });
-                    datosEntreno.partes.push({
-                        tipo: 'bloque_ejercicios',
-                        titulo: el.querySelector('.input-titulo').innerText,
-                        descripcion: el.querySelector('.input-descripcion').innerText,
-                        ejercicios: ejercicios
-                    });
-                }
-            });
-            return datosEntreno;
-        }
-
-        // CREADOR DE CABECERAS (MODIFICADO PARA PERMITIR MOVER/BORRAR)
-        function crearCabeceraUI(tituloTexto) {
-            const div = document.createElement('div');
-            div.className = 'cabecera-principal-empresa';
-            div.innerHTML = `
-                <div class="contenedor-titulo-principal">
-                    <input type="text" class="input-titulo-gran-formato" value="${tituloTexto}">
-                </div>
-                <div class="zona-ordenar no-print" style="gap: 5px; align-items:center;">
-                    <button class="btn-orden btn-subir-cabecera" title="Subir">▲</button>
-                    <button class="btn-orden btn-bajar-cabecera" title="Bajar">▼</button>
-                    <button class="btn-accion btn-eliminar btn-eliminar-cabecera" style="margin-left:5px;">✖</button>
-                </div>
-            `;
-            contenedorPartes.appendChild(div);
-
-            div.querySelector('.btn-eliminar-cabecera').addEventListener('click', () => { div.remove(); autoGuardar(); });
-            div.querySelector('.btn-subir-cabecera').addEventListener('click', () => {
-                const ant = div.previousElementSibling;
-                if (ant) { contenedorPartes.insertBefore(div, ant); autoGuardar(); }
-            });
-            div.querySelector('.btn-bajar-cabecera').addEventListener('click', () => {
-                const sig = div.nextElementSibling;
-                if (sig) { contenedorPartes.insertBefore(sig, div); autoGuardar(); }
-            });
-            autoGuardar();
-        }
-
-        // CREADOR DE PARTES (MODIFICADO EL ORDENAMIENTO Y EL BORRADO)
-        function crearParteUI(tituloVal = '', descripcionVal = '', ejerciciosLista = []) {
-            contadorPartes++;
-            const bloqueParte = document.createElement('div');
-            bloqueParte.className = 'bloque-parte';
-            
-            bloqueParte.innerHTML = `
-                <div class="cabecera-parte">
-                    <div class="zona-ordenar">
-                        <button class="btn-orden btn-subir-parte" title="Subir parte">▲</button>
-                        <button class="btn-orden btn-bajar-parte" title="Bajar parte">▼</button>
-                    </div>
-                    <div class="input-titulo celda-cabecera-editable" contenteditable="true" placeholder="Ej: Parte ${contadorPartes} - Movilidad">${tituloVal}</div>
-                    <div class="input-descripcion celda-cabecera-editable" contenteditable="true" placeholder="Explicación general de esta parte...">${descripcionVal}</div>
-                    <button class="btn-accion btn-eliminar btn-eliminar-parte">Eliminar Parte</button>
-                </div>
-                <table class="tabla-ejercicios">
-                    <thead>
-                        <tr>
-                            <th>Ejercicio</th>
-                            <th>Series / Tiempo</th>
-                            <th>Notas</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody class="cuerpo-tabla-ejercicios"></tbody>
-                </table>
-                <button class="btn-accion btn-añadir-ejercicio">＋ Añadir Ejercicio</button>
-            `;
-            
-            contenedorPartes.appendChild(bloqueParte);
-            const cuerpoTabla = bloqueParte.querySelector('.cuerpo-tabla-ejercicios');
-            
-            // CREADOR DE EJERCICIOS (MODIFICADO CON FLECHAS)
-            function añadirFilaEjercicio(ej = {nombre:'', series:'', notas:''}) {
-                const fila = document.createElement('tr');
-                fila.innerHTML = `
-                    <td class="celda-editable" contenteditable="true" placeholder="Nombre del ejercicio">${ej.nombre}</td>
-                    <td class="celda-editable" contenteditable="true" placeholder="Ej: 3x10">${ej.series}</td>
-                    <td class="celda-editable" contenteditable="true" placeholder="Notas...">${ej.notas}</td>
-                    <td style="white-space: nowrap;">
-                        <button class="btn-orden btn-subir-ej" title="Subir ejercicio">▲</button>
-                        <button class="btn-orden btn-bajar-ej" title="Bajar ejercicio">▼</button>
-                        <button class="btn-accion btn-eliminar btn-eliminar-ejercicio">✖</button>
-                    </td>
-                `;
-                cuerpoTabla.appendChild(fila);
-                
-                fila.querySelector('.btn-eliminar-ejercicio').addEventListener('click', () => { fila.remove(); autoGuardar(); });
-                fila.querySelector('.btn-subir-ej').addEventListener('click', () => {
-                    const ant = fila.previousElementSibling;
-                    if (ant) { fila.parentNode.insertBefore(fila, ant); autoGuardar(); }
-                });
-                fila.querySelector('.btn-bajar-ej').addEventListener('click', () => {
-                    const sig = fila.nextElementSibling;
-                    if (sig) { fila.parentNode.insertBefore(sig, fila); autoGuardar(); }
-                });
-                autoGuardar();
-            }
-
-            bloqueParte.querySelector('.btn-subir-parte').addEventListener('click', () => {
-                const ant = bloqueParte.previousElementSibling;
-                if (ant) { contenedorPartes.insertBefore(bloqueParte, ant); autoGuardar(); }
-            });
-
-            bloqueParte.querySelector('.btn-bajar-parte').addEventListener('click', () => {
-                const sig = bloqueParte.nextElementSibling;
-                if (sig) { contenedorPartes.insertBefore(sig, bloqueParte); autoGuardar(); }
-            });
-
-            bloqueParte.querySelector('.btn-añadir-ejercicio').addEventListener('click', () => añadirFilaEjercicio());
-            bloqueParte.querySelector('.btn-eliminar-parte').addEventListener('click', () => { bloqueParte.remove(); autoGuardar(); });
-
-            if(ejerciciosLista.length > 0) {
-                ejerciciosLista.forEach(ej => añadirFilaEjercicio(ej));
-            } else {
-                añadirFilaEjercicio();
-            }
-            autoGuardar();
-        }
-
-        function renderizarTodaLaTabla(appDatos) {
-            contenedorPartes.innerHTML = '';
-            contadorPartes = 0;
-            inputTituloPrincipal.value = appDatos.tituloPrincipal || '';
-            
-            if(appDatos.partes && appDatos.partes.length > 0) {
-                appDatos.partes.forEach(p => {
-                    if (p.tipo === 'cabecera_separadora') {
-                        crearCabeceraUI(p.tituloPrincipal);
-                    } else {
-                        crearParteUI(p.titulo, p.descripcion, p.ejercicios);
-                    }
-                });
-            } else {
-                crearParteUI();
-            }
         }
 
         btnNuevaParte.addEventListener('click', () => crearParteUI());
@@ -689,112 +468,6 @@
                     document.getElementById('img-logo-fondo').style.backgroundImage = "url('" + e.target.result + "')";
                 };
                 lectorImg.readAsDataURL(this.files[0]);
-            }
-        });
-
-        /* ================= PUBLICAR EN LA NUBE (para el motor genérico de sesión) ================= */
-        // Cliente y mesociclo ya NO se eligen aquí — llegan fijados por la
-        // URL (Semanas.html los calcula solo a partir del macrociclo real del
-        // cliente y abre esta página con ellos puestos). Así esta plantilla
-        // nunca puede quedar guardada bajo un cliente/mesociclo distinto del
-        // que de verdad toca esa semana.
-        const parametrosURL = new URLSearchParams(window.location.search);
-        const CLIENTE = (parametrosURL.get('cliente') || '').trim();
-        const MESOCICLO_INICIAL = (parametrosURL.get('mesociclo') || '').trim().toUpperCase();
-        // Sigue sin poder abrirse suelto (hace falta llegar con cliente+
-        // mesociclo desde Semanas.html), pero una vez dentro sí se puede
-        // cambiar libremente entre la cualidad de esa semana y los 2 tipos
-        // de gym — son solo 3 opciones de bajo riesgo (nunca las 7 de
-        // antes), y el propio entrenador decide cuál toca sin que la app
-        // tenga que adivinarlo.
-        let MESOCICLO = MESOCICLO_INICIAL;
-
-        const panelDesoxAlt = document.getElementById('panelDesoxAlternativa');
-        const estadoPublicar = document.getElementById('estadoPublicar');
-        const selectMesociclo = document.getElementById('selectMesociclo');
-
-        if (!CLIENTE || !MESOCICLO_INICIAL) {
-            document.getElementById('avisoSinContexto').hidden = false;
-            document.getElementById('panelPublicarSesion').hidden = true;
-        } else {
-            document.getElementById('disenandoPara').textContent = CLIENTE;
-            const OPCIONES_MESOCICLO = Array.from(new Set([MESOCICLO_INICIAL, 'GYM-FMAX', 'GYM-ANTAGONISTAS']));
-            selectMesociclo.innerHTML = OPCIONES_MESOCICLO.map(m => `<option value="${m}">${m}</option>`).join('');
-            selectMesociclo.value = MESOCICLO_INICIAL;
-            panelDesoxAlt.hidden = MESOCICLO !== 'DESOX';
-            selectMesociclo.addEventListener('change', () => {
-                MESOCICLO = selectMesociclo.value;
-                panelDesoxAlt.hidden = MESOCICLO !== 'DESOX';
-                mostrarEstadoPublicar('', null);
-            });
-        }
-
-        function mostrarEstadoPublicar(texto, clase) {
-            estadoPublicar.textContent = texto;
-            estadoPublicar.classList.remove('ok', 'error');
-            if (clase) estadoPublicar.classList.add(clase);
-        }
-
-        document.getElementById('btn-cargar-ultimo').addEventListener('click', async () => {
-            const cliente = CLIENTE, mesociclo = MESOCICLO;
-            if (!cliente || !mesociclo) return;
-            mostrarEstadoPublicar('Cargando última versión publicada...', null);
-            try {
-                const qs = new URLSearchParams({ cliente, mesociclo });
-                const res = await fetch('/api/ultima-sesion-publicada?' + qs.toString());
-                const data = await res.json();
-                if (data.success) {
-                    renderizarTodaLaTabla(data.sesion);
-                    autoGuardar();
-                    mostrarEstadoPublicar(`✓ Cargada la última sesión publicada de ${mesociclo} para ${cliente} (era del ${data.fecha}). Edítala y publica de nuevo cuando esté lista.`, 'ok');
-                } else {
-                    mostrarEstadoPublicar(data.error || 'No se encontró ninguna versión previa — empieza desde la plantilla que tengas cargada.', 'error');
-                }
-            } catch (e) {
-                mostrarEstadoPublicar('Error de red: ' + e.message, 'error');
-            }
-        });
-
-        document.getElementById('btn-publicar').addEventListener('click', async () => {
-            const cliente = CLIENTE, mesociclo = MESOCICLO;
-            if (!cliente || !mesociclo) return;
-            // La fecha no se usa para enlazar con Semanas.html (eso va por
-            // cliente+mesociclo, gana siempre la versión más reciente) — se
-            // manda solo porque la columna la exige, con la fecha de hoy.
-            const hoy = new Date();
-            const fecha = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
-
-            let datos = obtenerDatosEstructura();
-
-            // DESOX: Traves sin sueltas y Multibloque son alternativas — solo se publica la elegida.
-            if (mesociclo === 'DESOX') {
-                const elegido = document.querySelector('input[name="desoxAlternativa"]:checked');
-                if (elegido) {
-                    const excluirTitulo = elegido.value === 'traves' ? 'multibloque' : 'traves sin sueltas';
-                    datos = {
-                        ...datos,
-                        partes: datos.partes.filter(p =>
-                            !(p.tipo === 'bloque_ejercicios' && (p.titulo || '').trim().toLowerCase() === excluirTitulo)
-                        ),
-                    };
-                }
-            }
-
-            mostrarEstadoPublicar('Publicando...', null);
-            try {
-                const res = await fetch('/api/publicar-sesion', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ cliente, fecha, mesociclo, sesion: datos }),
-                });
-                const data = await res.json();
-                if (data.success) {
-                    mostrarEstadoPublicar(`✓ Publicado para ${cliente} — ${fecha} (${mesociclo}). El motor genérico ya puede leerlo.`, 'ok');
-                } else {
-                    mostrarEstadoPublicar('✗ ' + (data.error || 'Error al publicar.'), 'error');
-                }
-            } catch (e) {
-                mostrarEstadoPublicar('✗ Error de red: ' + e.message, 'error');
             }
         });
 

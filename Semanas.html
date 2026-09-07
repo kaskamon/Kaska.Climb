@@ -448,6 +448,84 @@ select.head-select option {
     box-shadow: none !important;
   }
 }
+
+/* ===== Modal "Diseñar sesión" — envuelve el editor compartido (libs/editor-sesion.js) ===== */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(10,12,10,0.72);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-overlay[hidden] { display: none; }
+.modal-sesion {
+  width: 100%; max-width: 720px; max-height: 90vh; overflow-y: auto;
+  background: var(--stone-900);
+  border: 1px solid rgba(242,237,225,0.14);
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.modal-sesion-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.modal-sesion-head .btn-action { width: auto; padding: 8px 14px; }
+.modal-sesion-cliente { font-family:'Anton',sans-serif; font-size:18px; letter-spacing:0.5px; color: var(--chalk); text-transform:uppercase; margin-bottom:6px; }
+#modalSelectMesociclo {
+  background: var(--stone-800); border: 1px solid rgba(242,237,225,0.16);
+  color: var(--chalk); border-radius: 8px; padding: 8px 10px; font-size: 12px;
+  font-family: 'Work Sans', sans-serif;
+}
+.panel-desox-alt-modal { display:flex; gap:12px; align-items:center; flex-wrap:wrap; font-size:12px; color: var(--chalk-dim); }
+.panel-desox-alt-modal[hidden] { display:none; }
+.panel-desox-alt-modal label { display:flex; align-items:center; gap:4px; font-weight:600; cursor:pointer; color: var(--chalk); }
+.modal-sesion-acciones { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.modal-sesion-acciones .btn-action { width:auto; padding:9px 14px; }
+.modal-sesion-acciones .estado-publicar { flex-basis:100%; font-size:12px; color: var(--chalk-dim); min-height:16px; }
+.modal-sesion-acciones .estado-publicar.ok { color: var(--moss-light); font-weight:700; }
+.modal-sesion-acciones .estado-publicar.error { color:#d99a8f; font-weight:700; }
+.modal-titulo-sesion {
+  background: var(--stone-800); border: 1px solid rgba(242,237,225,0.16);
+  color: var(--chalk); border-radius:8px; padding:10px 12px; font-size:15px; font-weight:700;
+  font-family:'Work Sans',sans-serif; width:100%; box-sizing:border-box;
+}
+#modalBtnNuevaParte { width:auto; padding:9px 14px; align-self:flex-start; }
+
+.modal-sesion .contenedor-titulo-principal { flex: 1; }
+.modal-sesion .cabecera-principal-empresa { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; }
+.modal-sesion .input-titulo-gran-formato {
+  background:transparent; border:none; border-bottom:2px solid var(--moss);
+  color: var(--chalk); font-size:18px; font-weight:800; font-family:'Work Sans',sans-serif;
+  padding:4px 0; width:100%;
+}
+.modal-sesion .zona-ordenar { display:flex; gap:5px; align-items:center; }
+.modal-sesion .btn-orden, .modal-sesion .btn-accion {
+  background: var(--stone-800); border:1px solid rgba(242,237,225,0.16); color: var(--chalk-dim);
+  border-radius:6px; padding:4px 8px; font-size:11px; cursor:pointer; font-family:'Work Sans',sans-serif;
+}
+.modal-sesion .btn-orden:hover, .modal-sesion .btn-accion:hover { background: var(--moss); color: var(--stone-900); border-color: var(--moss); }
+.modal-sesion .btn-eliminar:hover { background:#8a3d34; border-color:#8a3d34; color:#fff; }
+.modal-sesion .bloque-parte {
+  background: rgba(38,45,40,0.6); border:1px solid rgba(242,237,225,0.1);
+  border-left:3px solid var(--moss); border-radius:12px; padding:12px 14px;
+  display:flex; flex-direction:column; gap:8px;
+}
+.modal-sesion .cabecera-parte { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.modal-sesion .input-titulo {
+  font-weight:800; color: var(--chalk); flex:1 1 160px; min-width:120px;
+  outline:none; padding:2px 4px; border-radius:4px;
+}
+.modal-sesion .input-descripcion { color: var(--chalk-dim); flex:2 1 220px; min-width:160px; outline:none; padding:2px 4px; border-radius:4px; font-size:13px; }
+.modal-sesion .input-titulo:focus, .modal-sesion .input-descripcion:focus { background: rgba(124,144,112,0.12); }
+.modal-sesion table.tabla-ejercicios { width:100%; border-collapse:collapse; font-size:12.5px; }
+.modal-sesion table.tabla-ejercicios th {
+  text-align:left; color: var(--chalk-dim); font-weight:600; padding:5px 6px; font-size:10.5px;
+  text-transform:uppercase; letter-spacing:0.4px;
+}
+.modal-sesion table.tabla-ejercicios td { padding:5px 6px; border-top:1px solid rgba(242,237,225,0.08); }
+.modal-sesion .celda-editable { color: var(--chalk); outline:none; border-radius:4px; padding:2px 4px; }
+.modal-sesion .celda-editable:focus { background: rgba(124,144,112,0.12); }
+.modal-sesion .celda-editable:empty:before, .modal-sesion .celda-cabecera-editable:empty:before {
+  content: attr(placeholder); color: var(--chalk-dim); font-weight: normal;
+}
 </style>
 </head>
 
@@ -535,17 +613,10 @@ select.head-select option {
         </div>
       </div>
 
-      <div class="sesion gym" data-tipo="gym-fmax">
+      <div class="sesion gym" data-tipo="gym">
         <div class="sesion-contenido">
           <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">GYM-FMAX</span>
-        </div>
-      </div>
-
-      <div class="sesion gym" data-tipo="gym-antagonistas">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">GYM-ANTAGONISTAS</span>
+          <span class="sesion-text" contenteditable="true">GYM</span>
         </div>
       </div>
 
@@ -572,6 +643,13 @@ select.head-select option {
         Tapering de:
         <select id="selectorCalidadTapering"></select>
       </div>
+      <div class="no-print" style="font-size:0.85em; margin-top:4px;">
+        GYM de la semana:
+        <select id="selectorCalidadGym">
+          <option value="GYM-FMAX">GYM-FMAX</option>
+          <option value="GYM-ANTAGONISTAS">GYM-ANTAGONISTAS</option>
+        </select>
+      </div>
       <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
       <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
       <button class="btn-action" id="btnBorrarSemana" type="button">Borrar semana publicada</button>
@@ -584,6 +662,32 @@ select.head-select option {
   </div>
 </div>
 
+<div id="modalDisenarSesion" class="modal-overlay no-print" hidden>
+  <div class="modal-sesion">
+    <div class="modal-sesion-head">
+      <div>
+        <div class="modal-sesion-cliente" id="modalDisenandoPara">—</div>
+        <select id="modalSelectMesociclo"></select>
+      </div>
+      <button class="btn-action" id="btnCerrarModalSesion" type="button">✕ Cerrar</button>
+    </div>
+    <div class="panel-desox-alt-modal" id="modalPanelDesoxAlternativa" hidden>
+      <span>Bloque integrado:</span>
+      <label><input type="radio" name="modalDesoxAlternativa" value="traves" checked> Traves sin sueltas</label>
+      <label><input type="radio" name="modalDesoxAlternativa" value="multibloque"> Multibloque</label>
+    </div>
+    <div class="modal-sesion-acciones">
+      <button class="btn-action" id="modalBtnCargarUltimo" type="button">Cargar último publicado</button>
+      <button class="btn-action" id="modalBtnPublicar" type="button">Publicar sesión</button>
+      <div class="estado-publicar" id="modalEstadoPublicar"></div>
+    </div>
+    <input type="text" id="titulo-entreno-principal" class="modal-titulo-sesion" placeholder="Título de la sesión...">
+    <button class="btn-action" id="modalBtnNuevaParte" type="button">Añadir Nueva Parte</button>
+    <div id="contenedor-partes"></div>
+  </div>
+</div>
+
+<script src="libs/editor-sesion.js"></script>
 <script>
 function act() {
   if (window.Sortable) {
@@ -707,8 +811,7 @@ function mesocicloParaSesion() {
 
 function resolverMesocicloCaja(tipo) {
   if (tipo === 'sesion') return mesocicloParaSesion();
-  if (tipo === 'gym-fmax') return 'GYM-FMAX';
-  if (tipo === 'gym-antagonistas') return 'GYM-ANTAGONISTAS';
+  if (tipo === 'gym') return document.getElementById('selectorCalidadGym').value;
   if (tipo === 'roca') return 'ROCA';
   if (tipo === 'descanso') return 'DESCANSO';
   return null;
@@ -848,11 +951,112 @@ inputPublicarClienteSemana.addEventListener('change', () => recalcularMesocicloD
 
 const MESOCICLOS_SEMANA = ['REOX', 'AERO', 'DESOX', 'FMAX', 'TAPERING'];
 
+/* ================= MODAL "DISEÑAR SESIÓN" ================= */
+// El modal usa el motor de bloques/ejercicios compartido (libs/editor-sesion.js,
+// el mismo que usa Sesiones.html) — pero no persiste nada en localStorage
+// entre aperturas, para no mezclar el borrador de un cliente con el de otro.
+function autoGuardar() {}
+
+let MODAL_CLIENTE = '', MODAL_MESOCICLO_INICIAL = '', MODAL_MESOCICLO = '';
+
+function abrirModalSesion(cliente, mesociclo) {
+  MODAL_CLIENTE = cliente;
+  MODAL_MESOCICLO_INICIAL = mesociclo;
+  MODAL_MESOCICLO = mesociclo;
+  document.getElementById('modalDisenandoPara').textContent = cliente;
+
+  const sel = document.getElementById('modalSelectMesociclo');
+  const opciones = Array.from(new Set([mesociclo, 'GYM-FMAX', 'GYM-ANTAGONISTAS']));
+  sel.innerHTML = opciones.map(m => `<option value="${m}">${m}</option>`).join('');
+  sel.value = mesociclo;
+  document.getElementById('modalPanelDesoxAlternativa').hidden = mesociclo !== 'DESOX';
+
+  renderizarTodaLaTabla({ tituloPrincipal: '', partes: [] });
+  document.getElementById('modalEstadoPublicar').textContent = '';
+  document.getElementById('modalEstadoPublicar').className = 'estado-publicar';
+  document.getElementById('modalDisenarSesion').hidden = false;
+}
+
+document.getElementById('modalSelectMesociclo').addEventListener('change', e => {
+  MODAL_MESOCICLO = e.target.value;
+  document.getElementById('modalPanelDesoxAlternativa').hidden = MODAL_MESOCICLO !== 'DESOX';
+});
+
+document.getElementById('btnCerrarModalSesion').addEventListener('click', () => {
+  document.getElementById('modalDisenarSesion').hidden = true;
+});
+
+document.getElementById('modalBtnNuevaParte').addEventListener('click', () => crearParteUI());
+
+function mostrarEstadoPublicarModal(texto, clase) {
+  const estado = document.getElementById('modalEstadoPublicar');
+  estado.textContent = texto;
+  estado.classList.remove('ok', 'error');
+  if (clase) estado.classList.add(clase);
+}
+
+document.getElementById('modalBtnCargarUltimo').addEventListener('click', async () => {
+  const cliente = MODAL_CLIENTE, mesociclo = MODAL_MESOCICLO;
+  if (!cliente || !mesociclo) return;
+  mostrarEstadoPublicarModal('Cargando última versión publicada...', null);
+  try {
+    const qs = new URLSearchParams({ cliente, mesociclo });
+    const res = await fetch('/api/ultima-sesion-publicada?' + qs.toString());
+    const data = await res.json();
+    if (data.success) {
+      renderizarTodaLaTabla(data.sesion);
+      mostrarEstadoPublicarModal(`✓ Cargada la última sesión publicada de ${mesociclo} para ${cliente} (era del ${data.fecha}). Edítala y publica de nuevo cuando esté lista.`, 'ok');
+    } else {
+      mostrarEstadoPublicarModal(data.error || 'No se encontró ninguna versión previa — empieza desde cero.', 'error');
+    }
+  } catch (e) {
+    mostrarEstadoPublicarModal('Error de red: ' + e.message, 'error');
+  }
+});
+
+document.getElementById('modalBtnPublicar').addEventListener('click', async () => {
+  const cliente = MODAL_CLIENTE, mesociclo = MODAL_MESOCICLO;
+  if (!cliente || !mesociclo) return;
+  const hoy = new Date();
+  const fecha = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${hoy.getFullYear()}`;
+
+  let datos = obtenerDatosEstructura();
+
+  if (mesociclo === 'DESOX') {
+    const elegido = document.querySelector('input[name="modalDesoxAlternativa"]:checked');
+    if (elegido) {
+      const excluirTitulo = elegido.value === 'traves' ? 'multibloque' : 'traves sin sueltas';
+      datos = {
+        ...datos,
+        partes: datos.partes.filter(p =>
+          !(p.tipo === 'bloque_ejercicios' && (p.titulo || '').trim().toLowerCase() === excluirTitulo)
+        ),
+      };
+    }
+  }
+
+  mostrarEstadoPublicarModal('Publicando...', null);
+  try {
+    const res = await fetch('/api/publicar-sesion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cliente, fecha, mesociclo, sesion: datos }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      mostrarEstadoPublicarModal(`✓ Publicado para ${cliente} — ${fecha} (${mesociclo}).`, 'ok');
+    } else {
+      mostrarEstadoPublicarModal('✗ ' + (data.error || 'Error al publicar.'), 'error');
+    }
+  } catch (e) {
+    mostrarEstadoPublicarModal('✗ Error de red: ' + e.message, 'error');
+  }
+});
+
 document.getElementById('btnDisenarSesion').addEventListener('click', () => {
   const cliente = inputPublicarClienteSemana.value.trim();
   if (!cliente || !MESOCICLO_ACTUAL) return;
-  const qs = new URLSearchParams({ cliente, mesociclo: mesocicloParaSesion() });
-  window.open('Sesiones.html?' + qs.toString(), '_blank');
+  abrirModalSesion(cliente, mesocicloParaSesion());
 });
 
 document.getElementById('btnCargarUltimaSemana').addEventListener('click', async () => {
@@ -908,8 +1112,10 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
       data.sesiones.filter(s => s.fecha === fechaDia).forEach(s => {
         let tipo = null;
         if (MESOCICLOS_SEMANA.includes(s.mesociclo)) tipo = 'sesion';
-        else if (s.mesociclo === 'GYM-FMAX') tipo = 'gym-fmax';
-        else if (s.mesociclo === 'GYM-ANTAGONISTAS') tipo = 'gym-antagonistas';
+        else if (s.mesociclo === 'GYM-FMAX' || s.mesociclo === 'GYM-ANTAGONISTAS') {
+          tipo = 'gym';
+          document.getElementById('selectorCalidadGym').value = s.mesociclo;
+        }
         else if (s.mesociclo === 'ROCA') tipo = 'roca';
         else if (s.mesociclo === 'DESCANSO') tipo = 'descanso';
         if (!tipo) return;
