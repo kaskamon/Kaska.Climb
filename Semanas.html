@@ -1109,6 +1109,9 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
       return;
     }
     if (!data.sesiones.length) {
+      // Vacía la tabla — si no, se quedaría viendo lo de la semana anterior
+      // y parecería que esta semana ya tiene algo programado.
+      limpiarTabla();
       estadoDiv.innerHTML = `<div class="error">Este cliente no tiene nada publicado en la semana del ${fechaBuscada}.</div>`;
       return;
     }
