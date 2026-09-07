@@ -1218,7 +1218,7 @@ document.getElementById('btnPublicarSemana').addEventListener('click', async () 
         const dataUltimo = await resUltimo.json();
 
         if (!dataUltimo.success) {
-          resultados.push({ texto: `${mesociclo} (${fecha}): sin versión previa publicada — abre "Diseñar sesión de este mesociclo", elige ${mesociclo} en el desplegable del popup y publícala ahí primero`, clase: 'error' });
+          resultados.push({ texto: `${mesociclo} (${fecha}) para ${cliente}: sin versión previa publicada — abre "Diseñar sesión de este mesociclo", elige ${mesociclo} en el desplegable del popup y publícala ahí primero. (${dataUltimo.error || 'sin más detalle del servidor'})`, clase: 'error' });
           continue;
         }
         sesionAPublicar = dataUltimo.sesion;
