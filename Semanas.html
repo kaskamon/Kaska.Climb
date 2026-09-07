@@ -643,13 +643,6 @@ select.head-select option {
         Tapering de:
         <select id="selectorCalidadTapering"></select>
       </div>
-      <div class="no-print" style="font-size:0.85em; margin-top:4px;">
-        GYM de la semana:
-        <select id="selectorCalidadGym">
-          <option value="GYM-FMAX">GYM-FMAX</option>
-          <option value="GYM-ANTAGONISTAS">GYM-ANTAGONISTAS</option>
-        </select>
-      </div>
       <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
       <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
       <button class="btn-action" id="btnBorrarSemana" type="button">Borrar semana publicada</button>
@@ -682,7 +675,11 @@ select.head-select option {
       <div class="estado-publicar" id="modalEstadoPublicar"></div>
     </div>
     <input type="text" id="titulo-entreno-principal" class="modal-titulo-sesion" placeholder="Título de la sesión...">
-    <button class="btn-action" id="modalBtnNuevaParte" type="button">Añadir Nueva Parte</button>
+    <div class="modal-sesion-acciones">
+      <button class="btn-action" id="modalBtnNuevaParte" type="button">Añadir Nueva Parte</button>
+      <input type="file" id="modalInputCargarJson" accept=".json" style="display:none;">
+      <button class="btn-action" id="modalBtnCargarVisual" type="button">Abrir tabla existente</button>
+    </div>
     <div id="contenedor-partes"></div>
   </div>
 </div>
@@ -796,6 +793,10 @@ const FASE_A_MESOCICLO = { fmax: 'FMAX', desox: 'DESOX', reox: 'REOX', aero: 'AE
 
 let MESOCICLO_ACTUAL = null; // se rellena solo desde el macrociclo real del cliente
 let MESOCICLO_ORIGEN_TAPERING = null; // cualidad del bloque anterior, solo si esta semana es TAPERING
+// Cuál de los 2 tipos de GYM representa la caja "GYM" del banco — se elige
+// dentro del popup "Diseñar sesión" (independiente del mesociclo de la
+// semana), no con un selector aparte. GYM-FMAX por defecto.
+let MESOCICLO_GYM_ACTUAL = 'GYM-FMAX';
 
 // Durante una semana de TAPERING, el entrenador puede elegir etiquetar la
 // caja de "sesión" como el TAPERING genérico o como la cualidad de la que
@@ -811,7 +812,7 @@ function mesocicloParaSesion() {
 
 function resolverMesocicloCaja(tipo) {
   if (tipo === 'sesion') return mesocicloParaSesion();
-  if (tipo === 'gym') return document.getElementById('selectorCalidadGym').value;
+  if (tipo === 'gym') return MESOCICLO_GYM_ACTUAL;
   if (tipo === 'roca') return 'ROCA';
   if (tipo === 'descanso') return 'DESCANSO';
   return null;
@@ -980,6 +981,11 @@ function abrirModalSesion(cliente, mesociclo) {
 document.getElementById('modalSelectMesociclo').addEventListener('change', e => {
   MODAL_MESOCICLO = e.target.value;
   document.getElementById('modalPanelDesoxAlternativa').hidden = MODAL_MESOCICLO !== 'DESOX';
+  // Elegir GYM-FMAX/GYM-ANTAGONISTAS aquí dentro es lo que decide, para
+  // publicar la semana, cuál de los 2 representa la caja "GYM" del banco.
+  if (MODAL_MESOCICLO === 'GYM-FMAX' || MODAL_MESOCICLO === 'GYM-ANTAGONISTAS') {
+    MESOCICLO_GYM_ACTUAL = MODAL_MESOCICLO;
+  }
 });
 
 document.getElementById('btnCerrarModalSesion').addEventListener('click', () => {
@@ -987,6 +993,24 @@ document.getElementById('btnCerrarModalSesion').addEventListener('click', () => 
 });
 
 document.getElementById('modalBtnNuevaParte').addEventListener('click', () => crearParteUI());
+
+document.getElementById('modalBtnCargarVisual').addEventListener('click', () => {
+  document.getElementById('modalInputCargarJson').click();
+});
+document.getElementById('modalInputCargarJson').addEventListener('change', (e) => {
+  const archivos = e.target.files;
+  if (!archivos || archivos.length === 0) return;
+  const lector = new FileReader();
+  lector.onload = function (evt) {
+    try {
+      renderizarTodaLaTabla(JSON.parse(evt.target.result));
+    } catch (error) {
+      alert('El archivo seleccionado no es válido.');
+    }
+    e.target.value = '';
+  };
+  lector.readAsText(archivos[0]);
+});
 
 function mostrarEstadoPublicarModal(texto, clase) {
   const estado = document.getElementById('modalEstadoPublicar');
@@ -1114,7 +1138,7 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
         if (MESOCICLOS_SEMANA.includes(s.mesociclo)) tipo = 'sesion';
         else if (s.mesociclo === 'GYM-FMAX' || s.mesociclo === 'GYM-ANTAGONISTAS') {
           tipo = 'gym';
-          document.getElementById('selectorCalidadGym').value = s.mesociclo;
+          MESOCICLO_GYM_ACTUAL = s.mesociclo;
         }
         else if (s.mesociclo === 'ROCA') tipo = 'roca';
         else if (s.mesociclo === 'DESCANSO') tipo = 'descanso';
