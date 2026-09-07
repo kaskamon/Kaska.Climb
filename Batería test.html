@@ -151,6 +151,12 @@
   }
   input:focus, select:focus{ outline:2px solid var(--moss); outline-offset:1px; border-color:var(--moss); }
   input[readonly]{ background:var(--stone-700); color:var(--chalk-dim); }
+  textarea{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.16);
+    color:var(--chalk); border-radius:10px; padding:10px 12px; font-size:14px;
+    font-family:'Work Sans',sans-serif; width:100%; min-height:170px; resize:vertical;
+  }
+  textarea:focus{ outline:2px solid var(--moss); outline-offset:1px; border-color:var(--moss); }
 
   .out{
     display:flex; align-items:baseline; justify-content:space-between; gap:10px;
@@ -416,6 +422,7 @@
         Inicio
       </a>
     </div>
+    <button class="icon-btn" id="btnFormulas" data-tab="formulas">Fórmulas</button>
     <button class="icon-btn" id="btnGuion" data-tab="guion">Guión</button>
   </div>
 </div>
@@ -853,6 +860,30 @@
   <section class="panel" id="panel-boulder"></section>
 
   <!-- ============ GUIÓN ============ -->
+  <section class="panel" id="panel-formulas">
+    <div class="section-head"><h2>Fórmulas por cualidad</h2></div>
+
+    <div class="card">
+      <h3>FMAX</h3>
+      <div class="field"><textarea id="formula-fmax" rows="8" placeholder="Fórmulas de SuspMax, Campus Board, Boulder Max, lastres a usar..."></textarea></div>
+    </div>
+
+    <div class="card">
+      <h3>REOX</h3>
+      <div class="field"><textarea id="formula-reox" rows="8" placeholder="Fórmulas de SuspInt (OT), Campus HMH, Travesías con sueltas, lastres a usar..."></textarea></div>
+    </div>
+
+    <div class="card">
+      <h3>DESOX</h3>
+      <div class="field"><textarea id="formula-desox" rows="8" placeholder="Fórmulas de SuspSub (OT), Campus McClure, Travesías sin sueltas, Multibloque, lastres a usar..."></textarea></div>
+    </div>
+
+    <div class="card">
+      <h3>AERO</h3>
+      <div class="field"><textarea id="formula-aero" rows="8" placeholder="Fórmulas de SuspInt (CF), Escalada continua, lastres a usar..."></textarea></div>
+    </div>
+  </section>
+
   <section class="panel" id="panel-guion">
     <div class="section-head"><h2>Guión de test</h2></div>
 
@@ -1934,6 +1965,8 @@ function switchToTab(tabName){
   if(navBtn) navBtn.classList.add('active');
   const guionBtn = $('btnGuion');
   if(guionBtn) guionBtn.classList.toggle('active', tabName==='guion');
+  const formulasBtn = $('btnFormulas');
+  if(formulasBtn) formulasBtn.classList.toggle('active', tabName==='formulas');
   document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   document.getElementById('panel-'+tabName).classList.add('active');
   window.scrollTo({top:0, behavior:'smooth'});
@@ -1944,8 +1977,9 @@ document.getElementById('tabs').addEventListener('click', e=>{
   switchToTab(btn.dataset.tab);
 });
 $('btnGuion').addEventListener('click', ()=> switchToTab('guion'));
+$('btnFormulas').addEventListener('click', ()=> switchToTab('formulas'));
 
-const ALL_IDS = () => Array.from(document.querySelectorAll('input, select')).map(el=>el.id).filter(Boolean);
+const ALL_IDS = () => Array.from(document.querySelectorAll('input, select, textarea')).map(el=>el.id).filter(Boolean);
 
 function saveState(){
   const data = {};
@@ -1975,6 +2009,7 @@ function nombreClienteBateriaSeleccionado(){
 
 function limpiarCamposBateria(){
   document.querySelectorAll('input').forEach(el=> el.value='');
+  document.querySelectorAll('textarea').forEach(el=> el.value='');
   document.querySelectorAll('select:not(#selectorClienteBateria)').forEach(el=> el.selectedIndex=0);
   $('ot-final').dataset.auto = 'true';
   document.querySelectorAll('[id^="guion-d"]').forEach(el=> el.dataset.auto = 'true');
