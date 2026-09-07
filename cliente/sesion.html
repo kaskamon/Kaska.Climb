@@ -374,10 +374,16 @@ function esBloqueRefFmax(titulo){
    misma sesión (cliente+fecha+mesociclo) antes de haberla enviado. */
 const STORAGE_KEY_BORRADOR = `kaska_borrador_sesion::${CLIENTE}::${FECHA_PARAM}::${MESOCICLO}`;
 let envioExitoso = false;
+// Huella de la sesión que había publicada cuando se guardó el borrador — si
+// el entrenador vuelve a publicar esta misma fecha/mesociclo con contenido
+// distinto (p.ej. al actualizar la semana desde Semanas.html), el borrador
+// viejo ya no corresponde a los mismos campos y no debe restaurarse encima
+// (quedaba "enquistado" pisando la versión nueva con valores de la vieja).
+let SESION_JSON_ACTUAL = '';
 
 function guardarBorrador(){
   try{
-    const datos = {};
+    const datos = { __sesion: SESION_JSON_ACTUAL };
     document.querySelectorAll('#contenedorBloques input[type=number]').forEach(el => { datos[el.id] = el.value; });
     document.querySelectorAll('#contenedorBloques .ex-check').forEach(el => { datos[el.id] = el.checked; });
     localStorage.setItem(STORAGE_KEY_BORRADOR, JSON.stringify(datos));
@@ -397,9 +403,14 @@ function restaurarBorrador(){
   let datos;
   try{ datos = JSON.parse(localStorage.getItem(STORAGE_KEY_BORRADOR) || 'null'); }catch(e){ datos = null; }
   if(!datos) return;
+  if(datos.__sesion !== SESION_JSON_ACTUAL){
+    borrarBorrador();
+    return;
+  }
 
   let huboRestauracion = false;
   Object.entries(datos).forEach(([id, valor]) => {
+    if(id === '__sesion') return;
     const el = document.getElementById(id);
     if(!el) return;
     if(el.type === 'checkbox'){
@@ -941,6 +952,7 @@ async function cargar(){
       mostrarError(dataSesion.error || 'No se encontró ninguna sesión programada para hoy.');
       return;
     }
+    SESION_JSON_ACTUAL = JSON.stringify(dataSesion.sesion);
 
     // El "Mesociclo" que se muestra es siempre el de la semana (FMAX/REOX/
     // DESOX/AERO/TAP) — nunca el tipo de esta caja en concreto (GYM-FMAX,
