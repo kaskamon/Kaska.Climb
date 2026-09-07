@@ -11,6 +11,50 @@ const COL_CORREO = 34; // AI — mismo campo que escribe api/enviar-sesion.js
 // a propósito, así que nunca tienen nada que enseñar aquí.
 const MESOCICLOS_CON_DATOS = Object.keys(COLUMNS).filter(m => COLUMNS[m] && COLUMNS[m].pfInicial !== undefined);
 
+function parseFechaDDMMYYYY(s) {
+  const [d, m, y] = (s || '').split('/').map(Number);
+  if (!d || !m || !y) return null;
+  return new Date(y, m - 1, d).getTime();
+}
+
+// Para el chequeo de recuperación de cliente/sesion.html: el PFinicial y el
+// Fmax reflejan el estado físico real del cliente en ese momento, no algo
+// que "empiece de cero" solo porque el macrociclo pasa de un mesociclo a
+// otro (p.ej. de REOX a DESOX) — así que la referencia se busca en el
+// histórico de CUALQUIER mesociclo con datos (FMAX/REOX/DESOX/AERO/
+// TAPERING), no solo en el mesociclo que se está entrenando hoy. Si no se
+// hiciera así, la primera sesión de cada mesociclo nuevo se quedaría
+// siempre sin referencia con la que comparar la recuperación, aunque el
+// cliente hubiera entrenado el día anterior.
+function extraerHistorialCrossMesociclo(filas, cliente, max) {
+  return filas
+    .filter(f => f[COL_CORREO] === cliente)
+    .map(f => {
+      const filaMesociclo = f[3];
+      const cfg = COLUMNS[filaMesociclo];
+      if (!cfg || cfg.pfInicial === undefined) return null;
+      if (f[cfg.pfInicial] === undefined || f[cfg.pfInicial] === '') return null;
+      const fmaxIzq = cfg.fmaxIzq !== undefined ? f[cfg.fmaxIzq] : undefined;
+      const fmaxDer = cfg.fmaxDer !== undefined ? f[cfg.fmaxDer] : undefined;
+      const pfFinalRaw = cfg.pfFinal !== undefined && cfg.pfFinal !== null ? f[cfg.pfFinal] : undefined;
+      const entrenada = cfg.fmaxIzq !== undefined ? (fmaxIzq !== undefined && fmaxIzq !== '') : true;
+      return {
+        fecha: f[2],
+        _t: parseFechaDDMMYYYY(f[2]),
+        mesociclo: filaMesociclo,
+        pfInicial: Number(f[cfg.pfInicial]),
+        entrenada,
+        fmaxIzq: fmaxIzq !== undefined && fmaxIzq !== '' ? Number(fmaxIzq) : undefined,
+        fmaxDer: fmaxDer !== undefined && fmaxDer !== '' ? Number(fmaxDer) : undefined,
+        pfFinal: pfFinalRaw !== undefined && pfFinalRaw !== '' ? Number(pfFinalRaw) : undefined,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (a._t ?? -Infinity) - (b._t ?? -Infinity))
+    .map(({ _t, ...resto }) => resto)
+    .slice(-max);
+}
+
 function extraerHistorialDeMesociclo(filas, cliente, mesociclo, max) {
   const cfg = COLUMNS[mesociclo];
   if (!cfg || cfg.pfInicial === undefined) return [];
@@ -91,11 +135,13 @@ module.exports = async (req, res) => {
     const filas = resp.data.values || [];
     const max = Number(limite) || 10;
 
-    // Con mesociclo: misma forma de siempre (usada por cliente/sesion.html
-    // para el chequeo de recuperación) — un array plano, ahora con pfFinal y
-    // campos añadidos (los consumidores antiguos simplemente los ignoran).
+    // Con mesociclo: usada por cliente/sesion.html para el chequeo de
+    // recuperación — cruza todos los mesociclos con datos (ver
+    // extraerHistorialCrossMesociclo), no solo el que se pide, para que la
+    // referencia de PFinicial/Fmax nunca desaparezca solo por haber
+    // cambiado de mesociclo.
     if (mesociclo) {
-      const historial = extraerHistorialDeMesociclo(filas, cliente, mesociclo, max);
+      const historial = extraerHistorialCrossMesociclo(filas, cliente, max);
       return res.status(200).json({ success: true, historial });
     }
 
