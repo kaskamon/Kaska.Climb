@@ -533,6 +533,58 @@ select.head-select option {
 <div class="fondo-logo"></div>
 
 <div class="layout-editor">
+  <div class="panel-derecho">
+    <div id="banco" class="no-print">
+      <h4>Banco de sesiones</h4>
+
+      <div class="sesion sesion-roco" data-tipo="sesion">
+        <div class="sesion-contenido">
+          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
+          <span class="sesion-text" contenteditable="true">SESIÓN (ROCO)</span>
+        </div>
+      </div>
+
+      <div class="sesion gym" data-tipo="gym">
+        <div class="sesion-contenido">
+          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
+          <span class="sesion-text" contenteditable="true">GYM/ANTAGONISTAS</span>
+        </div>
+      </div>
+
+      <div class="sesion roca" data-tipo="roca">
+        <div class="sesion-contenido">
+          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
+          <span class="sesion-text" contenteditable="true">Roca/roco</span>
+        </div>
+      </div>
+
+      <div class="sesion descanso" data-tipo="descanso">
+        <div class="sesion-contenido">
+          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
+          <span class="sesion-text" contenteditable="true">Descanso</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-publicar-semana no-print">
+      <select id="publicarClienteSemana"><option value="">Cargando clientes...</option></select>
+      <button class="btn-action" id="btnCargarUltimaSemana" type="button">Cargar semana</button>
+      <button class="btn-action" id="btnDisenarSesion" type="button" disabled>Diseñar sesión de este mesociclo</button>
+      <div id="wrapCalidadTapering" class="no-print" hidden style="font-size:0.85em; margin-top:4px;">
+        Tapering de:
+        <select id="selectorCalidadTapering"></select>
+      </div>
+      <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
+      <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
+      <button class="btn-action" id="btnBorrarSemana" type="button">Borrar semana publicada</button>
+      <button class="btn-action" onclick="window.location.href='index.html'">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Inicio
+      </button>
+      <div class="estado-publicar-semana" id="estadoPublicarSemana"></div>
+    </div>
+  </div>
+
   <div class="contenedor-principal" id="panelExportable">
     <div class="eyebrow no-print">Kaska.Climb</div>
 
@@ -599,58 +651,6 @@ select.head-select option {
         <div class="dia-nombre">DOM</div>
         <div class="dia-sesiones"></div>
       </div>
-    </div>
-  </div>
-
-  <div class="panel-derecho">
-    <div id="banco" class="no-print">
-      <h4>Banco de sesiones</h4>
-
-      <div class="sesion sesion-roco" data-tipo="sesion">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">SESIÓN (ROCO)</span>
-        </div>
-      </div>
-
-      <div class="sesion gym" data-tipo="gym">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">GYM/ANTAGONISTAS</span>
-        </div>
-      </div>
-
-      <div class="sesion roca" data-tipo="roca">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">Roca/roco</span>
-        </div>
-      </div>
-
-      <div class="sesion descanso" data-tipo="descanso">
-        <div class="sesion-contenido">
-          <div class="btn-del-sesion" onclick="this.parentElement.parentElement.remove()">X</div>
-          <span class="sesion-text" contenteditable="true">Descanso</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="panel-publicar-semana no-print">
-      <select id="publicarClienteSemana"><option value="">Cargando clientes...</option></select>
-      <button class="btn-action" id="btnCargarUltimaSemana" type="button">Cargar semana</button>
-      <button class="btn-action" id="btnDisenarSesion" type="button" disabled>Diseñar sesión de este mesociclo</button>
-      <div id="wrapCalidadTapering" class="no-print" hidden style="font-size:0.85em; margin-top:4px;">
-        Tapering de:
-        <select id="selectorCalidadTapering"></select>
-      </div>
-      <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
-      <button class="btn-action" onclick="limpiarTabla()">Limpiar Tabla</button>
-      <button class="btn-action" id="btnBorrarSemana" type="button">Borrar semana publicada</button>
-      <button class="btn-action" onclick="window.location.href='index.html'">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px; margin-right:4px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-        Inicio
-      </button>
-      <div class="estado-publicar-semana" id="estadoPublicarSemana"></div>
     </div>
   </div>
 </div>
