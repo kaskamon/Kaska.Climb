@@ -56,7 +56,16 @@ module.exports = async (req, res) => {
     const sheets = google.sheets({ version: 'v4', auth: authClient });
 
     const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
-    const num = v => (v !== undefined && v !== null && v !== '') ? Number(v) : undefined;
+    // Por si algún valor llega como texto con coma decimal (teclado en
+    // español) en vez de ya convertido a número — Number("64,5") da NaN, que
+    // JSON.stringify convierte en null al mandarlo al Sheet. Se normaliza a
+    // "." y se descarta si sigue sin ser un número válido, en vez de escribir
+    // NaN/null en la columna.
+    const num = v => {
+      if (v === undefined || v === null || v === '') return undefined;
+      const n = Number(String(v).replace(',', '.'));
+      return isNaN(n) ? undefined : n;
+    };
 
     const fila = new Array(TOTAL_COLUMNAS).fill('');
     fila[0] = marcaTemporal; // A

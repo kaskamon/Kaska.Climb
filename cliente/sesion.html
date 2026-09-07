@@ -304,6 +304,15 @@ function escapeHtml(str){
 
 function normalizar(s){ return (s || '').toString().trim().toLowerCase(); }
 
+// El teclado numérico en español manda "," como separador decimal —
+// parseFloat no la entiende y corta el número justo ahí (p.ej. "64,5" se
+// quedaba en 64), y ese valor mal leído acababa llegando como null a
+// Seguimiento. Se normaliza a "." antes de parsear.
+function parsearNumero(str){
+  if(str == null) return NaN;
+  return parseFloat(String(str).replace(',', '.'));
+}
+
 function limpiarNota(nota){
   if(!nota) return '';
   const lineas = nota.split('\n').map(l => l.trim().replace(/^-\s*/, '')).filter(Boolean);
@@ -697,7 +706,7 @@ function wireInteractividad(ultimaValida){
       // bloquea nunca, solo se avisa.
       if(recoveryBox){
         pfInicialInput.addEventListener('input', () => {
-          const v = parseFloat(pfInicialInput.value);
+          const v = parsearNumero(pfInicialInput.value);
           if(isNaN(v) || pfInicialInput.value.trim() === ''){
             recoveryBox.classList.remove('show', 'info');
             if(refPfFinalUmbral) refPfFinalUmbral.textContent = '— N';
@@ -719,7 +728,7 @@ function wireInteractividad(ultimaValida){
       const REF_PF = ultimaValida.pfInicial;
       const REF_FECHA = ultimaValida.fecha;
       pfInicialInput.addEventListener('input', () => {
-        const v = parseFloat(pfInicialInput.value);
+        const v = parsearNumero(pfInicialInput.value);
         if(isNaN(v) || pfInicialInput.value.trim() === ''){
           recoveryBox.classList.remove('show', 'ok', 'warn', 'info');
           sesionBloqueada = false;
@@ -757,7 +766,7 @@ function wireInteractividad(ultimaValida){
   const pfFinalWarning = document.getElementById('pfFinalWarning');
   if(pfFinalInput && pfFinalWarning){
     pfFinalInput.addEventListener('input', () => {
-      const v = parseFloat(pfFinalInput.value);
+      const v = parsearNumero(pfFinalInput.value);
       if(isNaN(v) || pfFinalInput.value.trim() === '' || umbralParadaActual === null || !pfInicialHoyActual){
         pfFinalWarning.classList.remove('show', 'ok', 'warn');
         return;
@@ -812,7 +821,7 @@ function wireInteractividad(ultimaValida){
       return { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: fechaReal, mesociclo: MESOCICLO };
     }
 
-    const pfInicialN = parseFloat(val('pf-inicial'));
+    const pfInicialN = parsearNumero(val('pf-inicial'));
     const payload = {
       nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: fechaReal, mesociclo: MESOCICLO,
       pfInicial: !isNaN(pfInicialN) ? pfInicialN : undefined,
@@ -823,15 +832,15 @@ function wireInteractividad(ultimaValida){
         payload.campos = CFG.campos.map(c => {
           if(c.tipo === 'tiempo'){
             if(!document.getElementById(c.id + '-min')) return undefined;
-            const min = parseFloat(val(c.id + '-min')) || 0;
-            const seg = parseFloat(val(c.id + '-seg')) || 0;
+            const min = parsearNumero(val(c.id + '-min')) || 0;
+            const seg = parsearNumero(val(c.id + '-seg')) || 0;
             return (min * 60) + seg;
           }
           return val(c.id);
         });
       }
       if(CFG.pfFinal){
-        const pfFinalN = parseFloat(val('pf-final'));
+        const pfFinalN = parsearNumero(val('pf-final'));
         payload.pfFinal = !isNaN(pfFinalN) ? pfFinalN : undefined;
       }
     }
