@@ -313,6 +313,21 @@ function parsearNumero(str){
   return parseFloat(String(str).replace(',', '.'));
 }
 
+// Todos los campos numéricos del cliente son enteros — sin decimales, para
+// que nunca vuelva a colarse una coma/punto mal interpretado camino de
+// Seguimiento. validity.badInput detecta que se ha tecleado algo que el
+// input no puede convertir en número (p.ej. una coma) aunque el navegador
+// ya haya vaciado el .value; si sí que hay un número válido, se comprueba
+// además que sea entero.
+const MSG_OBLIGATORIO = 'Obligatorio — pon 0 si no aplica';
+const MSG_SOLO_ENTEROS = 'Solo números enteros, sin decimales';
+function esValorDecimal(inp){
+  if(inp.validity && inp.validity.badInput) return true;
+  if(inp.value.trim() === '') return false;
+  const n = Number(inp.value);
+  return !isNaN(n) && !Number.isInteger(n);
+}
+
 function limpiarNota(nota){
   if(!nota) return '';
   const lineas = nota.split('\n').map(l => l.trim().replace(/^-\s*/, '')).filter(Boolean);
@@ -483,7 +498,7 @@ function renderCampoInput(campo, ultimaValida){
       </div>
       <div class="field">
         <label>Resultado Test PFinicial <span class="unit">(N)</span></label>
-        <input type="number" step="0.1" id="pf-inicial" placeholder="Introduce el valor conseguido">
+        <input type="number" step="1" id="pf-inicial" placeholder="Introduce el valor conseguido">
         <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
       </div>
       <div class="recovery-status" id="recoveryStatus"></div>
@@ -497,7 +512,7 @@ function renderCampoInput(campo, ultimaValida){
       </div>
       <div class="field">
         <label>Último Test PFfinal realizado <span class="unit">(N)</span></label>
-        <input type="number" step="0.1" id="pf-final" placeholder="Introduce el valor conseguido">
+        <input type="number" step="1" id="pf-final" placeholder="Introduce el valor conseguido">
         <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
       </div>
       <div class="recovery-status" id="pfFinalWarning"></div>`;
@@ -507,12 +522,12 @@ function renderCampoInput(campo, ultimaValida){
       <div class="grid2">
         <div class="field">
           <label>Mano izq. — media <span class="unit">(N)</span></label>
-          <input type="number" step="0.1" id="fmax-izq" placeholder="0">
+          <input type="number" step="1" id="fmax-izq" placeholder="0">
           <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
         </div>
         <div class="field">
           <label>Mano der. — media <span class="unit">(N)</span></label>
-          <input type="number" step="0.1" id="fmax-der" placeholder="0">
+          <input type="number" step="1" id="fmax-der" placeholder="0">
           <span class="field-error-msg">Obligatorio — pon 0 si no aplica</span>
         </div>
       </div>`;
@@ -696,10 +711,19 @@ function wireInteractividad(ultimaValida){
   })();
 
   document.querySelectorAll('input[type=number]').forEach(inp => {
+    const campo = inp.closest('.field');
+    const msgEl = campo ? campo.querySelector('.field-error-msg') : null;
     inp.addEventListener('input', () => {
+      if(esValorDecimal(inp)){
+        inp.classList.add('field-error');
+        if(campo) campo.classList.add('has-error');
+        if(msgEl) msgEl.textContent = MSG_SOLO_ENTEROS;
+        return;
+      }
+      if(msgEl) msgEl.textContent = MSG_OBLIGATORIO;
       if(inp.value.trim() !== ''){
         inp.classList.remove('field-error');
-        inp.closest('.field').classList.remove('has-error');
+        if(campo) campo.classList.remove('has-error');
       }
     });
   });
@@ -899,10 +923,14 @@ function wireInteractividad(ultimaValida){
     let firstInvalid = null;
     requiredIds.forEach(id => {
       const input = document.getElementById(id);
-      const isEmpty = input.value.trim() === '';
-      input.classList.toggle('field-error', isEmpty);
-      input.closest('.field').classList.toggle('has-error', isEmpty);
-      if(isEmpty && !firstInvalid) firstInvalid = input;
+      const campo = input.closest('.field');
+      const msgEl = campo ? campo.querySelector('.field-error-msg') : null;
+      const esDecimal = esValorDecimal(input);
+      const isEmpty = !esDecimal && input.value.trim() === '';
+      if(msgEl) msgEl.textContent = esDecimal ? MSG_SOLO_ENTEROS : MSG_OBLIGATORIO;
+      input.classList.toggle('field-error', isEmpty || esDecimal);
+      if(campo) campo.classList.toggle('has-error', isEmpty || esDecimal);
+      if((isEmpty || esDecimal) && !firstInvalid) firstInvalid = input;
     });
 
     const topError = document.getElementById('topError');
