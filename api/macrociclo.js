@@ -1,5 +1,6 @@
 const { google } = require('googleapis');
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
+const { guardarBackup } = require('../libs/backup.js');
 
 // Planificación de macrociclo por cliente (Macrociclos.html) — hoja principal,
 // distinta de la de sesiones/historial. Columnas: A marcaTemporal, B correo,
@@ -12,40 +13,8 @@ const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Macrociclos_Cliente';
 
-// Copia de seguridad en crudo en la pestaña "Backups" (misma que usa
-// enviar-sesion.js), independiente de si la escritura de arriba falla.
-// Aquí sí hay como mucho 1 backup por cliente+fecha (columna B con una
-// etiqueta que identifica ambos) — republicar el mismo macrociclo
-// sobrescribe su backup en vez de acumular uno nuevo cada vez.
-const BACKUP_SHEET_NAME = 'Backups';
-async function guardarBackup(sheets, etiqueta, cuerpo) {
-  const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
-  const fila = [marcaTemporal, etiqueta, JSON.stringify(cuerpo)];
-  try {
-    const existentes = await sheets.spreadsheets.values.get({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `'${BACKUP_SHEET_NAME}'!A:C`,
-    });
-    const filas = existentes.data.values || [];
-    const idx = filas.findIndex(f => f[1] === etiqueta);
-    if (idx !== -1) {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `'${BACKUP_SHEET_NAME}'!A${idx + 1}:C${idx + 1}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [fila] },
-      });
-    } else {
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `'${BACKUP_SHEET_NAME}'!A:C`,
-        valueInputOption: 'USER_ENTERED',
-        insertDataOption: 'INSERT_ROWS',
-        requestBody: { values: [fila] },
-      });
-    }
-  } catch (e) { /* el backup nunca debe tumbar la publicación principal */ }
-}
+// Copia de seguridad en crudo en la pestaña "Backups" — ver libs/backup.js
+// (compartido con bateria-test.js, mismo mecanismo de sobrescritura por etiqueta).
 
 function authSheets() {
   const auth = new google.auth.GoogleAuth({

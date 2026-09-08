@@ -565,7 +565,7 @@ function renderCampoInput(campo, ultimaValida){
     </div>`;
 }
 
-function renderParte(parte, ultimaValida){
+function renderParte(parte, ultimaValida, ultimaConFmax){
   const campo = encontrarCampo(parte.titulo);
   if(campo && campo.tipo === 'unico') huboCampoUnico = true;
   const esRefFmax = esBloqueRefFmax(parte.titulo);
@@ -579,7 +579,12 @@ function renderParte(parte, ultimaValida){
   }
 
   if(esRefFmax){
-    html += renderRefFmax(ultimaValida);
+    // La referencia de PFinicial (ultimaValida) es "la última sesión
+    // entrenada de cualquier mesociclo" — pero TAPERING nunca registra Fmax,
+    // así que si esa última sesión fue un TAPERING, no sirve como referencia
+    // de Fmax. ultimaConFmax busca, aparte, la última sesión entrenada que
+    // SÍ tenga Fmax medido, aunque sea de una fecha algo más atrás.
+    html += renderRefFmax(ultimaConFmax || ultimaValida);
   }
 
   // Los bloques de gimnasio agrupan varios ejercicios sueltos bajo un mismo
@@ -636,7 +641,7 @@ function renderParte(parte, ultimaValida){
 }
 
 /* ---------- Render de toda la sesión ---------- */
-function renderSesion(sesion, ultimaValida, semanaFinal, semanaMesocicloFinal, mesocicloRealSemana){
+function renderSesion(sesion, ultimaValida, semanaFinal, semanaMesocicloFinal, mesocicloRealSemana, ultimaConFmax){
   const partes = sesion.partes || [];
 
   const bloques = [];
@@ -657,7 +662,7 @@ function renderSesion(sesion, ultimaValida, semanaFinal, semanaMesocicloFinal, m
   let bloquesHtml = '';
   bloques.forEach(bloque => {
     let pasosHtml = '';
-    bloque.pasos.forEach(parte => { pasosHtml += renderParte(parte, ultimaValida); });
+    bloque.pasos.forEach(parte => { pasosHtml += renderParte(parte, ultimaValida, ultimaConFmax); });
     bloquesHtml += `
       <div class="block" id="${bloque.id}">
         <div class="block-head"><h2>${escapeHtml(bloque.titulo)}</h2></div>
@@ -833,11 +838,20 @@ function wireInteractividad(ultimaValida){
   }
 
   /* ---------- Envío ---------- */
+  function campoUnicoActivo(){
+    return CFG.unico || (huboCampoUnico ? CAMPO_UNICO_GLOBAL : null);
+  }
+
+  // El campo "unico" (Fmax tracción / Dominadas con lastre) ya no es
+  // excluyente con PFinicial/Fmax/campos/PFfinal — ese bloque puede aparecer
+  // también dentro de una sesión FMAX/REOX normal (ver CAMPO_UNICO_GLOBAL),
+  // así que se exige/envía JUNTO al resto, no en vez de.
   function calcularRequiredIds(){
-    if(CFG.unico) return [CFG.unico.id];
-    if(!CFG.pfInicial) return [];
-    if(sesionBloqueada) return ['pf-inicial'];
-    const ids = ['pf-inicial'];
+    const cfgUnico = campoUnicoActivo();
+    const idsUnico = cfgUnico ? [cfgUnico.id] : [];
+    if(!CFG.pfInicial) return idsUnico;
+    if(sesionBloqueada) return [...idsUnico, 'pf-inicial'];
+    const ids = [...idsUnico, 'pf-inicial'];
     // Cada campo solo se exige si de verdad se pintó en pantalla — el JSON
     // publicado puede no incluir todos los bloques que el mesociclo admite
     // (p.ej. si al entrenador se le olvidó un bloque, o lo quitó a propósito).
@@ -857,19 +871,14 @@ function wireInteractividad(ultimaValida){
     const val = id => { const el = document.getElementById(id); return el && el.value !== '' ? el.value : undefined; };
     const fechaReal = fechaRealDeHoy();
 
-    if(CFG.unico || huboCampoUnico){
-      const cfgUnico = CFG.unico || CAMPO_UNICO_GLOBAL;
-      return { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: fechaReal, mesociclo: MESOCICLO, unico: val(cfgUnico.id) };
-    }
-    if(!CFG.pfInicial){
-      return { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: fechaReal, mesociclo: MESOCICLO };
-    }
+    const payload = { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: fechaReal, mesociclo: MESOCICLO };
+    const cfgUnico = campoUnicoActivo();
+    if(cfgUnico) payload.unico = val(cfgUnico.id);
+
+    if(!CFG.pfInicial) return payload;
 
     const pfInicialN = parsearNumero(val('pf-inicial'));
-    const payload = {
-      nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: fechaReal, mesociclo: MESOCICLO,
-      pfInicial: !isNaN(pfInicialN) ? pfInicialN : undefined,
-    };
+    payload.pfInicial = !isNaN(pfInicialN) ? pfInicialN : undefined;
     if(!sesionBloqueada){
       if(CFG.fmaxTest){ payload.fmaxIzq = val('fmax-izq'); payload.fmaxDer = val('fmax-der'); }
       if(CFG.campos){
@@ -892,19 +901,20 @@ function wireInteractividad(ultimaValida){
   }
 
   function construirFilasModal(payload){
-    if(CFG.unico || huboCampoUnico){
-      return [[(CFG.unico || CAMPO_UNICO_GLOBAL).label, payload.unico ?? '—']];
-    }
+    const cfgUnico = campoUnicoActivo();
+    const filasUnico = cfgUnico ? [[cfgUnico.label, payload.unico ?? '—']] : [];
+
     if(!CFG.pfInicial){
-      return [['Sesión', 'Completada']];
+      return filasUnico.length ? filasUnico : [['Sesión', 'Completada']];
     }
     if(sesionBloqueada){
       return [
+        ...filasUnico,
         ['Test PFinicial (N)', payload.pfInicial ?? '—'],
         ['Sesión', 'No entrenada — no recuperado'],
       ];
     }
-    const filas = [['Test PFinicial (N)', payload.pfInicial ?? '—']];
+    const filas = [...filasUnico, ['Test PFinicial (N)', payload.pfInicial ?? '—']];
     if(CFG.fmaxTest){
       filas.push(['Fmax 5" mano izq. (N)', payload.fmaxIzq ?? '—']);
       filas.push(['Fmax 5" mano der. (N)', payload.fmaxDer ?? '—']);
@@ -1034,10 +1044,16 @@ async function cargar(){
     }
 
     let ultimaValida = null;
+    let ultimaConFmax = null;
     if(promHistorial){
       const dataHist = await promHistorial.then(r => r.json());
       if(dataHist.success && Array.isArray(dataHist.historial)){
-        ultimaValida = [...dataHist.historial].reverse().find(h => h.entrenada) || null;
+        const entrenadas = [...dataHist.historial].reverse().filter(h => h.entrenada);
+        ultimaValida = entrenadas[0] || null;
+        // TAPERING no mide Fmax — si la sesión entrenada más reciente fue de
+        // TAPERING, busca más atrás la última que sí tenga fmaxIzq medido,
+        // para no perder la referencia real solo por venir de una descarga.
+        ultimaConFmax = entrenadas.find(h => h.fmaxIzq !== undefined) || null;
       }
     }
 
@@ -1045,7 +1061,7 @@ async function cargar(){
     // de la cabecera de Semanas.html) — si por lo que sea no vino, caemos al
     // ?semana= de la URL como último recurso.
     const semanaFinal = dataSesion.semana || SEMANA_PARAM;
-    renderSesion(dataSesion.sesion, ultimaValida, semanaFinal, dataSesion.semanaMesociclo, mesocicloRealSemana);
+    renderSesion(dataSesion.sesion, ultimaValida, semanaFinal, dataSesion.semanaMesociclo, mesocicloRealSemana, ultimaConFmax);
     wireInteractividad(ultimaValida);
     restaurarBorrador();
 

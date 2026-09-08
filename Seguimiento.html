@@ -435,15 +435,25 @@ function pintarPanelCampo(panel, historial, indice){
   const ultimo = conValor[conValor.length - 1];
   const primero = conValor[0];
   const media = conValor.reduce((s,x) => s + x.valor, 0) / conValor.length;
-  const tendencia = primero.valor ? ((ultimo.valor - primero.valor) / primero.valor * 100) : 0;
+  // primero.valor === 0 es un dato real y válido (varios campos admiten "0
+  // si no aplica") — el % de cambio no se puede calcular con denominador 0,
+  // así que ahí se muestra la diferencia absoluta en vez de forzar un "0%"
+  // que parecería "sin cambios" cuando en realidad puede haber mejorado mucho.
+  const primerEsCero = primero.valor === 0;
+  const tendenciaPct = primerEsCero ? null : ((ultimo.valor - primero.valor) / primero.valor * 100);
+  const deltaAbsoluto = ultimo.valor - primero.valor;
+  const tendenciaPositiva = primerEsCero ? deltaAbsoluto >= 0 : tendenciaPct >= 0;
+  const tendenciaTexto = primerEsCero
+    ? `${deltaAbsoluto >= 0 ? '+' : ''}${escapeHtml(formatCampoValor(deltaAbsoluto, tipo))}`
+    : `${tendenciaPct >= 0 ? '+' : ''}${tendenciaPct.toFixed(1)}<small>%</small>`;
 
   panel.innerHTML = `
     <div class="stat-tiles">
       <div class="stat-tile"><div class="k">${escapeHtml(cfgCampo.label)} media</div><div class="v">${escapeHtml(formatCampoValor(media, tipo))}</div></div>
       <div class="stat-tile">
         <div class="k">Tendencia (${conValor.length} ses.)</div>
-        <div class="v" style="color:${tendencia>=0?'var(--moss-light)':'var(--danger)'};">${tendencia>=0?'+':''}${tendencia.toFixed(1)}<small>%</small></div>
-        <div class="delta ${tendencia>=0?'up':'down'}">${tendencia>=0?'↑ progresando':'↓ en descenso'}</div>
+        <div class="v" style="color:${tendenciaPositiva?'var(--moss-light)':'var(--danger)'};">${tendenciaTexto}</div>
+        <div class="delta ${tendenciaPositiva?'up':'down'}">${tendenciaPositiva?'↑ progresando':'↓ en descenso'}</div>
       </div>
       <div class="stat-tile"><div class="k">Último valor</div><div class="v">${escapeHtml(formatCampoValor(ultimo.valor, tipo))}</div></div>
       <div class="stat-tile"><div class="k">Sesiones con dato</div><div class="v">${conValor.length}<small>/${historial.length}</small></div></div>
@@ -477,10 +487,18 @@ function pintarPanelPfPct(panel, historial){
   const umbralControl = cfg ? cfg.umbralControl : undefined;
   const color = MESO_COLORS[MESO_ACTIVO];
 
+  // PFinicial=0 es un valor real que se puede registrar (sin mínimo forzado
+  // en el servidor) — no es "sin dato". Con denominador 0 el % no se puede
+  // calcular, así que ese punto concreto se omite de la gráfica (no hay
+  // forma honesta de dibujar un "+∞%"), pero se avisa en vez de desaparecer
+  // en silencio, a diferencia de antes donde cualquier anterior "falsy" se
+  // saltaba sin distinguir "sin dato" de "0 real".
   const puntos = [];
+  let omitidosPorCero = 0;
   for(let i = 1; i < historial.length; i++){
     const anterior = historial[i-1].pfInicial, actual = historial[i].pfInicial;
-    if(!anterior) continue;
+    if(anterior === undefined || anterior === null) continue;
+    if(anterior === 0){ omitidosPorCero++; continue; }
     puntos.push({ fecha: historial[i].fecha, valor: ((actual - anterior) / anterior) * 100 });
   }
 
@@ -504,6 +522,7 @@ function pintarPanelPfPct(panel, historial){
       <div class="stat-tile"><div class="k">Pérdida &gt; umbral</div><div class="v">${sobreUmbral ?? '—'}<small>/${puntos.length}</small></div></div>
       <div class="stat-tile"><div class="k">Umbral de control</div><div class="v">${umbralControl ?? '—'}<small>%</small></div></div>
     </div>
+    ${omitidosPorCero ? `<div class="estado-panel" style="margin-bottom:10px;">${omitidosPorCero} sesión${omitidosPorCero===1?'':'es'} con PFinicial de 0 en la sesión anterior — no se puede calcular el % de variación para ${omitidosPorCero===1?'esa fecha':'esas fechas'}.</div>` : ''}
     <div class="chart-shell">
       <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
     </div>

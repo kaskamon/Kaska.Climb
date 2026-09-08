@@ -14,6 +14,7 @@
 
 <script src="libs/Sortable.min.js"></script>
 <script src="libs/clientes-selector.js"></script>
+<script src="libs/mesociclos-config.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -568,7 +569,7 @@ select.head-select option {
         Fecha:
         <br>
         <span class="head-val" id="displayDate" onclick="abrirSelectorFecha()">DD/MM/AAAA</span>
-        <input type="date" id="hiddenDate" class="date-input-hidden" onchange="actualizarFecha(this.value)">
+        <input type="date" id="hiddenDate" class="date-input-hidden" onchange="actualizarFecha(this.value); recalcularMesocicloDesdeMacrociclo();">
       </div>
 
       <div class="head-item">
@@ -745,7 +746,9 @@ function actualizarFecha(val) {
   const mmStr = String(m).padStart(2, '0');
   document.getElementById('displayDate').innerText = `${ddStr}/${mmStr}/${y}`;
 
-  if (typeof recalcularMesocicloDesdeMacrociclo === 'function') recalcularMesocicloDesdeMacrociclo();
+  // El recálculo ya NO se dispara aquí dentro — cada llamador lo hace
+  // explícitamente después (antes se disparaba aquí Y otra vez a mano en
+  // "Cargar semana", duplicando la petición a /api/macrociclo cada vez).
 }
 
 function limpiarTabla() {
@@ -851,7 +854,12 @@ function calcularFaseYSemana(inicioISO, bloques, fechaLunesDDMMYYYY) {
 // cabecera — vuelve a leer el macrociclo real de ese cliente y rellena
 // Semana / Mesociclo / Sem. Meso. solos, en vez de que el entrenador tenga
 // que teclearlos o elegirlos a mano.
+// Guarda contra respuestas fuera de orden: si el cliente/fecha cambian otra
+// vez mientras esta llamada sigue esperando al servidor, la respuesta que
+// llegue tarde no debe pisar el estado de la llamada más reciente.
+let mesocicloRequestId = 0;
 async function recalcularMesocicloDesdeMacrociclo() {
+  const miRequestId = ++mesocicloRequestId;
   const cliente = inputPublicarClienteSemana.value.trim();
   const fechaLunes = fechaParaDiaIndice(0);
   const estado = document.getElementById('estadoMacrociclo');
@@ -872,6 +880,7 @@ async function recalcularMesocicloDesdeMacrociclo() {
   try {
     const res = await fetch('/api/macrociclo?' + new URLSearchParams({ cliente }).toString());
     const data = await res.json();
+    if (miRequestId !== mesocicloRequestId) return; // ya hay una llamada más reciente en marcha — esta respuesta está obsoleta
     if (!data.success) {
       estado.textContent = data.error || 'No se pudo consultar el macrociclo.';
       estado.classList.add('error');
@@ -910,6 +919,7 @@ async function recalcularMesocicloDesdeMacrociclo() {
     estado.textContent = `✓ Semana ${calc.semanaEnBloque} de ${calc.semanasBloque} de ${calc.mesociclo} (según el macrociclo de ${data.plan.nombre || cliente}).`;
     estado.classList.add('ok');
   } catch (e) {
+    if (miRequestId !== mesocicloRequestId) return;
     estado.textContent = 'Error de red al consultar el macrociclo: ' + e.message;
     estado.classList.add('error');
   }
@@ -933,7 +943,11 @@ const inputPublicarClienteSemana = document.getElementById('publicarClienteSeman
 cargarSelectorClientes(inputPublicarClienteSemana);
 inputPublicarClienteSemana.addEventListener('change', () => recalcularMesocicloDesdeMacrociclo());
 
-const MESOCICLOS_SEMANA = ['REOX', 'AERO', 'DESOX', 'FMAX', 'TAPERING'];
+// Derivado de CATEGORIA_VISUAL (libs/mesociclos-config.js) en vez de una
+// lista aparte a mano — así un mesociclo nuevo o renombrado no se puede
+// quedar fuera de sincronía entre los dos sitios.
+const { CATEGORIA_VISUAL } = window.MESOCICLOS_CONFIG || {};
+const MESOCICLOS_SEMANA = Object.keys(CATEGORIA_VISUAL || {}).filter(m => CATEGORIA_VISUAL[m].tipo === 'sesion');
 
 /* ================= MODAL "DISEÑAR SESIÓN" ================= */
 // El modal usa el motor de bloques/ejercicios compartido (libs/editor-sesion.js,
@@ -1028,11 +1042,17 @@ document.getElementById('modalBtnPublicar').addEventListener('click', async () =
   // y la segunda borra la primera. Cada mesociclo usa su propia fecha fija y
   // lejana en el futuro — distinta entre sí para que dos plantillas nunca
   // choquen entre ellas, y ninguna coincide jamás con un día real publicado.
+  // Cada mesociclo va en un LUNES distinto, con una semana entera de margen
+  // entre uno y otro — no basta con que sean días distintos: api/publicar-
+  // sesion.js también borra cualquier OTRO mesociclo real (tipo:'sesion')
+  // que caiga en la MISMA SEMANA (lunes a lunes), no solo el mismo día. Con
+  // fechas consecutivas (1, 2, 3... enero) los 4 mesociclos de calidad caían
+  // todos en la semana del mismo lunes y se borraban entre sí al publicar.
   const FECHA_PLANTILLA_POR_MESOCICLO = {
-    FMAX: '01/01/2099', REOX: '02/01/2099', DESOX: '03/01/2099', AERO: '04/01/2099',
-    TAPERING: '05/01/2099', 'GYM-FMAX': '06/01/2099', 'GYM-ANTAGONISTAS': '07/01/2099',
+    FMAX: '05/01/2099', REOX: '12/01/2099', DESOX: '19/01/2099', AERO: '26/01/2099',
+    TAPERING: '02/02/2099', 'GYM-FMAX': '09/02/2099', 'GYM-ANTAGONISTAS': '16/02/2099',
   };
-  const fecha = FECHA_PLANTILLA_POR_MESOCICLO[mesociclo] || '01/01/2099';
+  const fecha = FECHA_PLANTILLA_POR_MESOCICLO[mesociclo] || '05/01/2099';
 
   let datos = obtenerDatosEstructura();
 
@@ -1120,8 +1140,7 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
     const [ddL, mmL, yyyyL] = fechaLunes.split('/');
     document.getElementById('hiddenDate').value = `${yyyyL}-${mmL}-${ddL}`;
     actualizarFecha(`${yyyyL}-${mmL}-${ddL}`);
-    // actualizarFecha ya dispara el recálculo, pero es async — lo esperamos
-    // aquí explícitamente para poder comparar contra lo ya publicado.
+    // Se espera aquí explícitamente para poder comparar contra lo ya publicado.
     await recalcularMesocicloDesdeMacrociclo();
 
     limpiarTabla();
