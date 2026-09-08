@@ -10,6 +10,12 @@ const COL_CORREO = 34; // AI — identificador real del cliente (el nombre en B 
 // El mapeo de columnas por mesociclo vive ahora en libs/mesociclos-config.js
 // (fuente única, la reutilizan también los endpoints de lectura de sesión).
 
+// "Dominadas con lastre" (bloque "Fmax tracción") ya no depende de que el
+// mesociclo sea literalmente GYM-FMAX — ese bloque puede aparecer en
+// cualquier sesión de gimnasio, y siempre escribe en la misma columna, solo
+// si el cliente mandó ese dato (ver CAMPO_UNICO_GLOBAL en cliente/sesion.html).
+const COL_DOMINADAS_CON_LASTRE = 4; // E
+
 // Backup crudo: guardamos también el JSON completo de lo que envía el cliente en
 // la pestaña "Backups", independiente de si el volcado a columnas de arriba falla.
 const BACKUP_SHEET_NAME = 'Backups';
@@ -92,9 +98,9 @@ module.exports = async (req, res) => {
       const n = num(pfFinal);
       if (n !== undefined) fila[cfg.pfFinal] = n;
     }
-    if (cfg.unico !== undefined) {
+    if (cfg.unico !== undefined || unico !== undefined) {
       const n = num(unico);
-      if (n !== undefined) fila[cfg.unico] = n;
+      if (n !== undefined) fila[cfg.unico !== undefined ? cfg.unico : COL_DOMINADAS_CON_LASTRE] = n;
     }
 
     // 0) Si ya hay una entrada para este cliente/fecha/mesociclo exactos, la

@@ -780,10 +780,6 @@ const FASE_A_MESOCICLO = { fmax: 'FMAX', desox: 'DESOX', reox: 'REOX', aero: 'AE
 
 let MESOCICLO_ACTUAL = null; // se rellena solo desde el macrociclo real del cliente
 let MESOCICLO_ORIGEN_TAPERING = null; // cualidad del bloque anterior, solo si esta semana es TAPERING
-// Cuál de los 2 tipos de GYM representa la caja "GYM" del banco — se elige
-// dentro del popup "Diseñar sesión" (independiente del mesociclo de la
-// semana), no con un selector aparte. GYM-FMAX por defecto.
-let MESOCICLO_GYM_ACTUAL = 'GYM-FMAX';
 
 // Durante una semana de TAPERING, el entrenador puede elegir etiquetar la
 // caja de "sesión" como el TAPERING genérico o como la cualidad de la que
@@ -799,7 +795,7 @@ function mesocicloParaSesion() {
 
 function resolverMesocicloCaja(tipo) {
   if (tipo === 'sesion') return mesocicloParaSesion();
-  if (tipo === 'gym') return MESOCICLO_GYM_ACTUAL;
+  if (tipo === 'gym') return 'GYM-ANTAGONISTAS';
   if (tipo === 'roca') return 'ROCA';
   if (tipo === 'descanso') return 'DESCANSO';
   return null;
@@ -954,7 +950,7 @@ function abrirModalSesion(cliente, mesociclo) {
   document.getElementById('modalDisenandoPara').textContent = cliente;
 
   const sel = document.getElementById('modalSelectMesociclo');
-  const opciones = Array.from(new Set([mesociclo, 'GYM-FMAX', 'GYM-ANTAGONISTAS']));
+  const opciones = Array.from(new Set([mesociclo, 'GYM-ANTAGONISTAS']));
   sel.innerHTML = opciones.map(m => `<option value="${m}">${m}</option>`).join('');
   sel.value = mesociclo;
   document.getElementById('modalPanelDesoxAlternativa').hidden = mesociclo !== 'DESOX';
@@ -968,11 +964,6 @@ function abrirModalSesion(cliente, mesociclo) {
 document.getElementById('modalSelectMesociclo').addEventListener('change', e => {
   MODAL_MESOCICLO = e.target.value;
   document.getElementById('modalPanelDesoxAlternativa').hidden = MODAL_MESOCICLO !== 'DESOX';
-  // Elegir GYM-FMAX/GYM-ANTAGONISTAS aquí dentro es lo que decide, para
-  // publicar la semana, cuál de los 2 representa la caja "GYM" del banco.
-  if (MODAL_MESOCICLO === 'GYM-FMAX' || MODAL_MESOCICLO === 'GYM-ANTAGONISTAS') {
-    MESOCICLO_GYM_ACTUAL = MODAL_MESOCICLO;
-  }
 });
 
 document.getElementById('btnCerrarModalSesion').addEventListener('click', () => {
@@ -1145,10 +1136,10 @@ document.getElementById('btnCargarUltimaSemana').addEventListener('click', async
       data.sesiones.filter(s => s.fecha === fechaDia).forEach(s => {
         let tipo = null;
         if (MESOCICLOS_SEMANA.includes(s.mesociclo)) tipo = 'sesion';
-        else if (s.mesociclo === 'GYM-FMAX' || s.mesociclo === 'GYM-ANTAGONISTAS') {
-          tipo = 'gym';
-          MESOCICLO_GYM_ACTUAL = s.mesociclo;
-        }
+        // GYM-FMAX se conserva solo para poder seguir mostrando semanas ya
+        // publicadas de antes de fusionar los 2 tipos de gym en uno — ya no
+        // se puede volver a elegir al diseñar una sesión nueva.
+        else if (s.mesociclo === 'GYM-FMAX' || s.mesociclo === 'GYM-ANTAGONISTAS') tipo = 'gym';
         else if (s.mesociclo === 'ROCA') tipo = 'roca';
         else if (s.mesociclo === 'DESCANSO') tipo = 'descanso';
         if (!tipo) return;

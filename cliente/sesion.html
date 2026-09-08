@@ -362,6 +362,12 @@ function fechaRealDeHoy(){
   return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
 }
 
+// "Dominadas con lastre" (dentro del bloque "Fmax tracción") ya no depende
+// de que el mesociclo sea literalmente GYM-FMAX — el bloque puede aparecer
+// en cualquier sesión de gimnasio (o incluso dentro de una FMAX/REOX normal)
+// y siempre debe pedir ese dato, solo por su título, sin mirar el mesociclo.
+const CAMPO_UNICO_GLOBAL = { match: 'Fmax tracción', id: 'dominadas', label: 'Series completadas (Dominadas con lastre)' };
+
 /* ---------- Buscar dentro de un array de "partes" el que casa con un `titulo` ---------- */
 function encontrarCampo(titulo){
   const t = normalizar(titulo);
@@ -369,6 +375,7 @@ function encontrarCampo(titulo){
   if(CFG.pfFinal && normalizar(CFG.pfFinal.match) === t) return { tipo: 'pfFinal' };
   if(CFG.fmaxTest && normalizar(CFG.fmaxTest.match) === t) return { tipo: 'fmaxTest' };
   if(CFG.unico && normalizar(CFG.unico.match) === t) return { tipo: 'unico', cfg: CFG.unico };
+  if(normalizar(CAMPO_UNICO_GLOBAL.match) === t) return { tipo: 'unico', cfg: CAMPO_UNICO_GLOBAL };
   if(CFG.campos){
     for(const c of CFG.campos){
       if(normalizar(c.match) === t) return { tipo: 'campo', cfg: c };
@@ -446,6 +453,10 @@ function restaurarBorrador(){
 
 /* ---------- Render de una "parte" (bloque_ejercicios) como .step ---------- */
 let exchkContador = 0;
+// Si algún bloque de esta sesión resultó ser el campo "unico" (Fmax
+// tracción / Dominadas con lastre) — sin importar el mesociclo, ver
+// CAMPO_UNICO_GLOBAL — construirPayload() lo usa para mandar ese dato.
+let huboCampoUnico = false;
 
 function renderRefFmax(ultimaValida){
   const izq = ultimaValida && ultimaValida.fmaxIzq !== undefined ? ultimaValida.fmaxIzq + ' N' : '— N';
@@ -541,6 +552,7 @@ function renderCampoInput(campo, ultimaValida){
 
 function renderParte(parte, ultimaValida){
   const campo = encontrarCampo(parte.titulo);
+  if(campo && campo.tipo === 'unico') huboCampoUnico = true;
   const esRefFmax = esBloqueRefFmax(parte.titulo);
   const ejercicios = parte.ejercicios || [];
 
@@ -821,8 +833,9 @@ function wireInteractividad(ultimaValida){
     const val = id => { const el = document.getElementById(id); return el && el.value !== '' ? el.value : undefined; };
     const fechaReal = fechaRealDeHoy();
 
-    if(CFG.unico){
-      return { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: fechaReal, mesociclo: MESOCICLO, unico: val(CFG.unico.id) };
+    if(CFG.unico || huboCampoUnico){
+      const cfgUnico = CFG.unico || CAMPO_UNICO_GLOBAL;
+      return { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: fechaReal, mesociclo: MESOCICLO, unico: val(cfgUnico.id) };
     }
     if(!CFG.pfInicial){
       return { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: fechaReal, mesociclo: MESOCICLO };
@@ -855,8 +868,8 @@ function wireInteractividad(ultimaValida){
   }
 
   function construirFilasModal(payload){
-    if(CFG.unico){
-      return [[CFG.unico.label, payload.unico ?? '—']];
+    if(CFG.unico || huboCampoUnico){
+      return [[(CFG.unico || CAMPO_UNICO_GLOBAL).label, payload.unico ?? '—']];
     }
     if(!CFG.pfInicial){
       return [['Sesión', 'Completada']];
