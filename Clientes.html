@@ -101,6 +101,28 @@
 
   .estado-carga{ text-align:center; padding:60px 20px; color:var(--chalk-dim); }
   .vacio{ text-align:center; padding:50px 20px; color:var(--chalk-dim); }
+
+  .btn-fila.tiene-lesion{ border-color:var(--danger); color:var(--danger); }
+  .btn-fila.tiene-lesion:hover{ border-color:var(--danger); color:var(--chalk); background:rgba(201,112,91,0.14); }
+
+  .overlay-lesion{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:100;
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .overlay-lesion.abierto{ display:flex; }
+  .modal-lesion{
+    background:var(--stone-800); border:1px solid var(--line-strong); border-radius:16px;
+    max-width:420px; width:100%; padding:22px 24px; box-shadow:0 20px 50px rgba(0,0,0,0.4);
+  }
+  .modal-lesion h3{ font-size:15px; color:var(--chalk); margin-bottom:2px; }
+  .modal-lesion .correo-modal{ font-size:11.5px; color:var(--chalk-faint); margin-bottom:16px; }
+  .modal-lesion .texto-lesion{ font-size:13.5px; line-height:1.6; color:var(--chalk); white-space:pre-wrap; max-height:50vh; overflow-y:auto; }
+  .modal-lesion .texto-lesion.vacio{ color:var(--chalk-faint); font-style:italic; }
+  .modal-lesion .btn-cerrar-modal{
+    margin-top:18px; background:var(--moss); color:var(--stone-900); border:none; font-weight:800;
+    font-size:12px; letter-spacing:0.4px; text-transform:uppercase; padding:10px 18px; border-radius:9px;
+    cursor:pointer; font-family:inherit;
+  }
 </style>
 </head>
 <body>
@@ -140,6 +162,15 @@
     <div id="contenidoTabla" style="padding:22px 0 4px;">
       <div class="estado-carga">Cargando clientes…</div>
     </div>
+  </div>
+</div>
+
+<div class="overlay-lesion" id="overlayLesion">
+  <div class="modal-lesion">
+    <h3>¿Lesión?</h3>
+    <div class="correo-modal" id="modalLesionNombre"></div>
+    <div class="texto-lesion" id="modalLesionTexto"></div>
+    <button class="btn-cerrar-modal" id="btnCerrarModalLesion">Cerrar</button>
   </div>
 </div>
 
@@ -206,6 +237,23 @@ async function sumarMeses(correo, meses){
     alert('Error de red: ' + e.message);
   }
 }
+
+// Popup "Lesiones" — evita tener que abrir el panel de edición completo
+// solo para ver ese campo antes de una sesión.
+const overlayLesion = document.getElementById('overlayLesion');
+function mostrarLesion(correo){
+  const cliente = TODOS_LOS_CLIENTES.find(c => c.email === correo);
+  if(!cliente) return;
+  document.getElementById('modalLesionNombre').textContent = `${cliente.nombreCompleto} · ${cliente.email}`;
+  const texto = document.getElementById('modalLesionTexto');
+  texto.textContent = cliente.lesion || 'Sin lesiones registradas.';
+  texto.classList.toggle('vacio', !cliente.lesion);
+  overlayLesion.classList.add('abierto');
+}
+function cerrarLesion(){ overlayLesion.classList.remove('abierto'); }
+document.getElementById('btnCerrarModalLesion').addEventListener('click', cerrarLesion);
+overlayLesion.addEventListener('click', (e) => { if(e.target === overlayLesion) cerrarLesion(); });
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape') cerrarLesion(); });
 
 async function cargarClientes(){
   try{
@@ -296,6 +344,7 @@ function render(){
       <td>
         <a class="btn-fila" href="cliente/semana.html?${new URLSearchParams({cliente:c.email, nombre:c.nombreCompleto}).toString()}" target="_blank" rel="noopener" title="Abrir su página tal como la ve">Ver como cliente</a>
         <button class="btn-fila" data-sumar="1" data-correo="${escapeHtml(c.email)}" title="Renovación mensual">+1 mes</button>
+        <button class="btn-fila${c.lesion ? ' tiene-lesion' : ''}" data-lesion="${escapeHtml(c.email)}" title="Ver ¿Lesión?">Lesiones</button>
         <button class="btn-fila" data-editar="${escapeHtml(c.email)}">${editando ? 'Cerrar' : 'Editar'}</button>
       </td>
     </tr>`;
@@ -312,6 +361,9 @@ function render(){
   });
   cont.querySelectorAll('[data-sumar]').forEach(btn => {
     btn.addEventListener('click', () => sumarMeses(btn.dataset.correo, Number(btn.dataset.sumar)));
+  });
+  cont.querySelectorAll('[data-lesion]').forEach(btn => {
+    btn.addEventListener('click', () => mostrarLesion(btn.dataset.lesion));
   });
 
   const btnGuardar = document.getElementById('btnGuardarEdicion');
