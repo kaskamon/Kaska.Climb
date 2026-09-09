@@ -215,6 +215,89 @@ async function manejarEliminar(req, res, sheets) {
   res.status(200).json({ success: true, message: 'Cliente eliminado correctamente.' });
 }
 
+// Igual que Clientes.html — dd/mm/aaaa es el único formato de fecha que se usa en este Sheet.
+function parseFechaDDMMYYYY(str) {
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec((str || '').trim());
+  if (!m) return null;
+  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+}
+
+// GET ?accion=revisar-caducados — pasa a Inactivo a los clientes Activos cuya
+// fecha de fin ya venció, y avisa por correo si ha marcado alguno. La
+// dispara sola vercel.json cada día (con el CRON_SECRET que manda Vercel
+// automáticamente), o el botón "Revisar caducados ahora" de Clientes.html
+// (con la contraseña de entrenador de siempre).
+async function manejarRevisarCaducados(req, res, sheets) {
+  const cabecera = req.headers && req.headers.authorization;
+  const esCron = !!process.env.CRON_SECRET && cabecera === `Bearer ${process.env.CRON_SECRET}`;
+  if (!esCron && !verificarEntrenador(req).ok) {
+    res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Kaska.Climb"' });
+    res.end('Acceso restringido — zona de entrenador.');
+    return;
+  }
+
+  let filas;
+  try {
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${SHEET_NAME}'!A:N`,
+    });
+    filas = resp.data.values || [];
+  } catch (e) {
+    return res.status(500).json({ success: false, error: `No se pudo leer la base de datos de clientes (${e.message}).` });
+  }
+
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const caducados = [];
+
+  filas.forEach((f, i) => {
+    if (i === 0) return; // cabecera
+    if ((f[COL.estado] || '').trim().toLowerCase() !== 'activo') return;
+    const fin = parseFechaDDMMYYYY(f[COL.fechaFin]);
+    if (!fin || fin >= hoy) return;
+    const nombre = (f[COL.nombre] || '').trim();
+    const apellidos = (f[COL.apellidos] || '').trim();
+    caducados.push({
+      filaSheet: i + 1, // A1: fila 1 = índice 0
+      nombreCompleto: [nombre, apellidos].filter(Boolean).join(' '),
+      correo: (f[COL.correo] || '').trim(),
+      fechaFin: (f[COL.fechaFin] || '').trim(),
+    });
+  });
+
+  if (caducados.length) {
+    try {
+      await sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: {
+          valueInputOption: 'USER_ENTERED',
+          data: caducados.map(c => ({ range: `'${SHEET_NAME}'!B${c.filaSheet}`, values: [['Inactivo']] })),
+        },
+      });
+    } catch (e) {
+      return res.status(500).json({ success: false, error: `No se pudo actualizar los clientes caducados (${e.message}).` });
+    }
+
+    try {
+      const plural = caducados.length === 1 ? '' : 's';
+      const asunto = `${caducados.length} cliente${plural} pasado${plural} a Inactivo por caducidad`;
+      const cuerpo = [
+        `Se ${caducados.length === 1 ? 'ha' : 'han'} marcado Inactivo automáticamente por haber pasado su fecha de fin:`,
+        ``,
+        ...caducados.map(c => `- ${c.nombreCompleto} (${c.correo}) — fin: ${c.fechaFin}`),
+        ``,
+        `Revísalo en Clientes.html si alguno necesita renovarse en vez de quedar inactivo.`,
+      ].join('\r\n');
+      await enviarCorreoComoEntrenador(CORREO_ENTRENADOR, asunto, cuerpo);
+    } catch (e) {
+      console.error(`No se pudo mandar el aviso de clientes caducados: ${e.message}`);
+    }
+  }
+
+  res.status(200).json({ success: true, marcados: caducados.length });
+}
+
 // Busca una carpeta por nombre exacto dentro de otra (evita duplicados si se
 // reprocesa el mismo cliente), igual que getFoldersByName() del script viejo.
 async function buscarCarpetaPorNombre(drive, nombre, idPadre) {
@@ -537,6 +620,7 @@ module.exports = async (req, res) => {
       });
     }
     const sheets = await authSheets();
+    if (req.method === 'GET' && req.query && req.query.accion === 'revisar-caducados') return await manejarRevisarCaducados(req, res, sheets);
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     if (req.body && req.body.accion === 'alta') return await manejarAlta(req, res, sheets);
     if (req.body && req.body.accion === 'eliminar') return await manejarEliminar(req, res, sheets);

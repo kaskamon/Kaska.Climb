@@ -105,6 +105,10 @@
   .btn-fila.tiene-lesion{ border-color:var(--danger); color:var(--danger); }
   .btn-fila.tiene-lesion:hover{ border-color:var(--danger); color:var(--chalk); background:rgba(201,112,91,0.14); }
 
+  .estado-caducados{ font-size:11.5px; color:var(--chalk-faint); }
+  .estado-caducados.ok{ color:var(--moss-light); }
+  .estado-caducados.error{ color:var(--danger); }
+
   .overlay-lesion{
     display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:100;
     align-items:center; justify-content:center; padding:20px;
@@ -133,10 +137,14 @@
       <div class="eyebrow">Kaska.Climb</div>
       <h1>Clientes</h1>
     </div>
-    <a class="icon-btn" href="index.html">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-      Inicio
-    </a>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <span class="estado-caducados" id="estadoCaducados"></span>
+      <button class="icon-btn" id="btnRevisarCaducados" type="button">Revisar caducados ahora</button>
+      <a class="icon-btn" href="index.html">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Inicio
+      </a>
+    </div>
   </div>
 </div>
 
@@ -419,6 +427,29 @@ document.getElementById('filtros').addEventListener('click', (e) => {
   document.querySelectorAll('.chip-filtro').forEach(c => c.classList.remove('activo'));
   btn.classList.add('activo');
   render();
+});
+
+document.getElementById('btnRevisarCaducados').addEventListener('click', async () => {
+  const estadoEl = document.getElementById('estadoCaducados');
+  estadoEl.className = 'estado-caducados';
+  estadoEl.textContent = 'Revisando...';
+  try {
+    const res = await fetch('/api/listar-clientes?accion=revisar-caducados');
+    const data = await res.json();
+    if (data.success) {
+      estadoEl.className = 'estado-caducados ok';
+      estadoEl.textContent = data.marcados
+        ? `${data.marcados} cliente${data.marcados === 1 ? '' : 's'} pasado${data.marcados === 1 ? '' : 's'} a Inactivo.`
+        : 'Ningún cliente caducado.';
+      if (data.marcados) cargarClientes();
+    } else {
+      estadoEl.className = 'estado-caducados error';
+      estadoEl.textContent = data.error || 'No se pudo revisar.';
+    }
+  } catch (e) {
+    estadoEl.className = 'estado-caducados error';
+    estadoEl.textContent = 'Error de red: ' + e.message;
+  }
 });
 
 cargarClientes();
