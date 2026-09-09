@@ -274,39 +274,37 @@ async function manejarAlta(req, res, sheets, drive) {
   fila[COL.modalidad] = modalidad || '';
   fila[COL.disponibilidad] = disponibilidadTexto;
 
-  let filaInsertada;
+  // Escribimos en la fila exacta que le toca (ya sabemos cuántas filas reales
+  // hay por el values.get de arriba) en vez de usar values.append: este Sheet
+  // nació como respuestas de un Google Form, y algún resto de contenido muy
+  // abajo (aunque se vea vacío) hace que el auto-detectado de tabla de
+  // append() se equivoque y añada al final físico del Sheet (fila 1005, en
+  // vez de justo debajo del último cliente real).
+  const filaInsertada = filas.length + 1;
   try {
-    const resp = await sheets.spreadsheets.values.append({
+    await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `'${SHEET_NAME}'!A:N`,
+      range: `'${SHEET_NAME}'!A${filaInsertada}:N${filaInsertada}`,
       valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
       requestBody: { values: [fila] },
     });
-    // "'Respuestas de formulario 1'!A15:N15" -> 15. Necesitamos el número real
-    // de fila para poder escribir el enlace de Drive en su columna, una vez
-    // creada la carpeta.
-    const m = /![A-Z]+(\d+):/.exec(resp.data.updates.updatedRange);
-    filaInsertada = m ? Number(m[1]) : null;
   } catch (e) {
     return res.status(500).json({ success: false, error: `No se pudo guardar el alta (${e.message}).` });
   }
 
-  if (filaInsertada) {
-    try {
-      const nombreCompleto = [nombre, apellidos].filter(Boolean).join(' ');
-      const enlaceDrive = await crearCarpetaCliente(drive, nombreCompleto);
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `'${SHEET_NAME}'!L${filaInsertada}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [[enlaceDrive]] },
-      });
-    } catch (e) {
-      // El alta ya está guardada — no se bloquea al cliente por esto. Queda
-      // en los logs de Vercel para que el entrenador lo rellene a mano si hace falta.
-      console.error(`No se pudo crear la carpeta de Drive para ${correo}: ${e.message}`);
-    }
+  try {
+    const nombreCompleto = [nombre, apellidos].filter(Boolean).join(' ');
+    const enlaceDrive = await crearCarpetaCliente(drive, nombreCompleto);
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${SHEET_NAME}'!L${filaInsertada}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [[enlaceDrive]] },
+    });
+  } catch (e) {
+    // El alta ya está guardada — no se bloquea al cliente por esto. Queda
+    // en los logs de Vercel para que el entrenador lo rellene a mano si hace falta.
+    console.error(`No se pudo crear la carpeta de Drive para ${correo}: ${e.message}`);
   }
 
   res.status(200).json({ success: true, message: 'Alta registrada correctamente.' });
