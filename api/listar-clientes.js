@@ -27,6 +27,15 @@ const CAMPOS_EDITABLES = ['estado', 'telefono', 'fechaNacimiento', 'lesion', 'mo
 // con la cuenta de servicio como Editor — si no, drive.files.create falla).
 const DRIVE_PARENT_ID = '16Ef_byfR5qhWQgn5YvEej3Nem8uGljBO';
 
+// La cuenta de servicio es quien crea la carpeta, así que se queda como
+// propietaria por defecto — con una cuenta de Gmail normal (no Workspace) no
+// hay forma de que nazca ya siendo tuya, solo de pedir la transferencia (ver
+// crearCarpetaCliente). Tienes que aceptarla desde drive.google.com — te
+// llega un aviso — la primera vez que puedas; hasta entonces sigues teniendo
+// acceso de Editor, pero como no eres el propietario real, borrarla desde tu
+// PC/tablet puede fallar o dar la sensación de que "aparece y desaparece".
+const DRIVE_PROPIETARIO_FINAL = 'kaskamon@gmail.com';
+
 function authGoogle() {
   const auth = new google.auth.GoogleAuth({
     credentials: {
@@ -221,6 +230,20 @@ async function crearCarpetaCliente(drive, nombreCompleto) {
     },
     fields: 'id',
   });
+
+  // Pide el cambio de propietario a la cuenta real — falla solo (try/catch
+  // propio) sin tumbar el alta si la cuenta de servicio no tiene permiso para
+  // pedirlo; la carpeta ya está creada y utilizable de todas formas.
+  try {
+    await drive.permissions.create({
+      fileId: carpeta.data.id,
+      transferOwnership: true,
+      requestBody: { role: 'owner', type: 'user', emailAddress: DRIVE_PROPIETARIO_FINAL },
+    });
+  } catch (e) {
+    console.error(`No se pudo pedir la transferencia de propiedad de la carpeta de Drive: ${e.message}`);
+  }
+
   return `https://drive.google.com/drive/folders/${carpeta.data.id}`;
 }
 
