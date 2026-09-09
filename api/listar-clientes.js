@@ -1,4 +1,5 @@
 const { google } = require('googleapis');
+const { driveComoEntrenador } = require('../libs/google-oauth-entrenador.js');
 
 // Mismo Sheet que usa api/verificar-cliente.js (la base de alta de clientes,
 // distinta del Sheet de sesiones).
@@ -23,31 +24,24 @@ const COL = {
 // arriesgar una fila "huérfana" si alguna vez se usaran para emparejar algo.
 const CAMPOS_EDITABLES = ['estado', 'telefono', 'fechaNacimiento', 'lesion', 'modalidad', 'disponibilidad', 'drive', 'fechaInicio', 'fechaFin'];
 
-// Carpeta padre en Drive donde vive la carpeta de cada cliente (compartida
-// con la cuenta de servicio como Editor — si no, drive.files.create falla).
+// Carpeta padre en Drive donde vive la carpeta de cada cliente. La carpeta de
+// cada cliente se crea con la cuenta de Google del propio entrenador (ver
+// libs/google-oauth-entrenador.js), no con la cuenta de servicio: una cuenta
+// de servicio no puede transferir la propiedad de un archivo a una cuenta de
+// Gmail normal por API (Google lo bloquea desde 2022), así que la única forma
+// de que la carpeta nazca ya siendo del entrenador es crearla directamente
+// como él.
 const DRIVE_PARENT_ID = '16Ef_byfR5qhWQgn5YvEej3Nem8uGljBO';
 
-// La cuenta de servicio es quien crea la carpeta, así que se queda como
-// propietaria por defecto — con una cuenta de Gmail normal (no Workspace) no
-// hay forma de que nazca ya siendo tuya, solo de pedir la transferencia (ver
-// crearCarpetaCliente). Tienes que aceptarla desde drive.google.com — te
-// llega un aviso — la primera vez que puedas; hasta entonces sigues teniendo
-// acceso de Editor, pero como no eres el propietario real, borrarla desde tu
-// PC/tablet puede fallar o dar la sensación de que "aparece y desaparece".
-const DRIVE_PROPIETARIO_FINAL = 'kaskamon@gmail.com';
-
-function authGoogle() {
+function authSheets() {
   const auth = new google.auth.GoogleAuth({
     credentials: {
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
     },
-    scopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'],
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   });
-  return auth.getClient().then(authClient => ({
-    sheets: google.sheets({ version: 'v4', auth: authClient }),
-    drive: google.drive({ version: 'v3', auth: authClient }),
-  }));
+  return auth.getClient().then(authClient => google.sheets({ version: 'v4', auth: authClient }));
 }
 
 // GET — lista de clientes. Por defecto (como siempre): solo activos, 4 campos,
@@ -216,12 +210,14 @@ async function manejarEliminar(req, res, sheets) {
   res.status(200).json({ success: true, message: 'Cliente eliminado correctamente.' });
 }
 
-// Crea la carpeta del cliente dentro de DRIVE_PARENT_ID y devuelve su enlace.
-// Best-effort: si falla (p.ej. la carpeta padre no está compartida con la
-// cuenta de servicio), el alta ya se ha guardado igualmente — se registra el
-// error en los logs y el entrenador puede rellenar el enlace a mano desde
-// Clientes.html.
-async function crearCarpetaCliente(drive, nombreCompleto) {
+// Crea la carpeta del cliente dentro de DRIVE_PARENT_ID (con la cuenta de
+// Google del propio entrenador, ver libs/google-oauth-entrenador.js) y
+// devuelve su enlace. Best-effort: si falla (p.ej. todavía no se ha
+// completado el alta de /api/drive-oauth-inicio), el alta del cliente ya se
+// ha guardado igualmente — se registra el error en los logs y el entrenador
+// puede rellenar el enlace a mano desde Clientes.html.
+async function crearCarpetaCliente(nombreCompleto) {
+  const drive = driveComoEntrenador();
   const carpeta = await drive.files.create({
     requestBody: {
       name: nombreCompleto,
@@ -230,20 +226,6 @@ async function crearCarpetaCliente(drive, nombreCompleto) {
     },
     fields: 'id',
   });
-
-  // Pide el cambio de propietario a la cuenta real — falla solo (try/catch
-  // propio) sin tumbar el alta si la cuenta de servicio no tiene permiso para
-  // pedirlo; la carpeta ya está creada y utilizable de todas formas.
-  try {
-    await drive.permissions.create({
-      fileId: carpeta.data.id,
-      transferOwnership: true,
-      requestBody: { role: 'owner', type: 'user', emailAddress: DRIVE_PROPIETARIO_FINAL },
-    });
-  } catch (e) {
-    console.error(`No se pudo pedir la transferencia de propiedad de la carpeta de Drive: ${e.message}`);
-  }
-
   return `https://drive.google.com/drive/folders/${carpeta.data.id}`;
 }
 
@@ -255,7 +237,7 @@ async function crearCarpetaCliente(drive, nombreCompleto) {
 // un disparador "al enviarse el formulario", pero ese disparador nunca ve las
 // altas que llegan por esta API (no son un envío real del Google Form), así
 // que la carpeta se dejaba de crear en silencio.
-async function manejarAlta(req, res, sheets, drive) {
+async function manejarAlta(req, res, sheets) {
   const { nombre, apellidos, correo, telefono, fechaNacimiento, modalidad, disponibilidad, lesion } = req.body || {};
 
   if (!nombre || !apellidos || !correo || !String(correo).includes('@')) {
@@ -317,7 +299,7 @@ async function manejarAlta(req, res, sheets, drive) {
 
   try {
     const nombreCompleto = [nombre, apellidos].filter(Boolean).join(' ');
-    const enlaceDrive = await crearCarpetaCliente(drive, nombreCompleto);
+    const enlaceDrive = await crearCarpetaCliente(nombreCompleto);
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `'${SHEET_NAME}'!L${filaInsertada}`,
@@ -345,9 +327,9 @@ module.exports = async (req, res) => {
         error: 'Faltan las variables de entorno GOOGLE_SERVICE_ACCOUNT_EMAIL o GOOGLE_SERVICE_ACCOUNT_KEY en Vercel.',
       });
     }
-    const { sheets, drive } = await authGoogle();
+    const sheets = await authSheets();
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
-    if (req.body && req.body.accion === 'alta') return await manejarAlta(req, res, sheets, drive);
+    if (req.body && req.body.accion === 'alta') return await manejarAlta(req, res, sheets);
     if (req.body && req.body.accion === 'eliminar') return await manejarEliminar(req, res, sheets);
     return await manejarPost(req, res, sheets);
   } catch (error) {
