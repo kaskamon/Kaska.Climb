@@ -11,10 +11,12 @@ const { google } = require('googleapis');
 // Mismo Client ID que login.html (Google Sign-In de clientes) — es del tipo
 // "Aplicación web", así que también tiene un Client Secret en Google Cloud
 // Console, solo hace falta usarlo aquí. El flujo de un solo uso para
-// conseguir el refresh token vive en api/drive-oauth-inicio.js y
-// api/drive-oauth-callback.js.
+// conseguir el refresh token vive dentro de api/listar-clientes.js
+// (?accion=drive-oauth-inicio / ?accion=drive-oauth-callback) — en vez de en
+// archivos propios, para no pasarnos del límite de funciones serverless del
+// plan gratuito de Vercel (12 por despliegue).
 const GOOGLE_CLIENT_ID = '750960934789-afud0r9hmq7fe700okgu0o0cer0cih1q.apps.googleusercontent.com';
-const REDIRECT_URI = 'https://kaska-climb.vercel.app/api/drive-oauth-callback';
+const REDIRECT_URI = 'https://kaska-climb.vercel.app/api/listar-clientes?accion=drive-oauth-callback';
 
 function clienteOAuth() {
   return new google.auth.OAuth2(GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, REDIRECT_URI);

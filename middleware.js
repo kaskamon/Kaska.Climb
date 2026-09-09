@@ -23,18 +23,11 @@ const RUTAS_PUBLICAS = [
   '/apple-touch-icon-precomposed.png',
 ];
 
-// El alta de la cuenta de Drive del entrenador (libs/google-oauth-entrenador.js)
-// es una acción de entrenador aunque viva bajo /api/ — a diferencia del resto
-// de /api/ (llamadas AJAX desde páginas ya protegidas, o endpoints públicos
-// para clientes), esta se visita directamente en el navegador, así que
-// necesita el popup nativo para protegerse por sí misma.
-const RUTAS_API_DE_ENTRENADOR = ['/api/drive-oauth-inicio', '/api/drive-oauth-callback'];
-
 export default function middleware(request) {
   const { pathname } = new URL(request.url);
 
   const esPublica =
-    (pathname.startsWith('/api/') && !RUTAS_API_DE_ENTRENADOR.includes(pathname)) ||
+    pathname.startsWith('/api/') ||
     pathname.startsWith('/cliente/') ||
     pathname.startsWith('/libs/') ||
     RUTAS_PUBLICAS.includes(pathname);
