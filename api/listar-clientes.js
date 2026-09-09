@@ -38,10 +38,6 @@ const CAMPOS_EDITABLES = ['estado', 'telefono', 'fechaNacimiento', 'lesion', 'mo
 // como él.
 const DRIVE_PARENT_ID = '16Ef_byfR5qhWQgn5YvEej3Nem8uGljBO';
 
-// Plantilla que se enlaza (como atajo de Drive) dentro de la subcarpeta de
-// cada cliente nuevo — igual que hacía el script viejo de Apps Script.
-const ID_FORMULARIO_PLANTILLA = '1zAPbLOvBXRlF14XKuPs_0x-jQzLD6phe0qvUJvcclkY';
-
 function authSheets() {
   const auth = new google.auth.GoogleAuth({
     credentials: {
@@ -231,63 +227,37 @@ async function buscarCarpetaPorNombre(drive, nombre, idPadre) {
 }
 
 // Crea la carpeta del cliente dentro de DRIVE_PARENT_ID (con la cuenta de
-// Google del propio entrenador, ver libs/google-oauth-entrenador.js) —
-// mismo esquema que el script viejo de Apps Script (verificarYActualizarEstados):
-// una carpeta principal con el nombre del cliente, y dentro una subcarpeta
-// "Semana entrenamiento" con un atajo a la plantilla y compartida con el
-// cliente como lector — es esa subcarpeta la que se enlaza en el Sheet y en
-// el correo de bienvenida, no la carpeta principal. Devuelve su enlace.
-// Best-effort: si falla (p.ej. todavía no se ha completado el alta de
-// ?accion=drive-oauth-inicio), el alta del cliente ya se ha guardado
-// igualmente — se registra el error en los logs y el entrenador puede
-// rellenar el enlace a mano desde Clientes.html.
+// Google del propio entrenador, ver libs/google-oauth-entrenador.js) y la
+// comparte con él como lector. Devuelve su enlace. Best-effort: si falla
+// (p.ej. todavía no se ha completado el alta de ?accion=drive-oauth-inicio),
+// el alta del cliente ya se ha guardado igualmente — se registra el error en
+// los logs y el entrenador puede rellenar el enlace a mano desde Clientes.html.
 async function crearCarpetaCliente(nombreCompleto, correoCliente) {
   const drive = driveComoEntrenador();
 
-  let carpetaPrincipalId = await buscarCarpetaPorNombre(drive, nombreCompleto, DRIVE_PARENT_ID);
-  if (!carpetaPrincipalId) {
+  let carpetaId = await buscarCarpetaPorNombre(drive, nombreCompleto, DRIVE_PARENT_ID);
+  let esNueva = false;
+  if (!carpetaId) {
+    esNueva = true;
     const nueva = await drive.files.create({
       requestBody: { name: nombreCompleto, mimeType: 'application/vnd.google-apps.folder', parents: [DRIVE_PARENT_ID] },
       fields: 'id',
     });
-    carpetaPrincipalId = nueva.data.id;
+    carpetaId = nueva.data.id;
   }
 
-  let subcarpetaId = await buscarCarpetaPorNombre(drive, 'Semana entrenamiento', carpetaPrincipalId);
-  if (!subcarpetaId) {
-    const nuevaSub = await drive.files.create({
-      requestBody: { name: 'Semana entrenamiento', mimeType: 'application/vnd.google-apps.folder', parents: [carpetaPrincipalId] },
-      fields: 'id',
-    });
-    subcarpetaId = nuevaSub.data.id;
-
+  if (esNueva && correoCliente) {
     try {
-      const plantilla = await drive.files.get({ fileId: ID_FORMULARIO_PLANTILLA, fields: 'name' });
-      await drive.files.create({
-        requestBody: {
-          name: plantilla.data.name,
-          mimeType: 'application/vnd.google-apps.shortcut',
-          parents: [subcarpetaId],
-          shortcutDetails: { targetId: ID_FORMULARIO_PLANTILLA },
-        },
+      await drive.permissions.create({
+        fileId: carpetaId,
+        requestBody: { role: 'reader', type: 'user', emailAddress: correoCliente },
       });
     } catch (e) {
-      console.error(`No se pudo crear el atajo a la plantilla para ${nombreCompleto}: ${e.message}`);
-    }
-
-    if (correoCliente) {
-      try {
-        await drive.permissions.create({
-          fileId: subcarpetaId,
-          requestBody: { role: 'reader', type: 'user', emailAddress: correoCliente },
-        });
-      } catch (e) {
-        console.error(`No se pudo compartir la carpeta con ${correoCliente}: ${e.message}`);
-      }
+      console.error(`No se pudo compartir la carpeta con ${correoCliente}: ${e.message}`);
     }
   }
 
-  return `https://drive.google.com/drive/folders/${subcarpetaId}`;
+  return `https://drive.google.com/drive/folders/${carpetaId}`;
 }
 
 // Mismo mecanismo de construcción y envío para los dos correos de abajo —
