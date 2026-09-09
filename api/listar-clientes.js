@@ -38,6 +38,10 @@ const CAMPOS_EDITABLES = ['estado', 'telefono', 'fechaNacimiento', 'lesion', 'mo
 // como él.
 const DRIVE_PARENT_ID = '16Ef_byfR5qhWQgn5YvEej3Nem8uGljBO';
 
+// Plantilla que se enlaza (como atajo de Drive) dentro de la subcarpeta de
+// cada cliente nuevo — igual que hacía el script viejo de Apps Script.
+const ID_FORMULARIO_PLANTILLA = '1zAPbLOvBXRlF14XKuPs_0x-jQzLD6phe0qvUJvcclkY';
+
 function authSheets() {
   const auth = new google.auth.GoogleAuth({
     credentials: {
@@ -215,33 +219,122 @@ async function manejarEliminar(req, res, sheets) {
   res.status(200).json({ success: true, message: 'Cliente eliminado correctamente.' });
 }
 
-// Crea la carpeta del cliente dentro de DRIVE_PARENT_ID (con la cuenta de
-// Google del propio entrenador, ver libs/google-oauth-entrenador.js) y
-// devuelve su enlace. Best-effort: si falla (p.ej. todavía no se ha
-// completado el alta de /api/drive-oauth-inicio), el alta del cliente ya se
-// ha guardado igualmente — se registra el error en los logs y el entrenador
-// puede rellenar el enlace a mano desde Clientes.html.
-async function crearCarpetaCliente(nombreCompleto) {
-  const drive = driveComoEntrenador();
-  const carpeta = await drive.files.create({
-    requestBody: {
-      name: nombreCompleto,
-      mimeType: 'application/vnd.google-apps.folder',
-      parents: [DRIVE_PARENT_ID],
-    },
-    fields: 'id',
+// Busca una carpeta por nombre exacto dentro de otra (evita duplicados si se
+// reprocesa el mismo cliente), igual que getFoldersByName() del script viejo.
+async function buscarCarpetaPorNombre(drive, nombre, idPadre) {
+  const nombreEscapado = nombre.replace(/'/g, "\\'");
+  const resp = await drive.files.list({
+    q: `'${idPadre}' in parents and name = '${nombreEscapado}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+    fields: 'files(id)',
   });
-  return `https://drive.google.com/drive/folders/${carpeta.data.id}`;
+  return resp.data.files && resp.data.files[0] ? resp.data.files[0].id : null;
 }
 
-// Manda el aviso de "cliente nuevo" a CORREO_ENTRENADOR, desde la propia
-// cuenta del entrenador (ver libs/google-oauth-entrenador.js). Best-effort,
-// igual que crearCarpetaCliente — si falla no bloquea el alta.
-async function enviarAvisoNuevoCliente(datos) {
+// Crea la carpeta del cliente dentro de DRIVE_PARENT_ID (con la cuenta de
+// Google del propio entrenador, ver libs/google-oauth-entrenador.js) —
+// mismo esquema que el script viejo de Apps Script (verificarYActualizarEstados):
+// una carpeta principal con el nombre del cliente, y dentro una subcarpeta
+// "Semana entrenamiento" con un atajo a la plantilla y compartida con el
+// cliente como lector — es esa subcarpeta la que se enlaza en el Sheet y en
+// el correo de bienvenida, no la carpeta principal. Devuelve su enlace.
+// Best-effort: si falla (p.ej. todavía no se ha completado el alta de
+// ?accion=drive-oauth-inicio), el alta del cliente ya se ha guardado
+// igualmente — se registra el error en los logs y el entrenador puede
+// rellenar el enlace a mano desde Clientes.html.
+async function crearCarpetaCliente(nombreCompleto, correoCliente) {
+  const drive = driveComoEntrenador();
+
+  let carpetaPrincipalId = await buscarCarpetaPorNombre(drive, nombreCompleto, DRIVE_PARENT_ID);
+  if (!carpetaPrincipalId) {
+    const nueva = await drive.files.create({
+      requestBody: { name: nombreCompleto, mimeType: 'application/vnd.google-apps.folder', parents: [DRIVE_PARENT_ID] },
+      fields: 'id',
+    });
+    carpetaPrincipalId = nueva.data.id;
+  }
+
+  let subcarpetaId = await buscarCarpetaPorNombre(drive, 'Semana entrenamiento', carpetaPrincipalId);
+  if (!subcarpetaId) {
+    const nuevaSub = await drive.files.create({
+      requestBody: { name: 'Semana entrenamiento', mimeType: 'application/vnd.google-apps.folder', parents: [carpetaPrincipalId] },
+      fields: 'id',
+    });
+    subcarpetaId = nuevaSub.data.id;
+
+    try {
+      const plantilla = await drive.files.get({ fileId: ID_FORMULARIO_PLANTILLA, fields: 'name' });
+      await drive.files.create({
+        requestBody: {
+          name: plantilla.data.name,
+          mimeType: 'application/vnd.google-apps.shortcut',
+          parents: [subcarpetaId],
+          shortcutDetails: { targetId: ID_FORMULARIO_PLANTILLA },
+        },
+      });
+    } catch (e) {
+      console.error(`No se pudo crear el atajo a la plantilla para ${nombreCompleto}: ${e.message}`);
+    }
+
+    if (correoCliente) {
+      try {
+        await drive.permissions.create({
+          fileId: subcarpetaId,
+          requestBody: { role: 'reader', type: 'user', emailAddress: correoCliente },
+        });
+      } catch (e) {
+        console.error(`No se pudo compartir la carpeta con ${correoCliente}: ${e.message}`);
+      }
+    }
+  }
+
+  return `https://drive.google.com/drive/folders/${subcarpetaId}`;
+}
+
+// Mismo mecanismo de construcción y envío para los dos correos de abajo —
+// siempre desde la propia cuenta del entrenador (ver libs/google-oauth-entrenador.js).
+async function enviarCorreoComoEntrenador(destinatario, asunto, cuerpo) {
   const gmail = gmailComoEntrenador();
+  const mensajeCrudo = [
+    `To: ${destinatario}`,
+    `Subject: =?UTF-8?B?${Buffer.from(asunto, 'utf8').toString('base64')}?=`,
+    `Content-Type: text/plain; charset="UTF-8"`,
+    ``,
+    cuerpo,
+  ].join('\r\n');
+  const raw = Buffer.from(mensajeCrudo, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
+}
+
+// Correo de bienvenida al cliente — mismo texto que ya teníais probado en el
+// script de Apps Script, incluidas las instrucciones para instalarla como PWA.
+async function enviarBienvenidaCliente(correoCliente, nombreCliente, urlCarpeta) {
+  const asunto = 'Bienvenido/a al entrenamiento personalizado Kaska.Climb';
+  const cuerpo = [
+    `Hola ${nombreCliente},`,
+    ``,
+    `¡Qué bueno tenerte a bordo! Ya he preparado tu base de datos para comenzar con los entrenamientos.`,
+    ``,
+    `A partir de ahora, podrás acceder a tu zona personal desde cualquier dispositivo, accediendo a este enlace: https://kaska-climb.vercel.app/login.html e iniciando sesión con tu cuenta de Google.`,
+    ``,
+    `Truco: puedes instalarla en tu móvil como si fuera una app normal, sin pasar por la App Store ni Google Play. Entra en el enlace desde el navegador y:`,
+    `- iPhone (Safari): pulsa el botón de compartir (el cuadrado con la flecha hacia arriba) y elige "Añadir a pantalla de inicio".`,
+    `- Android (Chrome): pulsa el menú (los tres puntos, arriba a la derecha) y elige "Instalar aplicación" o "Añadir a pantalla de inicio".`,
+    ``,
+    `Te queda un icono como cualquier otra app, y se abre a pantalla completa, más rápido y sin la barra del navegador.`,
+    ``,
+    `Además, ya tienes lista tu carpeta personal en la nube por si en algún momento necesito compartirte vídeos o imágenes: ${urlCarpeta || '(la comparto en breve)'}`,
+    ``,
+    `¡Vamos a por tus objetivos!`,
+  ].join('\r\n');
+  await enviarCorreoComoEntrenador(correoCliente, asunto, cuerpo);
+}
+
+// Manda el aviso de "cliente nuevo" a CORREO_ENTRENADOR. Best-effort, igual
+// que las dos funciones de arriba — si falla no bloquea el alta.
+async function enviarAvisoNuevoCliente(datos) {
   const asunto = `Nuevo cliente registrado: ${datos.nombreCompleto}`;
   const cuerpo = [
-    `Se acaba de dar de alta un cliente nuevo en Kaska.Climb:`,
+    `Un nuevo cliente ha completado el formulario de alta:`,
     ``,
     `Nombre: ${datos.nombreCompleto}`,
     `Correo: ${datos.correo}`,
@@ -250,20 +343,13 @@ async function enviarAvisoNuevoCliente(datos) {
     `Modalidad: ${datos.modalidad || '—'}`,
     `Disponibilidad: ${datos.disponibilidad || '—'}`,
     `¿Lesión?: ${datos.lesion || '—'}`,
+    `Enlace a su carpeta de Drive: ${datos.urlCarpeta || '(no se pudo crear, revísalo en Clientes.html)'}`,
     ``,
-    `Revísalo en Clientes.html cuando puedas.`,
+    datos.bienvenidaEnviada
+      ? 'El correo de bienvenida ya ha sido enviado automáticamente al cliente.'
+      : 'OJO: no se ha podido mandar el correo de bienvenida al cliente — revisa los logs de Vercel.',
   ].join('\r\n');
-
-  const mensajeCrudo = [
-    `To: ${CORREO_ENTRENADOR}`,
-    `Subject: =?UTF-8?B?${Buffer.from(asunto, 'utf8').toString('base64')}?=`,
-    `Content-Type: text/plain; charset="UTF-8"`,
-    ``,
-    cuerpo,
-  ].join('\r\n');
-
-  const raw = Buffer.from(mensajeCrudo, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
+  await enviarCorreoComoEntrenador(CORREO_ENTRENADOR, asunto, cuerpo);
 }
 
 // POST (accion: 'alta') — alta de un cliente nuevo desde alta.html (público,
@@ -335,14 +421,17 @@ async function manejarAlta(req, res, sheets) {
   }
 
   const nombreCompleto = [nombre, apellidos].filter(Boolean).join(' ');
+  const correoLimpio = correo.trim();
+  let urlCarpeta = '';
+  let bienvenidaEnviada = false;
 
   try {
-    const enlaceDrive = await crearCarpetaCliente(nombreCompleto);
+    urlCarpeta = await crearCarpetaCliente(nombreCompleto, correoLimpio);
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
       range: `'${SHEET_NAME}'!L${filaInsertada}`,
       valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [[enlaceDrive]] },
+      requestBody: { values: [[urlCarpeta]] },
     });
   } catch (e) {
     // El alta ya está guardada — no se bloquea al cliente por esto. Queda
@@ -351,7 +440,14 @@ async function manejarAlta(req, res, sheets) {
   }
 
   try {
-    await enviarAvisoNuevoCliente({ nombreCompleto, correo: correo.trim(), telefono, fechaNacimiento, modalidad, disponibilidad: disponibilidadTexto, lesion });
+    await enviarBienvenidaCliente(correoLimpio, nombre, urlCarpeta);
+    bienvenidaEnviada = true;
+  } catch (e) {
+    console.error(`No se pudo mandar el correo de bienvenida a ${correo}: ${e.message}`);
+  }
+
+  try {
+    await enviarAvisoNuevoCliente({ nombreCompleto, correo: correoLimpio, urlCarpeta, bienvenidaEnviada, telefono, fechaNacimiento, modalidad, disponibilidad: disponibilidadTexto, lesion });
   } catch (e) {
     console.error(`No se pudo mandar el aviso de cliente nuevo para ${correo}: ${e.message}`);
   }
