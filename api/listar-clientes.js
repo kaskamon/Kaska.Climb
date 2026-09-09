@@ -23,15 +23,22 @@ const COL = {
 // arriesgar una fila "huérfana" si alguna vez se usaran para emparejar algo.
 const CAMPOS_EDITABLES = ['estado', 'telefono', 'fechaNacimiento', 'lesion', 'modalidad', 'disponibilidad', 'drive', 'fechaInicio', 'fechaFin'];
 
-function authSheets() {
+// Carpeta padre en Drive donde vive la carpeta de cada cliente (compartida
+// con la cuenta de servicio como Editor — si no, drive.files.create falla).
+const DRIVE_PARENT_ID = '16Ef_byfR5qhWQgn5YvEej3Nem8uGljBO';
+
+function authGoogle() {
   const auth = new google.auth.GoogleAuth({
     credentials: {
       client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
       private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
     },
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+    scopes: ['https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/drive'],
   });
-  return auth.getClient().then(authClient => google.sheets({ version: 'v4', auth: authClient }));
+  return auth.getClient().then(authClient => ({
+    sheets: google.sheets({ version: 'v4', auth: authClient }),
+    drive: google.drive({ version: 'v3', auth: authClient }),
+  }));
 }
 
 // GET — lista de clientes. Por defecto (como siempre): solo activos, 4 campos,
@@ -200,13 +207,32 @@ async function manejarEliminar(req, res, sheets) {
   res.status(200).json({ success: true, message: 'Cliente eliminado correctamente.' });
 }
 
+// Crea la carpeta del cliente dentro de DRIVE_PARENT_ID y devuelve su enlace.
+// Best-effort: si falla (p.ej. la carpeta padre no está compartida con la
+// cuenta de servicio), el alta ya se ha guardado igualmente — se registra el
+// error en los logs y el entrenador puede rellenar el enlace a mano desde
+// Clientes.html.
+async function crearCarpetaCliente(drive, nombreCompleto) {
+  const carpeta = await drive.files.create({
+    requestBody: {
+      name: nombreCompleto,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [DRIVE_PARENT_ID],
+    },
+    fields: 'id',
+  });
+  return `https://drive.google.com/drive/folders/${carpeta.data.id}`;
+}
+
 // POST (accion: 'alta') — alta de un cliente nuevo desde alta.html (público,
 // sin contraseña — lo rellena el propio cliente). Body: { accion:'alta',
 // nombre, apellidos, correo, telefono, fechaNacimiento, modalidad,
-// disponibilidad, lesion }. Al aparecer la fila nueva en el Sheet, el Apps
-// Script de altas (onChange) hace el resto solo: crea la carpeta de Drive y
-// manda el correo de bienvenida — no hace falta tocar nada de eso aquí.
-async function manejarAlta(req, res, sheets) {
+// disponibilidad, lesion }. La carpeta de Drive se crea aquí mismo (ver
+// crearCarpetaCliente) — antes lo hacía un Apps Script vinculado al Sheet con
+// un disparador "al enviarse el formulario", pero ese disparador nunca ve las
+// altas que llegan por esta API (no son un envío real del Google Form), así
+// que la carpeta se dejaba de crear en silencio.
+async function manejarAlta(req, res, sheets, drive) {
   const { nombre, apellidos, correo, telefono, fechaNacimiento, modalidad, disponibilidad, lesion } = req.body || {};
 
   if (!nombre || !apellidos || !correo || !String(correo).includes('@')) {
@@ -248,16 +274,39 @@ async function manejarAlta(req, res, sheets) {
   fila[COL.modalidad] = modalidad || '';
   fila[COL.disponibilidad] = disponibilidadTexto;
 
+  let filaInsertada;
   try {
-    await sheets.spreadsheets.values.append({
+    const resp = await sheets.spreadsheets.values.append({
       spreadsheetId: SPREADSHEET_ID,
       range: `'${SHEET_NAME}'!A:N`,
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
       requestBody: { values: [fila] },
     });
+    // "'Respuestas de formulario 1'!A15:N15" -> 15. Necesitamos el número real
+    // de fila para poder escribir el enlace de Drive en su columna, una vez
+    // creada la carpeta.
+    const m = /![A-Z]+(\d+):/.exec(resp.data.updates.updatedRange);
+    filaInsertada = m ? Number(m[1]) : null;
   } catch (e) {
     return res.status(500).json({ success: false, error: `No se pudo guardar el alta (${e.message}).` });
+  }
+
+  if (filaInsertada) {
+    try {
+      const nombreCompleto = [nombre, apellidos].filter(Boolean).join(' ');
+      const enlaceDrive = await crearCarpetaCliente(drive, nombreCompleto);
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `'${SHEET_NAME}'!L${filaInsertada}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [[enlaceDrive]] },
+      });
+    } catch (e) {
+      // El alta ya está guardada — no se bloquea al cliente por esto. Queda
+      // en los logs de Vercel para que el entrenador lo rellene a mano si hace falta.
+      console.error(`No se pudo crear la carpeta de Drive para ${correo}: ${e.message}`);
+    }
   }
 
   res.status(200).json({ success: true, message: 'Alta registrada correctamente.' });
@@ -275,9 +324,9 @@ module.exports = async (req, res) => {
         error: 'Faltan las variables de entorno GOOGLE_SERVICE_ACCOUNT_EMAIL o GOOGLE_SERVICE_ACCOUNT_KEY en Vercel.',
       });
     }
-    const sheets = await authSheets();
+    const { sheets, drive } = await authGoogle();
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
-    if (req.body && req.body.accion === 'alta') return await manejarAlta(req, res, sheets);
+    if (req.body && req.body.accion === 'alta') return await manejarAlta(req, res, sheets, drive);
     if (req.body && req.body.accion === 'eliminar') return await manejarEliminar(req, res, sheets);
     return await manejarPost(req, res, sheets);
   } catch (error) {
