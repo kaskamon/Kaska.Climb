@@ -1,6 +1,10 @@
 const { google } = require('googleapis');
-const { driveComoEntrenador, clienteOAuth } = require('../libs/google-oauth-entrenador.js');
+const { driveComoEntrenador, gmailComoEntrenador, clienteOAuth, SCOPES } = require('../libs/google-oauth-entrenador.js');
 const { verificarEntrenador } = require('../libs/sesion-cliente.js');
+
+// Correo donde llega el aviso de "cliente nuevo" — el mismo entrenador,
+// mandado desde su propia cuenta (ver enviarAvisoNuevoCliente).
+const CORREO_ENTRENADOR = 'kaskamon@gmail.com';
 
 // Mismo Sheet que usa api/verificar-cliente.js (la base de alta de clientes,
 // distinta del Sheet de sesiones).
@@ -230,6 +234,38 @@ async function crearCarpetaCliente(nombreCompleto) {
   return `https://drive.google.com/drive/folders/${carpeta.data.id}`;
 }
 
+// Manda el aviso de "cliente nuevo" a CORREO_ENTRENADOR, desde la propia
+// cuenta del entrenador (ver libs/google-oauth-entrenador.js). Best-effort,
+// igual que crearCarpetaCliente — si falla no bloquea el alta.
+async function enviarAvisoNuevoCliente(datos) {
+  const gmail = gmailComoEntrenador();
+  const asunto = `Nuevo cliente registrado: ${datos.nombreCompleto}`;
+  const cuerpo = [
+    `Se acaba de dar de alta un cliente nuevo en Kaska.Climb:`,
+    ``,
+    `Nombre: ${datos.nombreCompleto}`,
+    `Correo: ${datos.correo}`,
+    `Teléfono: ${datos.telefono || '—'}`,
+    `Fecha de nacimiento: ${datos.fechaNacimiento || '—'}`,
+    `Modalidad: ${datos.modalidad || '—'}`,
+    `Disponibilidad: ${datos.disponibilidad || '—'}`,
+    `¿Lesión?: ${datos.lesion || '—'}`,
+    ``,
+    `Revísalo en Clientes.html cuando puedas.`,
+  ].join('\r\n');
+
+  const mensajeCrudo = [
+    `To: ${CORREO_ENTRENADOR}`,
+    `Subject: =?UTF-8?B?${Buffer.from(asunto, 'utf8').toString('base64')}?=`,
+    `Content-Type: text/plain; charset="UTF-8"`,
+    ``,
+    cuerpo,
+  ].join('\r\n');
+
+  const raw = Buffer.from(mensajeCrudo, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
+}
+
 // POST (accion: 'alta') — alta de un cliente nuevo desde alta.html (público,
 // sin contraseña — lo rellena el propio cliente). Body: { accion:'alta',
 // nombre, apellidos, correo, telefono, fechaNacimiento, modalidad,
@@ -298,8 +334,9 @@ async function manejarAlta(req, res, sheets) {
     return res.status(500).json({ success: false, error: `No se pudo guardar el alta (${e.message}).` });
   }
 
+  const nombreCompleto = [nombre, apellidos].filter(Boolean).join(' ');
+
   try {
-    const nombreCompleto = [nombre, apellidos].filter(Boolean).join(' ');
     const enlaceDrive = await crearCarpetaCliente(nombreCompleto);
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
@@ -311,6 +348,12 @@ async function manejarAlta(req, res, sheets) {
     // El alta ya está guardada — no se bloquea al cliente por esto. Queda
     // en los logs de Vercel para que el entrenador lo rellene a mano si hace falta.
     console.error(`No se pudo crear la carpeta de Drive para ${correo}: ${e.message}`);
+  }
+
+  try {
+    await enviarAvisoNuevoCliente({ nombreCompleto, correo: correo.trim(), telefono, fechaNacimiento, modalidad, disponibilidad: disponibilidadTexto, lesion });
+  } catch (e) {
+    console.error(`No se pudo mandar el aviso de cliente nuevo para ${correo}: ${e.message}`);
   }
 
   res.status(200).json({ success: true, message: 'Alta registrada correctamente.' });
@@ -353,7 +396,7 @@ async function manejarDriveOAuthInicio(req, res) {
   const url = clienteOAuth().generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',
-    scope: ['https://www.googleapis.com/auth/drive'],
+    scope: SCOPES,
   });
   res.writeHead(302, { Location: url });
   res.end();
