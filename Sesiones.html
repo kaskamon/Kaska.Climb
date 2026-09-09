@@ -30,6 +30,7 @@
             --moss:#7c9070;
             --moss-light:#a7bd98;
             --moss-deep:#4d5c46;
+            --danger:#b5453a;
         }
 
         * {
@@ -118,11 +119,20 @@
         }
 
         .zona-botones {
-            margin-bottom: 25px; 
+            margin-bottom: 25px;
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+            align-items: center;
         }
+
+        .estado-guardar {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--chalk-dim);
+        }
+        .estado-guardar.ok { color: var(--moss-deep); }
+        .estado-guardar.error { color: var(--danger); }
 
         /* Formato unificado de botones */
         .btn-principal {
@@ -350,10 +360,11 @@
             <div class="zona-botones">
                 <button id="btn-nueva-parte" class="btn-principal">Añadir Nueva Parte</button>
                 <button id="btn-exportar" class="btn-principal" onclick="exportarComoPDF()">Guardar como PDF</button>
-                <button id="btn-descargar-json" class="btn-principal">Guardar Tabla Modificable</button>
-                
+                <button id="btn-guardar" class="btn-principal">Guardar</button>
+                <div class="estado-guardar" id="estadoGuardar"></div>
+
                 <input type="file" id="input-cargar-json" accept=".json" style="display: none;">
-                <button id="btn-cargar-visual" class="btn-principal" onclick="document.getElementById('input-cargar-json').click()">Abrir Tabla Existente</button>
+                <button id="btn-cargar-visual" class="btn-principal">Abrir Tabla Existente</button>
 
                 <input type="file" id="input-unir-json" accept=".json" style="display: none;">
                 <button id="btn-unir-visual" class="btn-principal" onclick="document.getElementById('input-unir-json').click()">Unir con Otra Tabla</button>
@@ -385,7 +396,8 @@
         }
 
         const btnNuevaParte = document.getElementById('btn-nueva-parte');
-        const btnDescargarJson = document.getElementById('btn-descargar-json');
+        const btnGuardar = document.getElementById('btn-guardar');
+        const estadoGuardar = document.getElementById('estadoGuardar');
         const inputCargarJson = document.getElementById('input-cargar-json');
         const btnCargarVisual = document.getElementById('btn-cargar-visual');
         const btnUnirVisual = document.getElementById('btn-unir-visual');
@@ -401,25 +413,92 @@
 
         btnNuevaParte.addEventListener('click', () => crearParteUI());
 
-        // LÓGICA ORIGINAL INTACTA
-        btnDescargarJson.addEventListener('click', async () => {
-            const datos = obtenerDatosEstructura();
-            const textoJson = JSON.stringify(datos, null, 2);
-            const nombreSugerido = (inputTituloPrincipal.value.trim() || 'tabla-entrenamiento').toLowerCase().replace(/[^a-z0-9]/gi, '_') + '.json';
+        // -- Guardar directamente en el archivo real (tablet/PC), sin pasar
+        // por la carpeta de Descargas del navegador --
+        // La File System Access API (Chrome/Edge, escritorio y Android) deja
+        // guardar un "handle" al archivo elegido y escribir encima de él
+        // directamente, como Guardar/Guardar como en un procesador de texto:
+        // la primera vez (o si aún no se ha abierto ningún archivo) se pide
+        // carpeta y nombre; a partir de ahí "Guardar" sobrescribe ese mismo
+        // archivo sin diálogos ni pasos de más. Si el archivo vive en una
+        // carpeta sincronizada con la nube (Google Drive, OneDrive...), el
+        // cambio llega solo, sin descargar/renombrar/mover nada a mano.
+        // Safari/iPad no implementan esta API — ahí se mantiene el
+        // comportamiento de siempre (descarga a Descargas).
+        const soportaFileSystemAccess = 'showOpenFilePicker' in window && 'showSaveFilePicker' in window;
+        let archivoHandleActual = null;
 
-            const blob = new Blob([textoJson], { type: 'application/json' });
+        function mostrarEstadoGuardar(texto, clase) {
+            estadoGuardar.textContent = texto;
+            estadoGuardar.classList.remove('ok', 'error');
+            if (clase) estadoGuardar.classList.add(clase);
+        }
+
+        function nombreSugeridoJson() {
+            return (inputTituloPrincipal.value.trim() || 'tabla-entrenamiento').toLowerCase().replace(/[^a-z0-9]/gi, '_') + '.json';
+        }
+
+        // Reserva de siempre: descarga un archivo nuevo a Descargas. Se usa
+        // en navegadores sin la API de arriba, y como último recurso si
+        // escribir en el archivo real falla por algún motivo.
+        function guardarComoDescarga() {
+            const datos = obtenerDatosEstructura();
+            const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            
+
             const enlace = document.createElement('a');
             enlace.href = url;
-            enlace.download = nombreSugerido;
-            
+            enlace.download = nombreSugeridoJson();
+
             document.body.appendChild(enlace);
             enlace.click();
             document.body.removeChild(enlace);
             setTimeout(() => URL.revokeObjectURL(url), 100);
+        }
+
+        btnGuardar.addEventListener('click', async () => {
+            if (!soportaFileSystemAccess) { guardarComoDescarga(); return; }
+
+            try {
+                if (!archivoHandleActual) {
+                    archivoHandleActual = await window.showSaveFilePicker({
+                        suggestedName: nombreSugeridoJson(),
+                        types: [{ description: 'Tabla de Kaska.Climb', accept: { 'application/json': ['.json'] } }],
+                    });
+                }
+                const datos = obtenerDatosEstructura();
+                const writable = await archivoHandleActual.createWritable();
+                await writable.write(JSON.stringify(datos, null, 2));
+                await writable.close();
+                mostrarEstadoGuardar('Guardado ✓', 'ok');
+            } catch (error) {
+                if (error.name === 'AbortError') return; // el usuario ha cerrado el selector, no es un fallo real
+                archivoHandleActual = null;
+                mostrarEstadoGuardar('No se pudo guardar en el archivo, se ha descargado una copia.', 'error');
+                guardarComoDescarga();
+            }
         });
 
+        btnCargarVisual.addEventListener('click', async () => {
+            if (!soportaFileSystemAccess) { inputCargarJson.click(); return; }
+
+            try {
+                const [handle] = await window.showOpenFilePicker({
+                    types: [{ description: 'Tabla de Kaska.Climb', accept: { 'application/json': ['.json'] } }],
+                });
+                const archivo = await handle.getFile();
+                renderizarTodaLaTabla(JSON.parse(await archivo.text()));
+                archivoHandleActual = handle;
+                mostrarEstadoGuardar('', null);
+                autoGuardar(); // Guardar lo cargado
+            } catch (error) {
+                if (error.name === 'AbortError') return;
+                alert('El archivo seleccionado no es válido.');
+            }
+        });
+
+        // Reserva de siempre (Safari/iPad, sin File System Access): abrir
+        // mediante el selector de archivos clásico, sin handle de escritura.
         inputCargarJson.addEventListener('change', (e) => {
             const archivos = e.target.files;
             if (!archivos || archivos.length === 0) return;
