@@ -402,9 +402,24 @@
         // propia del Sheet (Plantillas_Sesiones) en vez de archivos sueltos --
         // Mismo mecanismo en cualquier dispositivo/navegador (a diferencia de
         // la File System Access API de antes, que ni siquiera existe en
-        // Android). El título de la tabla es su nombre: "Guardar" sobrescribe
-        // la fila si ya existe una plantilla con ese título exacto, o crea una
-        // nueva si no.
+        // Android).
+        //
+        // "Guardar" sobrescribe la plantilla de la que vino la tabla (la que
+        // se abrió con el desplegable), no la que diga el título — el título
+        // es solo el nombre visible dentro de la sesión (en varias plantillas
+        // antiguas siempre pone "CALENTAMIENTO", el título del primer bloque,
+        // nada que ver con qué plantilla es). Si no se ha abierto ninguna
+        // (tabla nueva), usa el título para crear una plantilla nueva la
+        // primera vez, y a partir de ahí sigue sobrescribiendo esa misma.
+        // Se recuerda en localStorage para que sobreviva a un refresco de página.
+        let nombrePlantillaActual = localStorage.getItem('kaska_plantilla_actual') || null;
+
+        function fijarPlantillaActual(nombre) {
+            nombrePlantillaActual = nombre;
+            if (nombre) localStorage.setItem('kaska_plantilla_actual', nombre);
+            else localStorage.removeItem('kaska_plantilla_actual');
+        }
+
         async function cargarListaPlantillas() {
             try {
                 const res = await fetch('/api/plantillas-sesion');
@@ -416,10 +431,13 @@
         }
 
         btnGuardar.addEventListener('click', async () => {
-            const nombre = inputTituloPrincipal.value.trim();
+            let nombre = nombrePlantillaActual;
             if (!nombre) {
-                mostrarEstadoGuardar('Ponle un título a la tabla antes de guardar.', 'error');
-                return;
+                nombre = inputTituloPrincipal.value.trim();
+                if (!nombre) {
+                    mostrarEstadoGuardar('Ponle un título a la tabla antes de guardar.', 'error');
+                    return;
+                }
             }
             mostrarEstadoGuardar('Guardando...', null);
             try {
@@ -430,7 +448,8 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    mostrarEstadoGuardar('Guardado ✓', 'ok');
+                    fijarPlantillaActual(nombre);
+                    mostrarEstadoGuardar(`Guardado ✓ (${nombre})`, 'ok');
                     cargarListaPlantillas();
                 } else {
                     mostrarEstadoGuardar(data.error || 'No se pudo guardar.', 'error');
@@ -449,8 +468,9 @@
                 const data = await res.json();
                 if (data.success) {
                     renderizarTodaLaTabla(data.datos);
+                    fijarPlantillaActual(nombre);
                     autoGuardar(); // Guardar lo cargado
-                    mostrarEstadoGuardar('', null);
+                    mostrarEstadoGuardar(`Editando: ${nombre}`, null);
                 } else {
                     mostrarEstadoGuardar(data.error || 'No se pudo cargar esa plantilla.', 'error');
                 }
