@@ -323,24 +323,6 @@
         .btn-eliminar-parte { background-color: rgba(255, 255, 255, 0.7); color: var(--chalk-dim); border: 1px solid var(--line); }
         .btn-eliminar-parte:hover { background-color: #f6e3e0; color: #b3564a; border-color: #f0d0cb; }
 
-        @page { size: A4 portrait; margin: 8mm 15mm 15mm 15mm; }
-
-        @media print {
-            .cuerpo-app { padding: 0 !important; padding-top: 0mm !important; }
-            body { background: #ffffff !important; padding: 0; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            .marca-agua-fondo { display: block !important; position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; transform: scale(0.88) !important; opacity: 0.20 !important; z-index: 0 !important; }
-            .cabecera-principal-empresa { padding-top: 0 !important; margin-top: 0 !important; padding-bottom: 8px !important; margin-bottom: 20px !important; border-bottom: 2px solid #1c211e !important; display: flex !important; align-items: center !important; page-break-after: avoid !important; break-after: avoid !important; }
-            .contenedor-titulo-principal { margin-top: 0 !important; }
-            .eyebrow { margin-bottom: 4px !important; }
-            .zona-botones, .btn-añadir-ejercicio, .btn-eliminar-parte, .zona-ordenar, th:last-child, td:last-child, .no-print { display: none !important; }
-            .celda-editable, .celda-cabecera-editable, .input-titulo-gran-formato { border: none !important; color: #1c211e !important; font-size: 11px !important; }
-            .input-titulo-gran-formato { font-size: 24px; }
-            .eyebrow { color: #4d5c46 !important; }
-            .eyebrow::before, .eyebrow::after { background: #4d5c46 !important; }
-            .bloque-parte { background: rgba(247, 245, 239, 0.85) !important; border: none !important; border-left: 5px solid #4d5c46 !important; border-radius: 8px !important; padding: 8px 0px 2px 14px !important; page-break-inside: avoid !important; break-inside: avoid !important; }
-            .tabla-ejercicios tr { page-break-inside: avoid !important; break-inside: avoid !important; }
-            .tabla-ejercicios th { border-bottom: 2px solid #4d5c46 !important; }
-        }
     </style>
 </head>
 <body>
@@ -359,19 +341,15 @@
             
             <div class="zona-botones">
                 <button id="btn-nueva-parte" class="btn-principal">Añadir Nueva Parte</button>
-                <button id="btn-exportar" class="btn-principal" onclick="exportarComoPDF()">Guardar como PDF</button>
                 <button id="btn-guardar" class="btn-principal">Guardar</button>
                 <div class="estado-guardar" id="estadoGuardar"></div>
 
                 <input type="file" id="input-cargar-json" accept=".json" style="display: none;">
                 <button id="btn-cargar-visual" class="btn-principal">Abrir Tabla Existente</button>
 
-                <input type="file" id="input-unir-json" accept=".json" style="display: none;">
-                <button id="btn-unir-visual" class="btn-principal" onclick="document.getElementById('input-unir-json').click()">Unir con Otra Tabla</button>
-
                 <input type="file" id="input-cambiar-logo" accept="image/*" style="display: none;">
                 <button id="btn-config-logo" class="btn-principal" onclick="document.getElementById('input-cambiar-logo').click()">Cambiar Logo de Fondo</button>
-		        <a href="index.html" class="btn-inicio-sesiones no-print">
+		        <a href="index.html" class="btn-inicio-sesiones">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                     Inicio
                 </a>
@@ -384,24 +362,11 @@
 
     <script src="libs/editor-sesion.js"></script>
     <script>
-        // Comprobamos si la página se está viendo dentro de una vista previa (iframe),
-        // ya que en ese caso el navegador bloquea window.print() por seguridad y no pasa nada al pulsar el botón.
-        function exportarComoPDF() {
-            const dentroDeIframe = (window.self !== window.top);
-            if (dentroDeIframe) {
-                alert('Para guardar como PDF, abre este archivo directamente en tu navegador (fuera de la vista previa) y vuelve a pulsar "Guardar como PDF".');
-                return;
-            }
-            window.print();
-        }
-
         const btnNuevaParte = document.getElementById('btn-nueva-parte');
         const btnGuardar = document.getElementById('btn-guardar');
         const estadoGuardar = document.getElementById('estadoGuardar');
         const inputCargarJson = document.getElementById('input-cargar-json');
         const btnCargarVisual = document.getElementById('btn-cargar-visual');
-        const btnUnirVisual = document.getElementById('btn-unir-visual');
-        const inputUnirJson = document.getElementById('input-unir-json');
         const btnConfigLogo = document.getElementById('btn-config-logo');
         const inputCambiarLogo = document.getElementById('input-cambiar-logo');
 
@@ -509,32 +474,6 @@
                     inputCargarJson.value = '';
                     autoGuardar(); // Guardar lo cargado
                 } catch (error) { alert('El archivo seleccionado no es válido.'); }
-            };
-            lector.readAsText(archivos[0]);
-        });
-
-        inputUnirJson.addEventListener('change', (e) => {
-            const archivos = e.target.files;
-            if (!archivos || archivos.length === 0) return;
-            const lector = new FileReader();
-            lector.onload = function(evt) {
-                try {
-                    const datosNuevos = JSON.parse(evt.target.result);
-                    if(datosNuevos.partes && datosNuevos.partes.length > 0) {
-                        if (datosNuevos.tituloPrincipal && datosNuevos.tituloPrincipal !== inputTituloPrincipal.value) {
-                            crearCabeceraUI(datosNuevos.tituloPrincipal);
-                        }
-                        datosNuevos.partes.forEach(p => {
-                            if (p.tipo === 'cabecera_separadora') {
-                                crearCabeceraUI(p.tituloPrincipal);
-                            } else {
-                                crearParteUI(p.titulo, p.descripcion, p.ejercicios);
-                            }
-                        });
-                    }
-                    inputUnirJson.value = '';
-                    autoGuardar(); // Guardar al unir
-                } catch (error) { alert('No se pudo unir la tabla.'); }
             };
             lector.readAsText(archivos[0]);
         });
