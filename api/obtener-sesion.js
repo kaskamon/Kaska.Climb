@@ -9,6 +9,10 @@ const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 // tal cual lo exporta Sesiones.html, en texto), G semanaMesociclo, H origenTapering.
 const SHEET_NAME = 'Sesiones_Programadas';
 
+// Con fecha: la sesión exacta de ese día. Sin fecha: la última publicada de
+// ese cliente+mesociclo (antes era api/ultima-sesion-publicada.js aparte —
+// se fusionó aquí mismo para no pasarse del límite de funciones serverless
+// del plan gratuito de Vercel, ver api/listar-clientes.js para el mismo caso).
 module.exports = async (req, res) => {
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, error: 'Método no permitido, usa GET.' });
@@ -16,9 +20,10 @@ module.exports = async (req, res) => {
 
   try {
     const { cliente, fecha, mesociclo } = req.query || {};
+    const modoUltima = !fecha;
 
-    if (!cliente || !fecha || !mesociclo) {
-      return res.status(400).json({ success: false, error: 'Faltan parámetros (cliente, fecha o mesociclo).' });
+    if (!cliente || !mesociclo) {
+      return res.status(400).json({ success: false, error: 'Faltan parámetros (cliente o mesociclo).' });
     }
     if (!COLUMNS[mesociclo]) {
       return res.status(400).json({ success: false, error: `El mesociclo "${mesociclo}" no existe.` });
@@ -59,11 +64,13 @@ module.exports = async (req, res) => {
     }
 
     // De abajo a arriba: si se ha publicado más de una vez para el mismo
-    // cliente/fecha/mesociclo, nos quedamos con la más reciente.
+    // cliente/fecha/mesociclo (o, en modoUltima, sin importar la fecha),
+    // nos quedamos con la más reciente.
     let filaEncontrada = null;
     for (let i = filas.length - 1; i >= 0; i--) {
       const fila = filas[i];
-      if (fila[1] === cliente && fila[2] === fecha && fila[3] === mesociclo) {
+      const coincideFecha = modoUltima || fila[2] === fecha;
+      if (fila[1] === cliente && coincideFecha && fila[3] === mesociclo) {
         filaEncontrada = fila;
         break;
       }
@@ -72,7 +79,9 @@ module.exports = async (req, res) => {
     if (!filaEncontrada) {
       return res.status(404).json({
         success: false,
-        error: 'No hay ninguna sesión publicada para ese cliente, fecha y mesociclo.',
+        error: modoUltima
+          ? 'Este cliente todavía no tiene ninguna sesión publicada de este mesociclo.'
+          : 'No hay ninguna sesión publicada para ese cliente, fecha y mesociclo.',
       });
     }
 
@@ -83,6 +92,9 @@ module.exports = async (req, res) => {
       return res.status(500).json({ success: false, error: 'La sesión publicada tiene un JSON inválido.' });
     }
 
+    if (modoUltima) {
+      return res.status(200).json({ success: true, sesion, fecha: filaEncontrada[2] });
+    }
     res.status(200).json({
       success: true,
       sesion,

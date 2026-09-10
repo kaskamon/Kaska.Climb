@@ -1017,7 +1017,7 @@ document.getElementById('modalBtnCargarUltimo').addEventListener('click', async 
   mostrarEstadoPublicarModal('Cargando última versión publicada...', null);
   try {
     const qs = new URLSearchParams({ cliente, mesociclo });
-    const res = await fetch('/api/ultima-sesion-publicada?' + qs.toString());
+    const res = await fetch('/api/obtener-sesion?' + qs.toString());
     const data = await res.json();
     if (data.success) {
       renderizarTodaLaTabla(data.sesion);
@@ -1236,7 +1236,7 @@ document.getElementById('btnPublicarSemana').addEventListener('click', async () 
         sesionAPublicar = { tituloPrincipal: mesociclo === 'ROCA' ? 'Roca/roco' : 'Descanso', partes: [] };
       } else {
         const qs = new URLSearchParams({ cliente, mesociclo });
-        const resUltimo = await fetch('/api/ultima-sesion-publicada?' + qs.toString());
+        const resUltimo = await fetch('/api/obtener-sesion?' + qs.toString());
         const dataUltimo = await resUltimo.json();
 
         if (!dataUltimo.success) {

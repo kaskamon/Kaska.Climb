@@ -323,6 +323,20 @@
         .btn-eliminar-parte { background-color: rgba(255, 255, 255, 0.7); color: var(--chalk-dim); border: 1px solid var(--line); }
         .btn-eliminar-parte:hover { background-color: #f6e3e0; color: #b3564a; border-color: #f0d0cb; }
 
+        .selector-plantilla {
+            background-color: var(--stone-900);
+            color: #ffffff;
+            padding: 8px 14px;
+            border: 1px solid var(--stone-900);
+            border-radius: 8px;
+            font-weight: 700;
+            font-family: 'Work Sans', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        .selector-plantilla:hover { background-color: var(--moss); border-color: var(--moss); }
     </style>
 </head>
 <body>
@@ -344,8 +358,9 @@
                 <button id="btn-guardar" class="btn-principal">Guardar</button>
                 <div class="estado-guardar" id="estadoGuardar"></div>
 
-                <input type="file" id="input-cargar-json" accept=".json" style="display: none;">
-                <button id="btn-cargar-visual" class="btn-principal">Abrir Tabla Existente</button>
+                <select id="selectorPlantilla" class="selector-plantilla">
+                    <option value="">Abrir tabla existente…</option>
+                </select>
 
                 <input type="file" id="input-cambiar-logo" accept="image/*" style="display: none;">
                 <button id="btn-config-logo" class="btn-principal" onclick="document.getElementById('input-cambiar-logo').click()">Cambiar Logo de Fondo</button>
@@ -365,10 +380,13 @@
         const btnNuevaParte = document.getElementById('btn-nueva-parte');
         const btnGuardar = document.getElementById('btn-guardar');
         const estadoGuardar = document.getElementById('estadoGuardar');
-        const inputCargarJson = document.getElementById('input-cargar-json');
-        const btnCargarVisual = document.getElementById('btn-cargar-visual');
+        const selectorPlantilla = document.getElementById('selectorPlantilla');
         const btnConfigLogo = document.getElementById('btn-config-logo');
         const inputCambiarLogo = document.getElementById('input-cambiar-logo');
+
+        function escapeHtml(str) {
+            return (str == null ? '' : String(str)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
 
         // Función centralizada para Auto-Guardado en LocalStorage
         function autoGuardar() {
@@ -378,104 +396,72 @@
 
         btnNuevaParte.addEventListener('click', () => crearParteUI());
 
-        // -- Guardar directamente en el archivo real (tablet/PC), sin pasar
-        // por la carpeta de Descargas del navegador --
-        // La File System Access API (Chrome/Edge, escritorio y Android) deja
-        // guardar un "handle" al archivo elegido y escribir encima de él
-        // directamente, como Guardar/Guardar como en un procesador de texto:
-        // la primera vez (o si aún no se ha abierto ningún archivo) se pide
-        // carpeta y nombre; a partir de ahí "Guardar" sobrescribe ese mismo
-        // archivo sin diálogos ni pasos de más. Si el archivo vive en una
-        // carpeta sincronizada con la nube (Google Drive, OneDrive...), el
-        // cambio llega solo, sin descargar/renombrar/mover nada a mano.
-        // Safari/iPad no implementan esta API — ahí se mantiene el
-        // comportamiento de siempre (descarga a Descargas).
-        const soportaFileSystemAccess = 'showOpenFilePicker' in window && 'showSaveFilePicker' in window;
-        let archivoHandleActual = null;
-
         function mostrarEstadoGuardar(texto, clase) {
             estadoGuardar.textContent = texto;
             estadoGuardar.classList.remove('ok', 'error');
             if (clase) estadoGuardar.classList.add(clase);
         }
 
-        function nombreSugeridoJson() {
-            return (inputTituloPrincipal.value.trim() || 'tabla-entrenamiento').toLowerCase().replace(/[^a-z0-9]/gi, '_') + '.json';
-        }
-
-        // Reserva de siempre: descarga un archivo nuevo a Descargas. Se usa
-        // en navegadores sin la API de arriba, y como último recurso si
-        // escribir en el archivo real falla por algún motivo.
-        function guardarComoDescarga() {
-            const datos = obtenerDatosEstructura();
-            const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-
-            const enlace = document.createElement('a');
-            enlace.href = url;
-            enlace.download = nombreSugeridoJson();
-
-            document.body.appendChild(enlace);
-            enlace.click();
-            document.body.removeChild(enlace);
-            setTimeout(() => URL.revokeObjectURL(url), 100);
+        // -- Guardar / Abrir Tabla Existente, como filas de una pestaña
+        // propia del Sheet (Plantillas_Sesiones) en vez de archivos sueltos --
+        // Mismo mecanismo en cualquier dispositivo/navegador (a diferencia de
+        // la File System Access API de antes, que ni siquiera existe en
+        // Android). El título de la tabla es su nombre: "Guardar" sobrescribe
+        // la fila si ya existe una plantilla con ese título exacto, o crea una
+        // nueva si no.
+        async function cargarListaPlantillas() {
+            try {
+                const res = await fetch('/api/plantillas-sesion');
+                const data = await res.json();
+                if (!data.success) return;
+                selectorPlantilla.innerHTML = '<option value="">Abrir tabla existente…</option>' +
+                    data.plantillas.map(p => `<option value="${escapeHtml(p.nombre)}">${escapeHtml(p.nombre)}</option>`).join('');
+            } catch (error) { /* el desplegable se queda solo con la opción por defecto */ }
         }
 
         btnGuardar.addEventListener('click', async () => {
-            if (!soportaFileSystemAccess) { guardarComoDescarga(); return; }
-
-            try {
-                if (!archivoHandleActual) {
-                    archivoHandleActual = await window.showSaveFilePicker({
-                        suggestedName: nombreSugeridoJson(),
-                        types: [{ description: 'Tabla de Kaska.Climb', accept: { 'application/json': ['.json'] } }],
-                    });
-                }
-                const datos = obtenerDatosEstructura();
-                const writable = await archivoHandleActual.createWritable();
-                await writable.write(JSON.stringify(datos, null, 2));
-                await writable.close();
-                mostrarEstadoGuardar('Guardado ✓', 'ok');
-            } catch (error) {
-                if (error.name === 'AbortError') return; // el usuario ha cerrado el selector, no es un fallo real
-                archivoHandleActual = null;
-                mostrarEstadoGuardar('No se pudo guardar en el archivo, se ha descargado una copia.', 'error');
-                guardarComoDescarga();
+            const nombre = inputTituloPrincipal.value.trim();
+            if (!nombre) {
+                mostrarEstadoGuardar('Ponle un título a la tabla antes de guardar.', 'error');
+                return;
             }
-        });
-
-        btnCargarVisual.addEventListener('click', async () => {
-            if (!soportaFileSystemAccess) { inputCargarJson.click(); return; }
-
+            mostrarEstadoGuardar('Guardando...', null);
             try {
-                const [handle] = await window.showOpenFilePicker({
-                    types: [{ description: 'Tabla de Kaska.Climb', accept: { 'application/json': ['.json'] } }],
+                const res = await fetch('/api/plantillas-sesion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ nombre, datos: obtenerDatosEstructura() }),
                 });
-                const archivo = await handle.getFile();
-                renderizarTodaLaTabla(JSON.parse(await archivo.text()));
-                archivoHandleActual = handle;
-                mostrarEstadoGuardar('', null);
-                autoGuardar(); // Guardar lo cargado
+                const data = await res.json();
+                if (data.success) {
+                    mostrarEstadoGuardar('Guardado ✓', 'ok');
+                    cargarListaPlantillas();
+                } else {
+                    mostrarEstadoGuardar(data.error || 'No se pudo guardar.', 'error');
+                }
             } catch (error) {
-                if (error.name === 'AbortError') return;
-                alert('El archivo seleccionado no es válido.');
+                mostrarEstadoGuardar('Error de red: ' + error.message, 'error');
             }
         });
 
-        // Reserva de siempre (Safari/iPad, sin File System Access): abrir
-        // mediante el selector de archivos clásico, sin handle de escritura.
-        inputCargarJson.addEventListener('change', (e) => {
-            const archivos = e.target.files;
-            if (!archivos || archivos.length === 0) return;
-            const lector = new FileReader();
-            lector.onload = function(evt) {
-                try {
-                    renderizarTodaLaTabla(JSON.parse(evt.target.result));
-                    inputCargarJson.value = '';
+        selectorPlantilla.addEventListener('change', async () => {
+            const nombre = selectorPlantilla.value;
+            if (!nombre) return;
+            mostrarEstadoGuardar('Cargando...', null);
+            try {
+                const res = await fetch('/api/plantillas-sesion?' + new URLSearchParams({ nombre }));
+                const data = await res.json();
+                if (data.success) {
+                    renderizarTodaLaTabla(data.datos);
                     autoGuardar(); // Guardar lo cargado
-                } catch (error) { alert('El archivo seleccionado no es válido.'); }
-            };
-            lector.readAsText(archivos[0]);
+                    mostrarEstadoGuardar('', null);
+                } else {
+                    mostrarEstadoGuardar(data.error || 'No se pudo cargar esa plantilla.', 'error');
+                }
+            } catch (error) {
+                mostrarEstadoGuardar('Error de red: ' + error.message, 'error');
+            }
+            selectorPlantilla.value = ''; // vuelve al placeholder, para poder reabrir la misma otra vez
         });
 
         inputCambiarLogo.addEventListener('change', function() {
@@ -490,11 +476,13 @@
         });
 
         window.addEventListener('DOMContentLoaded', () => {
+            cargarListaPlantillas();
+
             const logoGuardado = localStorage.getItem('empresa_logo_real');
             if(logoGuardado) {
                 document.getElementById('img-logo-fondo').style.backgroundImage = "url('" + logoGuardado + "')";
             }
-            
+
             // Lógica de carga del autoguardado al entrar a la página
             const autoGuardado = localStorage.getItem('kaska_sesion_auto');
             if (autoGuardado) {
