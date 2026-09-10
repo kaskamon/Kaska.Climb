@@ -494,24 +494,37 @@ function pintarPanelResumen(panel){
   const tienePfFinal = !!(cfgMeso && cfgMeso.pfFinal);
   const campos = camposDelMesoActivo();
 
-  const cabeceras = ['Fecha', 'PFinicial (N)', 'Fmax izq. (N)', 'Fmax der. (N)'];
-  if(tienePfFinal) cabeceras.push('PFfinal (N)');
+  const cabeceras = ['Fecha', 'PFinicial (N)', 'PFinicial (%)', 'Fmax izq. (N)', 'Fmax der. (N)'];
+  if(tienePfFinal) cabeceras.push('PFfinal (N)', 'PFfinal (%)');
   campos.forEach(c => cabeceras.push(`${c.label} (${c.match})`));
   cabeceras.push('Sesión');
 
+  // PFinicial (%) — misma variación que pintarPanelPfPct, frente a la
+  // sesión ENTRENADA anterior (los días no recuperados no cuentan como
+  // referencia ni tienen su propio %, igual que ahí).
+  let anteriorPfInicial;
   const filas = todas.map(h => {
     const celdas = [h.fecha, String(h.pfInicial)];
     if(h.entrenada){
-      celdas.push(h.fmaxIzq ?? '—', h.fmaxDer ?? '—');
-      if(tienePfFinal) celdas.push(h.pfFinal ?? '—');
+      const pfInicialPct = (anteriorPfInicial !== undefined && anteriorPfInicial !== 0)
+        ? `${h.pfInicial >= anteriorPfInicial ? '+' : ''}${((h.pfInicial - anteriorPfInicial) / anteriorPfInicial * 100).toFixed(1)}%`
+        : '—';
+      celdas.push(pfInicialPct, h.fmaxIzq ?? '—', h.fmaxDer ?? '—');
+      if(tienePfFinal){
+        const pfFinalPct = (h.pfFinal !== undefined && h.pfFinal !== null && h.pfInicial !== 0)
+          ? `${((h.pfInicial - h.pfFinal) / h.pfInicial * 100).toFixed(1)}%`
+          : '—';
+        celdas.push(h.pfFinal ?? '—', pfFinalPct);
+      }
       campos.forEach((c, i) => {
         const v = (h.campos || [])[i];
         celdas.push(v !== undefined && v !== null ? formatCampoValor(v, c.tipo) : '—');
       });
       celdas.push('Entrenada');
+      anteriorPfInicial = h.pfInicial;
     } else {
-      celdas.push('—', '—');
-      if(tienePfFinal) celdas.push('—');
+      celdas.push('—', '—', '—');
+      if(tienePfFinal) celdas.push('—', '—');
       campos.forEach(() => celdas.push('—'));
       celdas.push('No recuperado');
     }
