@@ -179,6 +179,7 @@ function poblarSelectorVariable(){
   camposDelMesoActivo().forEach((c, i) => {
     opciones.push(`<option value="campo:${i}">${escapeHtml(c.label)} (${escapeHtml(c.match)})</option>`);
   });
+  opciones.push('<option value="resumen">Resumen (todos los datos)</option>');
   sel.innerHTML = opciones.join('');
   VARIABLE_ACTIVA = 'fuerza';
   sel.value = 'fuerza';
@@ -363,6 +364,7 @@ function pintarDatos(){
   if(VARIABLE_ACTIVA === 'fuerza') pintarPanelFuerza(panel, historial);
   else if(VARIABLE_ACTIVA === 'pfpct') pintarPanelPfPct(panel, historial);
   else if(VARIABLE_ACTIVA === 'pffinalpct') pintarPanelPfFinalPct(panel, historial);
+  else if(VARIABLE_ACTIVA === 'resumen') pintarPanelResumen(panel);
   else pintarPanelCampo(panel, historial, Number(VARIABLE_ACTIVA.split(':')[1]));
 }
 
@@ -479,6 +481,50 @@ function pintarPanelCampo(panel, historial, indice){
     </div>`;
 
   dibujarGraficaCampo(document.getElementById('chartPF'), historial, indice, color, tipo);
+}
+
+// Resumen — todos los datos de este mesociclo en una sola tabla (PFinicial,
+// Fmax, PFfinal y los campos secundarios propios del mesociclo), incluidas
+// las sesiones no recuperadas. Solo tiene sentido como tabla: mezclar aquí
+// unidades tan distintas (N, %, series, tiempo...) en una misma gráfica no
+// contaría nada útil.
+function pintarPanelResumen(panel){
+  const todas = PORMESOCICLO[MESO_ACTIVO] || [];
+  const cfgMeso = window.MESOCICLOS_CONFIG && window.MESOCICLOS_CONFIG.FIELD_MAP[MESO_ACTIVO];
+  const tienePfFinal = !!(cfgMeso && cfgMeso.pfFinal);
+  const campos = camposDelMesoActivo();
+
+  const cabeceras = ['Fecha', 'PFinicial (N)', 'Fmax izq. (N)', 'Fmax der. (N)'];
+  if(tienePfFinal) cabeceras.push('PFfinal (N)');
+  campos.forEach(c => cabeceras.push(`${c.label} (${c.match})`));
+  cabeceras.push('Sesión');
+
+  const filas = todas.map(h => {
+    const celdas = [h.fecha, String(h.pfInicial)];
+    if(h.entrenada){
+      celdas.push(h.fmaxIzq ?? '—', h.fmaxDer ?? '—');
+      if(tienePfFinal) celdas.push(h.pfFinal ?? '—');
+      campos.forEach((c, i) => {
+        const v = (h.campos || [])[i];
+        celdas.push(v !== undefined && v !== null ? formatCampoValor(v, c.tipo) : '—');
+      });
+      celdas.push('Entrenada');
+    } else {
+      celdas.push('—', '—');
+      if(tienePfFinal) celdas.push('—');
+      campos.forEach(() => celdas.push('—'));
+      celdas.push('No recuperado');
+    }
+    return { celdas, entrenada: h.entrenada };
+  });
+
+  panel.innerHTML = `
+    <div class="tabla-datos-wrap">
+      <table class="tabla-datos">
+        <thead><tr>${cabeceras.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+        <tbody>${filas.map(f => `<tr>${f.celdas.map(v => `<td${f.entrenada ? '' : ' class="no-entrenada"'}>${escapeHtml(v)}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>
+    </div>`;
 }
 
 // PFinicial en % — variación de la fuerza de partida respecto a la sesión
