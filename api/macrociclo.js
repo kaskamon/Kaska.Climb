@@ -13,8 +13,9 @@ const { guardarBackup } = require('../libs/backup.js');
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Macrociclos_Cliente';
 
-// Copia de seguridad en crudo en la pestaña "Backups" — ver libs/backup.js
-// (compartido con bateria-test.js, mismo mecanismo de sobrescritura por etiqueta).
+// Copia de seguridad en crudo en su propia pestaña (Backups_Macrociclo) —
+// ver libs/backup.js (mismo mecanismo que bateria-test.js, sobrescritura por
+// etiqueta, pestaña propia en vez de compartir "Backups").
 
 function authSheets() {
   const auth = new google.auth.GoogleAuth({
@@ -131,7 +132,7 @@ async function manejarPost(req, res, sheets) {
     });
   }
 
-  await guardarBackup(sheets, `${correoNorm} · macrociclo · ${inicio || ''}`, req.body);
+  await guardarBackup(sheets, 'Backups_Macrociclo', `${correoNorm} · ${inicio || ''}`, req.body);
 
   res.status(200).json({ success: true, message: 'Macrociclo publicado correctamente.' });
 }

@@ -15,8 +15,9 @@ const { guardarBackup } = require('../libs/backup.js');
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Bateria_Test';
 
-// Copia de seguridad en crudo en la pestaña "Backups" — ver libs/backup.js
-// (compartido con macrociclo.js, mismo mecanismo de sobrescritura por etiqueta).
+// Copia de seguridad en crudo en su propia pestaña (Backups_BateriaTest) —
+// ver libs/backup.js (mismo mecanismo que macrociclo.js, sobrescritura por
+// etiqueta, pestaña propia en vez de compartir "Backups").
 
 function authSheets() {
   const auth = new google.auth.GoogleAuth({
@@ -129,7 +130,7 @@ async function manejarPost(req, res, sheets) {
     });
   }
 
-  await guardarBackup(sheets, `${correoNorm} · bateria-test · ${fecha}`, req.body);
+  await guardarBackup(sheets, 'Backups_BateriaTest', `${correoNorm} · ${fecha}`, req.body);
 
   res.status(200).json({ success: true, message: 'Perfil de batería publicado correctamente.' });
 }
