@@ -168,10 +168,14 @@ function camposDelMesoActivo(){
 
 function poblarSelectorVariable(){
   const sel = document.getElementById('selectorVariable');
+  const cfgMeso = window.MESOCICLOS_CONFIG && window.MESOCICLOS_CONFIG.FIELD_MAP[MESO_ACTIVO];
   const opciones = [
     '<option value="fuerza">Fuerza (PFinicial / Fmax)</option>',
     '<option value="pfpct">PFinicial en % (control de carga)</option>',
   ];
+  if(cfgMeso && cfgMeso.pfFinal){
+    opciones.push('<option value="pffinalpct">PFfinal en % (fatiga de la sesión)</option>');
+  }
   camposDelMesoActivo().forEach((c, i) => {
     opciones.push(`<option value="campo:${i}">${escapeHtml(c.label)} (${escapeHtml(c.match)})</option>`);
   });
@@ -358,6 +362,7 @@ function pintarDatos(){
 
   if(VARIABLE_ACTIVA === 'fuerza') pintarPanelFuerza(panel, historial);
   else if(VARIABLE_ACTIVA === 'pfpct') pintarPanelPfPct(panel, historial);
+  else if(VARIABLE_ACTIVA === 'pffinalpct') pintarPanelPfFinalPct(panel, historial);
   else pintarPanelCampo(panel, historial, Number(VARIABLE_ACTIVA.split(':')[1]));
 }
 
@@ -530,6 +535,66 @@ function pintarPanelPfPct(panel, historial){
       <table class="tabla-datos">
         <thead><tr><th>Fecha</th><th>Variación PFinicial</th></tr></thead>
         <tbody>${puntos.map(p => `<tr><td>${escapeHtml(p.fecha)}</td><td style="color:${p.valor>=0?'var(--moss-light)':'var(--danger)'};">${p.valor>=0?'+':''}${p.valor.toFixed(1)}%</td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+
+  dibujarGraficaValores(document.getElementById('chartPF'), puntos, color);
+}
+
+// PFfinal en % — a diferencia de pfpct (que compara una sesión con la
+// anterior), aquí cada punto es la caída DENTRO de la misma sesión: PFinicial
+// vs. PFfinal de ese mismo día (mismo cálculo que usa cliente/sesion.html
+// para el aviso de parada — umbralIntegrado). No es un dato de progreso
+// lineal entre sesiones, cada punto es independiente — pero sirve para ver
+// hasta dónde se ha llevado al cliente cada día. Positivo = ha caído
+// respecto a su PFinicial de ese día (lo normal); negativo = PFfinal salió
+// más alto que el PFinicial (raro, pero real, no se fuerza a 0).
+function pintarPanelPfFinalPct(panel, historial){
+  const cfg = window.MESOCICLOS_CONFIG && window.MESOCICLOS_CONFIG.FIELD_MAP[MESO_ACTIVO];
+  const umbralIntegrado = cfg ? cfg.umbralIntegrado : undefined;
+  const color = MESO_COLORS[MESO_ACTIVO];
+
+  // No todas las sesiones llevan PFfinal (puede bloquearse antes, o el
+  // cliente no llegar a hacerlo) — se cuentan aparte, no como "PFinicial=0".
+  const puntos = [];
+  let omitidosPorCero = 0;
+  historial.forEach(h => {
+    if(h.pfFinal === undefined || h.pfFinal === null) return;
+    if(h.pfInicial === 0){ omitidosPorCero++; return; }
+    puntos.push({ fecha: h.fecha, valor: ((h.pfInicial - h.pfFinal) / h.pfInicial) * 100 });
+  });
+
+  if(!puntos.length){
+    panel.innerHTML = omitidosPorCero
+      ? `<div class="estado-panel">${omitidosPorCero} sesión${omitidosPorCero===1?'':'es'} con PFfinal registrado, pero con PFinicial de 0 — no se puede calcular la caída.</div>`
+      : '<div class="estado-panel">Este cliente todavía no tiene datos de PFfinal en este mesociclo.</div>';
+    return;
+  }
+
+  const media = puntos.reduce((s,p) => s + p.valor, 0) / puntos.length;
+  const ultimo = puntos[puntos.length - 1].valor;
+  const sobreUmbral = umbralIntegrado !== undefined ? puntos.filter(p => p.valor > umbralIntegrado).length : null;
+
+  panel.innerHTML = `
+    <div class="stat-tiles">
+      <div class="stat-tile"><div class="k">Caída media</div><div class="v">${media.toFixed(1)}<small>%</small></div></div>
+      <div class="stat-tile">
+        <div class="k">Última caída</div>
+        <div class="v"${umbralIntegrado !== undefined && ultimo > umbralIntegrado ? ' style="color:var(--danger);"' : ''}>${ultimo.toFixed(1)}<small>%</small></div>
+        <div class="delta">vs. su propio PFinicial de ese día</div>
+      </div>
+      <div class="stat-tile"><div class="k">Sesiones &gt; umbral</div><div class="v"${sobreUmbral ? ' style="color:var(--danger);"' : ''}>${sobreUmbral ?? '—'}<small>/${puntos.length}</small></div></div>
+      <div class="stat-tile"><div class="k">Umbral integrado</div><div class="v">${umbralIntegrado ?? '—'}<small>%</small></div></div>
+    </div>
+    <div class="estado-panel" style="margin-bottom:10px;">No es un dato de progreso lineal entre sesiones — cada punto es la caída dentro de esa misma sesión, no una tendencia continua.</div>
+    ${omitidosPorCero ? `<div class="estado-panel" style="margin-bottom:10px;">${omitidosPorCero} sesión${omitidosPorCero===1?'':'es'} con PFinicial de 0 — no se puede calcular la caída para ${omitidosPorCero===1?'esa fecha':'esas fechas'}.</div>` : ''}
+    <div class="chart-shell">
+      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
+    </div>
+    <div class="tabla-datos-wrap">
+      <table class="tabla-datos">
+        <thead><tr><th>Fecha</th><th>Caída PFfinal</th></tr></thead>
+        <tbody>${puntos.map(p => `<tr><td>${escapeHtml(p.fecha)}</td><td${umbralIntegrado !== undefined && p.valor > umbralIntegrado ? ' style="color:var(--danger);"' : ''}>${p.valor.toFixed(1)}%</td></tr>`).join('')}</tbody>
       </table>
     </div>`;
 
