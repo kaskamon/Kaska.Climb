@@ -665,8 +665,9 @@ select.head-select option {
     <input type="text" id="titulo-entreno-principal" class="modal-titulo-sesion" placeholder="Título de la sesión...">
     <div class="modal-sesion-acciones">
       <button class="btn-action" id="modalBtnNuevaParte" type="button">Añadir Nueva Parte</button>
-      <input type="file" id="modalInputCargarJson" accept=".json" style="display:none;">
-      <button class="btn-action" id="modalBtnCargarVisual" type="button">Abrir tabla existente</button>
+      <select id="modalSelectorPlantilla" class="btn-action">
+        <option value="">Abrir tabla existente…</option>
+      </select>
     </div>
     <div id="contenedor-partes"></div>
   </div>
@@ -973,6 +974,7 @@ function abrirModalSesion(cliente, mesociclo) {
   document.getElementById('modalEstadoPublicar').textContent = '';
   document.getElementById('modalEstadoPublicar').className = 'estado-publicar';
   document.getElementById('modalDisenarSesion').hidden = false;
+  cargarListaPlantillasModal();
 }
 
 document.getElementById('modalSelectMesociclo').addEventListener('change', e => {
@@ -986,22 +988,39 @@ document.getElementById('btnCerrarModalSesion').addEventListener('click', () => 
 
 document.getElementById('modalBtnNuevaParte').addEventListener('click', () => crearParteUI());
 
-document.getElementById('modalBtnCargarVisual').addEventListener('click', () => {
-  document.getElementById('modalInputCargarJson').click();
-});
-document.getElementById('modalInputCargarJson').addEventListener('change', (e) => {
-  const archivos = e.target.files;
-  if (!archivos || archivos.length === 0) return;
-  const lector = new FileReader();
-  lector.onload = function (evt) {
-    try {
-      renderizarTodaLaTabla(JSON.parse(evt.target.result));
-    } catch (error) {
-      alert('El archivo seleccionado no es válido.');
+function escapeHtml(str) {
+  return (str == null ? '' : String(str)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Mismas plantillas que gestiona Sesiones.html (pestaña Plantillas_Sesiones
+// del Sheet) — este desplegable solo las abre, no guarda (aquí se publica
+// directamente a un cliente, no se crean plantillas nuevas).
+async function cargarListaPlantillasModal() {
+  const sel = document.getElementById('modalSelectorPlantilla');
+  try {
+    const res = await fetch('/api/plantillas-sesion');
+    const data = await res.json();
+    if (!data.success) return;
+    sel.innerHTML = '<option value="">Abrir tabla existente…</option>' +
+      data.plantillas.map(p => `<option value="${escapeHtml(p.nombre)}">${escapeHtml(p.nombre)}</option>`).join('');
+  } catch (error) { /* el desplegable se queda solo con la opción por defecto */ }
+}
+
+document.getElementById('modalSelectorPlantilla').addEventListener('change', async (e) => {
+  const nombre = e.target.value;
+  if (!nombre) return;
+  try {
+    const res = await fetch('/api/plantillas-sesion?' + new URLSearchParams({ nombre }));
+    const data = await res.json();
+    if (data.success) {
+      renderizarTodaLaTabla(data.datos);
+    } else {
+      alert(data.error || 'No se pudo cargar esa plantilla.');
     }
-    e.target.value = '';
-  };
-  lector.readAsText(archivos[0]);
+  } catch (error) {
+    alert('Error de red: ' + error.message);
+  }
+  e.target.value = ''; // vuelve al placeholder, para poder reabrir la misma otra vez
 });
 
 function mostrarEstadoPublicarModal(texto, clase) {
