@@ -3,6 +3,10 @@
     {
       "path": "/api/listar-clientes?accion=revisar-caducados",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/listar-clientes?accion=backup-diario",
+      "schedule": "0 5 * * *"
     }
   ]
 }

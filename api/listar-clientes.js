@@ -228,13 +228,7 @@ function parseFechaDDMMYYYY(str) {
 // automáticamente), o el botón "Revisar caducados ahora" de Clientes.html
 // (con la contraseña de entrenador de siempre).
 async function manejarRevisarCaducados(req, res, sheets) {
-  const cabecera = req.headers && req.headers.authorization;
-  const esCron = !!process.env.CRON_SECRET && cabecera === `Bearer ${process.env.CRON_SECRET}`;
-  if (!esCron && !verificarEntrenador(req).ok) {
-    res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Kaska.Climb"' });
-    res.end('Acceso restringido — zona de entrenador.');
-    return;
-  }
+  if (!exigirEntrenadorOCron(req, res)) return;
 
   let filas;
   try {
@@ -296,6 +290,84 @@ async function manejarRevisarCaducados(req, res, sheets) {
   }
 
   res.status(200).json({ success: true, marcados: caducados.length });
+}
+
+// Copia entera del Sheet indicado a la carpeta de backups, y borra las copias
+// más antiguas por encima de BACKUP_RETENCION (busca por nombre dentro de esa
+// carpeta — cada tipo tiene su propio prefijo, así que no se mezclan entre sí).
+const BACKUP_RETENCION = 7;
+
+async function copiarConRetencion(drive, carpetaId, spreadsheetId, prefijoNombre) {
+  const fechaStr = new Date().toISOString().slice(0, 10);
+  await drive.files.copy({
+    fileId: spreadsheetId,
+    requestBody: { name: `${prefijoNombre} ${fechaStr}`, parents: [carpetaId] },
+  });
+
+  const listado = await drive.files.list({
+    q: `'${carpetaId}' in parents and name contains '${prefijoNombre.replace(/'/g, "\\'")}' and trashed = false`,
+    fields: 'files(id, name, createdTime)',
+    orderBy: 'createdTime desc',
+  });
+  const sobrantes = (listado.data.files || []).slice(BACKUP_RETENCION);
+  for (const f of sobrantes) {
+    try {
+      await drive.files.delete({ fileId: f.id });
+    } catch (e) {
+      console.error(`No se pudo borrar la copia de seguridad antigua "${f.name}": ${e.message}`);
+    }
+  }
+}
+
+// Carpeta propia del entrenador (no DRIVE_PARENT_ID, que es la de clientes) —
+// se busca/crea en la raíz de su Drive la primera vez que hace falta.
+const BACKUP_FOLDER_NOMBRE = 'Kaska.Climb — Copias de seguridad diarias';
+
+async function asegurarCarpetaBackups(drive) {
+  const nombreEscapado = BACKUP_FOLDER_NOMBRE.replace(/'/g, "\\'");
+  const resp = await drive.files.list({
+    q: `name = '${nombreEscapado}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false and 'root' in parents`,
+    fields: 'files(id)',
+  });
+  if (resp.data.files && resp.data.files[0]) return resp.data.files[0].id;
+  const nueva = await drive.files.create({
+    requestBody: { name: BACKUP_FOLDER_NOMBRE, mimeType: 'application/vnd.google-apps.folder' },
+    fields: 'id',
+  });
+  return nueva.data.id;
+}
+
+// El otro Sheet de la app (sesiones, batería test, macrociclos...) — SPREADSHEET_ID
+// en este archivo es el de clientes, así que hace falta el segundo ID aparte.
+const SPREADSHEET_ID_SESIONES = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
+
+// GET ?accion=backup-diario — copia completa e independiente de los dos
+// Sheets de la app (sesiones y clientes) a una carpeta de Drive del propio
+// entrenador, con las últimas BACKUP_RETENCION copias de cada uno. A
+// diferencia del historial de versiones de Google (que desaparece si se
+// borra el archivo original y se vacía la papelera), esto es un archivo
+// aparte de verdad. Se dispara sola cada día (ver vercel.json, con el
+// CRON_SECRET que manda Vercel automáticamente) o a mano con la contraseña
+// de entrenador.
+async function manejarBackupDiario(req, res) {
+  if (!exigirEntrenadorOCron(req, res)) return;
+
+  try {
+    const drive = driveComoEntrenador();
+    const carpetaId = await asegurarCarpetaBackups(drive);
+    await copiarConRetencion(drive, carpetaId, SPREADSHEET_ID_SESIONES, 'Kaska.Climb (sesiones)');
+    await copiarConRetencion(drive, carpetaId, SPREADSHEET_ID, 'Kaska.Climb (clientes)');
+    res.status(200).json({ success: true, message: 'Copia de seguridad diaria completada.' });
+  } catch (e) {
+    try {
+      await enviarCorreoComoEntrenador(
+        CORREO_ENTRENADOR,
+        'Fallo en la copia de seguridad diaria',
+        `No se pudo completar la copia de seguridad diaria de los Sheets:\r\n\r\n${e.message}`
+      );
+    } catch (e2) { /* si hasta el aviso falla, no hay más que hacer aquí */ }
+    res.status(500).json({ success: false, error: e.message });
+  }
 }
 
 // Busca una carpeta por nombre exacto dentro de otra (evita duplicados si se
@@ -520,6 +592,16 @@ function exigirEntrenador(req, res) {
   return false;
 }
 
+// Igual que exigirEntrenador, pero acepta también el CRON_SECRET que Vercel
+// manda solo en sus propias llamadas programadas (ver vercel.json) — para
+// las acciones que se disparan solas cada día además de a mano.
+function exigirEntrenadorOCron(req, res) {
+  const cabecera = req.headers && req.headers.authorization;
+  const esCron = !!process.env.CRON_SECRET && cabecera === `Bearer ${process.env.CRON_SECRET}`;
+  if (esCron) return true;
+  return exigirEntrenador(req, res);
+}
+
 function paginaResultado(titulo, cuerpoHtml) {
   return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8">
 <title>${titulo} · Kaska.Climb</title>
@@ -606,6 +688,9 @@ module.exports = async (req, res) => {
   }
   if (req.method === 'GET' && req.query && req.query.accion === 'drive-oauth-callback') {
     return await manejarDriveOAuthCallback(req, res);
+  }
+  if (req.method === 'GET' && req.query && req.query.accion === 'backup-diario') {
+    return await manejarBackupDiario(req, res);
   }
 
   if (req.method !== 'GET' && req.method !== 'POST') {

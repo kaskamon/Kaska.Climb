@@ -1,6 +1,5 @@
 const { google } = require('googleapis');
 const { verificarEntrenador } = require('../libs/sesion-cliente.js');
-const { guardarBackup } = require('../libs/backup.js');
 
 // Batería de test completa (Batería test.html) — sustituye el ir exportando/
 // importando archivos JSON sueltos. Columnas: A marcaTemporal, B correo,
@@ -14,10 +13,6 @@ const { guardarBackup } = require('../libs/backup.js');
 // entrenador (igual que Macrociclos.html) — nunca la consulta el cliente.
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Bateria_Test';
-
-// Copia de seguridad en crudo en su propia pestaña (Backups_BateriaTest) —
-// ver libs/backup.js (mismo mecanismo que macrociclo.js, sobrescritura por
-// etiqueta, pestaña propia en vez de compartir "Backups").
 
 function authSheets() {
   const auth = new google.auth.GoogleAuth({
@@ -129,8 +124,6 @@ async function manejarPost(req, res, sheets) {
       error: `No se pudo publicar el perfil (${e.message}). ¿Existe la pestaña "${SHEET_NAME}" en el Sheet?`,
     });
   }
-
-  await guardarBackup(sheets, 'Backups_BateriaTest', `${correoNorm} · ${fecha}`, req.body);
 
   res.status(200).json({ success: true, message: 'Perfil de batería publicado correctamente.' });
 }

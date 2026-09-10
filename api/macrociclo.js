@@ -1,6 +1,5 @@
 const { google } = require('googleapis');
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
-const { guardarBackup } = require('../libs/backup.js');
 
 // Planificación de macrociclo por cliente (Macrociclos.html) — hoja principal,
 // distinta de la de sesiones/historial. Columnas: A marcaTemporal, B correo,
@@ -12,10 +11,6 @@ const { guardarBackup } = require('../libs/backup.js');
 // del mismo cliente. "Cargar" siempre trae el más reciente.
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Macrociclos_Cliente';
-
-// Copia de seguridad en crudo en su propia pestaña (Backups_Macrociclo) —
-// ver libs/backup.js (mismo mecanismo que bateria-test.js, sobrescritura por
-// etiqueta, pestaña propia en vez de compartir "Backups").
 
 function authSheets() {
   const auth = new google.auth.GoogleAuth({
@@ -131,8 +126,6 @@ async function manejarPost(req, res, sheets) {
       error: `No se pudo publicar el macrociclo (${e.message}). ¿Existe la pestaña "${SHEET_NAME}" en el Sheet?`,
     });
   }
-
-  await guardarBackup(sheets, 'Backups_Macrociclo', `${correoNorm} · ${inicio || ''}`, req.body);
 
   res.status(200).json({ success: true, message: 'Macrociclo publicado correctamente.' });
 }
