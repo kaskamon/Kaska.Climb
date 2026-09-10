@@ -341,6 +341,66 @@ async function asegurarCarpetaBackups(drive) {
 // en este archivo es el de clientes, así que hace falta el segundo ID aparte.
 const SPREADSHEET_ID_SESIONES = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 
+// GET ?accion=limpiar-backups-viejos — limpieza de UN SOLO USO, pensada para
+// borrarse de este archivo en cuanto se haya ejecutado una vez: borra las
+// pestañas Backups_BateriaTest/Backups_Macrociclo (sustituidas por la copia
+// diaria completa) y, dentro de la pestaña "Backups" compartida, las filas
+// viejas de bateria-test/macrociclo (etiqueta "correo · bateria-test · fecha"
+// o "correo · macrociclo · fecha", de cuando aún compartían esa pestaña) —
+// las de sesiones de cliente ("Nombre — Mesociclo") se quedan tal cual.
+async function manejarLimpiarBackupsViejos(req, res, sheets) {
+  if (!exigirEntrenadorOCron(req, res)) return;
+
+  try {
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID_SESIONES, fields: 'sheets.properties' });
+    const hojas = meta.data.sheets || [];
+
+    const idsABorrar = hojas
+      .filter(h => h.properties.title === 'Backups_BateriaTest' || h.properties.title === 'Backups_Macrociclo')
+      .map(h => h.properties.sheetId);
+
+    const requests = idsABorrar.map(sheetId => ({ deleteSheet: { sheetId } }));
+
+    const hojaBackups = hojas.find(h => h.properties.title === 'Backups');
+    let filasBorradasBackups = 0;
+    if (hojaBackups) {
+      const resp = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID_SESIONES,
+        range: `'Backups'!A:C`,
+      });
+      const filas = resp.data.values || [];
+      const patronViejo = / · (bateria-test|macrociclo) · /;
+      const indicesABorrar = [];
+      filas.forEach((f, i) => {
+        if (patronViejo.test(f[1] || '')) indicesABorrar.push(i);
+      });
+      filasBorradasBackups = indicesABorrar.length;
+      // De abajo a arriba: cada deleteDimension de este mismo batchUpdate ve
+      // el efecto de los anteriores, así que si borrase de arriba a abajo los
+      // índices de las filas siguientes quedarían desplazados.
+      indicesABorrar.sort((a, b) => b - a).forEach(i => {
+        requests.push({
+          deleteDimension: {
+            range: { sheetId: hojaBackups.properties.sheetId, dimension: 'ROWS', startIndex: i, endIndex: i + 1 },
+          },
+        });
+      });
+    }
+
+    if (requests.length) {
+      await sheets.spreadsheets.batchUpdate({ spreadsheetId: SPREADSHEET_ID_SESIONES, requestBody: { requests } });
+    }
+
+    res.status(200).json({
+      success: true,
+      pestanasBorradas: idsABorrar.length,
+      filasBorradasEnBackups: filasBorradasBackups,
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
 // GET ?accion=backup-diario — copia completa e independiente de los dos
 // Sheets de la app (sesiones y clientes) a una carpeta de Drive del propio
 // entrenador, con las últimas BACKUP_RETENCION copias de cada uno. A
@@ -705,6 +765,7 @@ module.exports = async (req, res) => {
       });
     }
     const sheets = await authSheets();
+    if (req.method === 'GET' && req.query && req.query.accion === 'limpiar-backups-viejos') return await manejarLimpiarBackupsViejos(req, res, sheets);
     if (req.method === 'GET' && req.query && req.query.accion === 'revisar-caducados') return await manejarRevisarCaducados(req, res, sheets);
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     if (req.body && req.body.accion === 'alta') return await manejarAlta(req, res, sheets);
