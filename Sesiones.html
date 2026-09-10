@@ -362,8 +362,6 @@
                     <option value="">Abrir tabla existente…</option>
                 </select>
 
-                <input type="file" id="input-cambiar-logo" accept="image/*" style="display: none;">
-                <button id="btn-config-logo" class="btn-principal" onclick="document.getElementById('input-cambiar-logo').click()">Cambiar Logo de Fondo</button>
 		        <a href="index.html" class="btn-inicio-sesiones">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
                     Inicio
@@ -381,8 +379,6 @@
         const btnGuardar = document.getElementById('btn-guardar');
         const estadoGuardar = document.getElementById('estadoGuardar');
         const selectorPlantilla = document.getElementById('selectorPlantilla');
-        const btnConfigLogo = document.getElementById('btn-config-logo');
-        const inputCambiarLogo = document.getElementById('input-cambiar-logo');
 
         function escapeHtml(str) {
             return (str == null ? '' : String(str)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -462,17 +458,6 @@
                 mostrarEstadoGuardar('Error de red: ' + error.message, 'error');
             }
             selectorPlantilla.value = ''; // vuelve al placeholder, para poder reabrir la misma otra vez
-        });
-
-        inputCambiarLogo.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                const lectorImg = new FileReader();
-                lectorImg.onload = function(e) {
-                    localStorage.setItem('empresa_logo_real', e.target.result);
-                    document.getElementById('img-logo-fondo').style.backgroundImage = "url('" + e.target.result + "')";
-                };
-                lectorImg.readAsDataURL(this.files[0]);
-            }
         });
 
         window.addEventListener('DOMContentLoaded', () => {
