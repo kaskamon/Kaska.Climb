@@ -19,6 +19,19 @@ function authSheets() {
   return auth.getClient().then(authClient => google.sheets({ version: 'v4', auth: authClient }));
 }
 
+// A diferencia de las demás pestañas del Sheet (creadas a mano en su día),
+// esta la crea el propio código la primera vez que hace falta — para no
+// depender de un paso manual más.
+async function asegurarPestana(sheets) {
+  const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID, fields: 'sheets.properties.title' });
+  const existe = (meta.data.sheets || []).some(s => s.properties.title === SHEET_NAME);
+  if (existe) return;
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId: SPREADSHEET_ID,
+    requestBody: { requests: [{ addSheet: { properties: { title: SHEET_NAME } } }] },
+  });
+}
+
 // GET sin ?nombre: lista ligera (nombre + fecha) para el desplegable — nunca
 // manda el JSON completo de cada plantilla, para no cargar de más.
 // GET ?nombre=X: la plantilla completa.
@@ -33,7 +46,7 @@ async function manejarGet(req, res, sheets) {
   } catch (e) {
     return res.status(500).json({
       success: false,
-      error: `No se pudo leer la pestaña "${SHEET_NAME}" (${e.message}). ¿Existe esa pestaña en el Sheet?`,
+      error: `No se pudo leer la pestaña "${SHEET_NAME}" (${e.message}).`,
     });
   }
 
@@ -89,7 +102,7 @@ async function manejarPost(req, res, sheets) {
   } catch (e) {
     return res.status(500).json({
       success: false,
-      error: `No se pudo leer la pestaña "${SHEET_NAME}" (${e.message}). ¿Existe esa pestaña en el Sheet?`,
+      error: `No se pudo leer la pestaña "${SHEET_NAME}" (${e.message}).`,
     });
   }
 
@@ -127,6 +140,7 @@ module.exports = async (req, res) => {
       });
     }
     const sheets = await authSheets();
+    await asegurarPestana(sheets);
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     return await manejarPost(req, res, sheets);
   } catch (error) {
