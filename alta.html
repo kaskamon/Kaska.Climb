@@ -139,6 +139,16 @@
       <div class="error-general" id="errorGeneral"></div>
       <form id="formAlta" novalidate>
         <div class="seccion">
+          <div class="seccion-titulo">Acceso</div>
+          <div class="seccion-contenido">
+            <div class="campo" id="campo-codigoAcceso">
+              <label>Código de acceso<small>te lo da tu entrenador</small></label>
+              <input type="text" id="codigoAcceso" placeholder="Código de acceso" autocomplete="off">
+              <span class="error-msg">Obligatorio</span>
+            </div>
+          </div>
+        </div>
+        <div class="seccion">
           <div class="seccion-titulo">Datos de contacto</div>
           <div class="seccion-contenido">
             <div class="grid2">
@@ -244,11 +254,13 @@ document.getElementById('formAlta').addEventListener('submit', async (e) => {
   const errorGeneral = document.getElementById('errorGeneral');
   errorGeneral.classList.remove('show');
 
+  const codigoAcceso = document.getElementById('codigoAcceso').value.trim();
   const nombre = document.getElementById('nombre').value.trim();
   const apellidos = document.getElementById('apellidos').value.trim();
   const correo = document.getElementById('correo').value.trim();
 
   let valido = true;
+  marcarError('codigoAcceso', !codigoAcceso); if(!codigoAcceso) valido = false;
   marcarError('nombre', !nombre); if(!nombre) valido = false;
   marcarError('apellidos', !apellidos); if(!apellidos) valido = false;
   const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
@@ -273,6 +285,7 @@ document.getElementById('formAlta').addEventListener('submit', async (e) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         accion: 'alta',
+        codigoAcceso,
         nombre, apellidos, correo,
         telefono: document.getElementById('telefono').value.trim(),
         fechaNacimiento,

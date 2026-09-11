@@ -488,16 +488,24 @@ async function enviarAvisoNuevoCliente(datos) {
 }
 
 // POST (accion: 'alta') — alta de un cliente nuevo desde alta.html (público,
-// sin contraseña — lo rellena el propio cliente). Body: { accion:'alta',
-// nombre, apellidos, correo, telefono, fechaNacimiento, modalidad,
-// disponibilidad, lesion }. La carpeta de Drive se crea aquí mismo (ver
-// crearCarpetaCliente) — antes lo hacía un Apps Script vinculado al Sheet con
-// un disparador "al enviarse el formulario", pero ese disparador nunca ve las
-// altas que llegan por esta API (no son un envío real del Google Form), así
-// que la carpeta se dejaba de crear en silencio.
+// pero con un código de acceso compartido — se lo da el entrenador a mano al
+// cliente nuevo, para que nadie pueda rellenarlo sin más y crear altas falsas,
+// carpetas de Drive de mentira o correos de "bienvenida" a cualquiera).
+// Body: { accion:'alta', codigoAcceso, nombre, apellidos, correo, telefono,
+// fechaNacimiento, modalidad, disponibilidad, lesion }. La carpeta de Drive
+// se crea aquí mismo (ver crearCarpetaCliente) — antes lo hacía un Apps
+// Script vinculado al Sheet con un disparador "al enviarse el formulario",
+// pero ese disparador nunca ve las altas que llegan por esta API (no son un
+// envío real del Google Form), así que la carpeta se dejaba de crear en silencio.
 async function manejarAlta(req, res, sheets) {
-  const { nombre, apellidos, correo, telefono, fechaNacimiento, modalidad, disponibilidad, lesion } = req.body || {};
+  const { codigoAcceso, nombre, apellidos, correo, telefono, fechaNacimiento, modalidad, disponibilidad, lesion } = req.body || {};
 
+  if (!process.env.ALTA_PASSWORD) {
+    return res.status(500).json({ success: false, error: 'Falta configurar ALTA_PASSWORD en Vercel.' });
+  }
+  if (!codigoAcceso || codigoAcceso !== process.env.ALTA_PASSWORD) {
+    return res.status(401).json({ success: false, error: 'Código de acceso incorrecto — pídeselo a tu entrenador.' });
+  }
   if (!nombre || !apellidos || !correo || !String(correo).includes('@')) {
     return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (nombre, apellidos o un correo válido).' });
   }
