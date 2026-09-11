@@ -238,6 +238,7 @@ async function manejarRevisarCaducados(req, res, sheets) {
     });
     filas = resp.data.values || [];
   } catch (e) {
+    await avisarFalloTareaProgramada('Revisión de caducados', e.message);
     return res.status(500).json({ success: false, error: `No se pudo leer la base de datos de clientes (${e.message}).` });
   }
 
@@ -270,6 +271,7 @@ async function manejarRevisarCaducados(req, res, sheets) {
         },
       });
     } catch (e) {
+      await avisarFalloTareaProgramada('Revisión de caducados', e.message);
       return res.status(500).json({ success: false, error: `No se pudo actualizar los clientes caducados (${e.message}).` });
     }
 
@@ -359,13 +361,7 @@ async function manejarBackupDiario(req, res) {
     await copiarConRetencion(drive, carpetaId, SPREADSHEET_ID, 'Kaska.Climb (clientes)');
     res.status(200).json({ success: true, message: 'Copia de seguridad diaria completada.' });
   } catch (e) {
-    try {
-      await enviarCorreoComoEntrenador(
-        CORREO_ENTRENADOR,
-        'Fallo en la copia de seguridad diaria',
-        `No se pudo completar la copia de seguridad diaria de los Sheets:\r\n\r\n${e.message}`
-      );
-    } catch (e2) { /* si hasta el aviso falla, no hay más que hacer aquí */ }
+    await avisarFalloTareaProgramada('Copia de seguridad diaria', e.message);
     res.status(500).json({ success: false, error: e.message });
   }
 }
@@ -428,6 +424,20 @@ async function enviarCorreoComoEntrenador(destinatario, asunto, cuerpo) {
   ].join('\r\n');
   const raw = Buffer.from(mensajeCrudo, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
   await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
+}
+
+// Aviso por correo cuando una tarea programada (cron) falla del todo — sin
+// esto, un fallo se queda solo en los logs de Vercel, que nadie mira a
+// diario, y el entrenador nunca se entera de que algo dejó de funcionar.
+// Best-effort: si hasta el propio aviso falla, no hay más que hacer aquí.
+async function avisarFalloTareaProgramada(nombreTarea, mensajeError) {
+  try {
+    await enviarCorreoComoEntrenador(
+      CORREO_ENTRENADOR,
+      `Fallo en tarea programada: ${nombreTarea}`,
+      `La tarea "${nombreTarea}" no se ha podido completar hoy:\r\n\r\n${mensajeError}`
+    );
+  } catch (e) { /* nada más que hacer si hasta el aviso falla */ }
 }
 
 // Correo de bienvenida al cliente — mismo texto que ya teníais probado en el
