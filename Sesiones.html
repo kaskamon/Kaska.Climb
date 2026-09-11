@@ -354,6 +354,7 @@
             </div>
             
             <div class="zona-botones">
+                <button id="btn-nueva-sesion" class="btn-principal">Crear Nueva Sesión</button>
                 <button id="btn-nueva-parte" class="btn-principal">Añadir Nueva Parte</button>
                 <button id="btn-guardar" class="btn-principal">Guardar</button>
                 <div class="estado-guardar" id="estadoGuardar"></div>
@@ -375,6 +376,7 @@
 
     <script src="libs/editor-sesion.js"></script>
     <script>
+        const btnNuevaSesion = document.getElementById('btn-nueva-sesion');
         const btnNuevaParte = document.getElementById('btn-nueva-parte');
         const btnGuardar = document.getElementById('btn-guardar');
         const estadoGuardar = document.getElementById('estadoGuardar');
@@ -391,6 +393,19 @@
         }
 
         btnNuevaParte.addEventListener('click', () => crearParteUI());
+
+        // Empieza una tabla en blanco de verdad, desenganchada de la
+        // plantilla que estuviera cargada — sin esto, "Guardar" seguía
+        // sobrescribiendo la última plantilla abierta para siempre (incluso
+        // tras recargar la página, por el localStorage), sin forma de crear
+        // una completamente nueva salvo borrando datos del navegador a mano.
+        btnNuevaSesion.addEventListener('click', () => {
+            if (!confirm('Esto vacía la tabla actual (lo ya guardado como plantilla no se toca). ¿Continuar?')) return;
+            renderizarTodaLaTabla({ tituloPrincipal: '', partes: [] });
+            fijarPlantillaActual(null);
+            mostrarEstadoGuardar('', null);
+            autoGuardar();
+        });
 
         function mostrarEstadoGuardar(texto, clase) {
             estadoGuardar.textContent = texto;
