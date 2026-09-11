@@ -354,9 +354,9 @@
             </div>
             
             <div class="zona-botones">
-                <button id="btn-nueva-sesion" class="btn-principal">Crear Nueva Sesión</button>
                 <button id="btn-nueva-parte" class="btn-principal">Añadir Nueva Parte</button>
                 <button id="btn-guardar" class="btn-principal">Guardar</button>
+                <button id="btn-guardar-como" class="btn-principal">Guardar Como</button>
                 <div class="estado-guardar" id="estadoGuardar"></div>
 
                 <select id="selectorPlantilla" class="selector-plantilla">
@@ -376,9 +376,9 @@
 
     <script src="libs/editor-sesion.js"></script>
     <script>
-        const btnNuevaSesion = document.getElementById('btn-nueva-sesion');
         const btnNuevaParte = document.getElementById('btn-nueva-parte');
         const btnGuardar = document.getElementById('btn-guardar');
+        const btnGuardarComo = document.getElementById('btn-guardar-como');
         const estadoGuardar = document.getElementById('estadoGuardar');
         const selectorPlantilla = document.getElementById('selectorPlantilla');
 
@@ -393,19 +393,6 @@
         }
 
         btnNuevaParte.addEventListener('click', () => crearParteUI());
-
-        // Empieza una tabla en blanco de verdad, desenganchada de la
-        // plantilla que estuviera cargada — sin esto, "Guardar" seguía
-        // sobrescribiendo la última plantilla abierta para siempre (incluso
-        // tras recargar la página, por el localStorage), sin forma de crear
-        // una completamente nueva salvo borrando datos del navegador a mano.
-        btnNuevaSesion.addEventListener('click', () => {
-            if (!confirm('Esto vacía la tabla actual (lo ya guardado como plantilla no se toca). ¿Continuar?')) return;
-            renderizarTodaLaTabla({ tituloPrincipal: '', partes: [] });
-            fijarPlantillaActual(null);
-            mostrarEstadoGuardar('', null);
-            autoGuardar();
-        });
 
         function mostrarEstadoGuardar(texto, clase) {
             estadoGuardar.textContent = texto;
@@ -445,15 +432,7 @@
             } catch (error) { /* el desplegable se queda solo con la opción por defecto */ }
         }
 
-        btnGuardar.addEventListener('click', async () => {
-            let nombre = nombrePlantillaActual;
-            if (!nombre) {
-                nombre = inputTituloPrincipal.value.trim();
-                if (!nombre) {
-                    mostrarEstadoGuardar('Ponle un título a la tabla antes de guardar.', 'error');
-                    return;
-                }
-            }
+        async function guardarPlantilla(nombre) {
             mostrarEstadoGuardar('Guardando...', null);
             try {
                 const res = await fetch('/api/plantillas-sesion', {
@@ -472,6 +451,32 @@
             } catch (error) {
                 mostrarEstadoGuardar('Error de red: ' + error.message, 'error');
             }
+        }
+
+        btnGuardar.addEventListener('click', () => {
+            let nombre = nombrePlantillaActual;
+            if (!nombre) {
+                nombre = inputTituloPrincipal.value.trim();
+                if (!nombre) {
+                    mostrarEstadoGuardar('Ponle un título a la tabla antes de guardar.', 'error');
+                    return;
+                }
+            }
+            guardarPlantilla(nombre);
+        });
+
+        // "Guardar Como" es la forma de crear una sesión nueva a partir de
+        // una ya existente: se abre una plantilla, se edita, y esto la
+        // guarda con otro nombre sin tocar la original (sustituye al antiguo
+        // botón "Crear Nueva Sesión", que empezaba de cero en blanco).
+        btnGuardarComo.addEventListener('click', () => {
+            const sugerido = ((nombrePlantillaActual || inputTituloPrincipal.value.trim() || '') + ' (copia)').trim();
+            const nombre = prompt('Nombre para la nueva sesión:', sugerido);
+            if (!nombre || !nombre.trim()) return;
+            const nombreLimpio = nombre.trim();
+            const yaExiste = Array.from(selectorPlantilla.options).some(o => o.value === nombreLimpio);
+            if (yaExiste && !confirm(`Ya existe una sesión llamada "${nombreLimpio}". ¿Sobrescribirla?`)) return;
+            guardarPlantilla(nombreLimpio);
         });
 
         selectorPlantilla.addEventListener('change', async () => {
