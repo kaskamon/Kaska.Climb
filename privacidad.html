@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Política de privacidad</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e; --stone-800:#262d28;
+    --chalk:#f2ede1; --chalk-dim:#c9c3b4;
+    --moss:#7c9070; --moss-light:#a7bd98; --moss-deep:#4d5c46;
+    --line-strong:rgba(242,237,225,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; min-height:100vh; background:var(--stone-900); color:var(--chalk); font-family:'Work Sans', sans-serif; }
+  h1,h2{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.4px; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px; font-weight:700; color:var(--moss-light); text-transform:uppercase; margin-bottom:8px; }
+  .eyebrow::before{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .wrap{ max-width:720px; margin:0 auto; padding:48px 24px 80px; }
+  h1{ font-size:28px; margin:0 0 6px; }
+  .fecha{ color:var(--chalk-dim); font-size:12.5px; margin-bottom:36px; }
+  h2{ font-size:16px; color:var(--moss-light); margin:34px 0 10px; }
+  p, li{ font-size:14px; line-height:1.7; color:var(--chalk); }
+  ul{ margin:8px 0; padding-left:20px; }
+  li{ margin-bottom:6px; }
+  a{ color:var(--moss-light); }
+  .card{ background:rgba(38,45,40,0.55); border:1px solid var(--line-strong); border-radius:14px; padding:18px 22px; margin-top:30px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Kaska.Climb</div>
+  <h1>Política de privacidad</h1>
+  <div class="fecha">Última actualización: 11 de septiembre de 2026</div>
+
+  <p>Kaska.Climb es una herramienta de gestión de entrenamiento de escalada, de uso privado, para un entrenador personal y sus clientes. Esta página explica qué datos se tratan y cómo.</p>
+
+  <h2>Quién soy</h2>
+  <p>Esta aplicación la gestiona un entrenador personal individual (no una empresa ni un servicio público). Contacto: <a href="mailto:kaskamon@gmail.com">kaskamon@gmail.com</a>.</p>
+
+  <h2>Qué datos se tratan</h2>
+  <p>Solo los datos necesarios para dar servicio a los clientes del entrenador:</p>
+  <ul>
+    <li>Datos de contacto del cliente: nombre, correo electrónico, teléfono, fecha de nacimiento.</li>
+    <li>Datos de entrenamiento: sesiones, resultados de tests de fuerza, planificación de macrociclos.</li>
+    <li>Información de salud relevante para el entrenamiento que el propio cliente decide compartir (p. ej. lesiones), usada únicamente para adaptar su plan de entrenamiento.</li>
+  </ul>
+  <p>Estos datos los introducen directamente el entrenador o el propio cliente a través de la aplicación, y se guardan en hojas de cálculo de Google Sheets propiedad del entrenador.</p>
+
+  <h2>Cómo se usan los permisos de Google</h2>
+  <p>La aplicación pide acceso a la cuenta de Google del entrenador (no a la de los clientes) para dos cosas, siempre iniciadas por una acción explícita del entrenador o del cliente dentro de la app — nunca en segundo plano sin motivo:</p>
+  <ul>
+    <li><strong>Google Drive (<code>drive.file</code>)</strong>: crear una carpeta por cada cliente nuevo, y guardar una copia de seguridad diaria de las hojas de cálculo de la propia aplicación. Este permiso solo da acceso a los archivos que la aplicación crea, o a los que el entrenador elige explícitamente con el selector nativo de Google Drive — nunca a otros archivos de su Drive.</li>
+    <li><strong>Gmail (<code>gmail.send</code>)</strong>: mandar, desde la propia cuenta del entrenador, el correo de bienvenida a un cliente nuevo y el aviso interno de alta — nada más. La aplicación no lee ni accede a ningún otro correo de la bandeja de entrada.</li>
+  </ul>
+
+  <h2>Con quién se comparten los datos</h2>
+  <p>Con nadie. Los datos no se venden, ni se ceden, ni se comparten con terceros con fines publicitarios o comerciales. Los únicos servicios involucrados son los de Google (Sheets, Drive, Gmail) necesarios para el funcionamiento descrito arriba, y el alojamiento de la propia aplicación (Vercel).</p>
+
+  <h2>Cuánto tiempo se conservan los datos</h2>
+  <p>Mientras el cliente mantenga una relación de entrenamiento activa con el entrenador. Cualquier cliente puede pedir la eliminación de sus datos contactando directamente con el entrenador.</p>
+
+  <h2>Tus derechos</h2>
+  <p>Puedes pedir acceder, corregir o eliminar tus datos en cualquier momento escribiendo a <a href="mailto:kaskamon@gmail.com">kaskamon@gmail.com</a>.</p>
+
+  <div class="card">
+    <p style="margin:0;">Esta aplicación es una herramienta de uso privado entre un entrenador y sus clientes — no está abierta al público general ni recopila datos de nadie que no sea cliente activo del entrenador.</p>
+  </div>
+</div>
+</body>
+</html>

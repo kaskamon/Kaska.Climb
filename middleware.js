@@ -11,6 +11,7 @@
 const RUTAS_PUBLICAS = [
   '/login.html',
   '/alta.html',
+  '/privacidad.html',
   '/manifest.json',
   '/manifest-cliente.json',
   '/sw.js',
