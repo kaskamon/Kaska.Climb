@@ -106,9 +106,16 @@ function abrirPicker(fila) {
     ? new google.picker.DocsView(google.picker.ViewId.FOLDERS).setSelectFolderEnabled(true)
     : new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS);
 
+  // Sin setAppId, drive.file deja "elegir" en la ventana del selector pero no
+  // registra de verdad el acceso al archivo — pasa la comprobación de la
+  // izquierda (mismo id) pero luego el backend no lo encuentra. El ID del
+  // proyecto es el número que va antes del primer guion del Client ID.
+  const idProyecto = CLIENT_ID.split('-')[0];
+
   const picker = new google.picker.PickerBuilder()
     .addView(vista)
     .setOAuthToken(ACCESS_TOKEN)
+    .setAppId(idProyecto)
     .setCallback((data) => {
       if (data.action !== google.picker.Action.PICKED) return;
       const elegido = data.docs[0];
