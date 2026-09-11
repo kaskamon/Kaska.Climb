@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Conectar Drive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e; --stone-800:#262d28;
+    --chalk:#f2ede1; --chalk-dim:#c9c3b4; --chalk-faint:#8d9187;
+    --moss:#7c9070; --moss-light:#a7bd98; --moss-deep:#4d5c46;
+    --amber:#c99a5b; --danger:#c9705b;
+    --line-strong:rgba(242,237,225,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; min-height:100vh; background:var(--stone-900); color:var(--chalk); font-family:'Work Sans', sans-serif; }
+  h1,h2{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.4px; margin:0; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px; font-weight:700; color:var(--moss-light); text-transform:uppercase; }
+  .eyebrow::before{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .wrap{ max-width:640px; margin:0 auto; padding:40px 24px 80px; }
+  .card{ background:rgba(38,45,40,0.55); border:1px solid var(--line-strong); border-radius:18px; padding:22px 26px; margin-top:18px; }
+  p{ color:var(--chalk-dim); font-size:13.5px; line-height:1.6; }
+  .fila-conectar{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:14px 0; border-top:1px solid var(--line-strong); }
+  .fila-conectar:first-of-type{ border-top:none; }
+  .fila-conectar .nombre{ font-weight:700; font-size:13.5px; }
+  .fila-conectar .nombre small{ display:block; font-weight:400; color:var(--chalk-faint); margin-top:2px; }
+  button{
+    background:var(--stone-800); color:var(--chalk); border:1px solid var(--line-strong);
+    padding:9px 16px; border-radius:9px; font-size:11.5px; font-weight:700; letter-spacing:0.4px;
+    text-transform:uppercase; cursor:pointer; font-family:inherit; white-space:nowrap;
+  }
+  button:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+  button:disabled{ opacity:0.5; cursor:default; }
+  .estado{ font-size:11.5px; font-weight:700; min-width:90px; text-align:right; }
+  .estado.ok{ color:var(--moss-light); }
+  .estado.error{ color:var(--danger); }
+  .estado.pendiente{ color:var(--chalk-faint); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="eyebrow">Kaska.Climb</div>
+  <h1>Conectar Drive</h1>
+  <p>Conecta aquí, una sola vez, la carpeta y los Sheets que ya existían antes de tu cuenta de Google — con el permiso reducido que usa la app (drive.file) no puede tocarlos hasta que los elijas tú mismo aquí, con el selector nativo de Drive. Después de esto no hace falta repetirlo, salvo que alguna vez tengas que volver a conectar la cuenta desde cero.</p>
+
+  <div class="card" id="tarjetaConexiones">
+    <div class="fila-conectar" data-objetivo="16Ef_byfR5qhWQgn5YvEej3Nem8uGljBO" data-vista="folder">
+      <div class="nombre">Carpeta padre de clientes<small>donde vive la carpeta de cada cliente</small></div>
+      <button type="button" class="btn-conectar">Elegir carpeta</button>
+      <span class="estado pendiente">Sin conectar</span>
+    </div>
+    <div class="fila-conectar" data-objetivo="10RasiExEFgUtGuFOeSCvnJWdMhtJZA3i0TSdChmkFv8" data-vista="spreadsheet">
+      <div class="nombre">Sheet de clientes<small>"Base de datos clientes"</small></div>
+      <button type="button" class="btn-conectar">Elegir Sheet</button>
+      <span class="estado pendiente">Sin conectar</span>
+    </div>
+    <div class="fila-conectar" data-objetivo="1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM" data-vista="spreadsheet">
+      <div class="nombre">Sheet de sesiones<small>Sesiones, Batería test, Macrociclos...</small></div>
+      <button type="button" class="btn-conectar">Elegir Sheet</button>
+      <span class="estado pendiente">Sin conectar</span>
+    </div>
+  </div>
+
+  <p id="avisoGlobal"></p>
+</div>
+
+<script src="https://apis.google.com/js/api.js"></script>
+<script>
+let ACCESS_TOKEN = null;
+let CLIENT_ID = null;
+
+function fijarEstado(fila, texto, clase) {
+  const el = fila.querySelector('.estado');
+  el.textContent = texto;
+  el.className = 'estado ' + clase;
+}
+
+async function cargarToken() {
+  const aviso = document.getElementById('avisoGlobal');
+  try {
+    const res = await fetch('/api/listar-clientes?accion=drive-picker-token');
+    const data = await res.json();
+    if (!data.success) {
+      aviso.textContent = data.error || 'No se pudo obtener el permiso — ¿está conectada tu cuenta de Google? (drive-oauth-inicio)';
+      aviso.style.color = 'var(--danger)';
+      return;
+    }
+    ACCESS_TOKEN = data.accessToken;
+    CLIENT_ID = data.clientId;
+    document.querySelectorAll('.btn-conectar').forEach(b => b.disabled = false);
+  } catch (e) {
+    aviso.textContent = 'Error de red: ' + e.message;
+    aviso.style.color = 'var(--danger)';
+  }
+}
+
+function abrirPicker(fila) {
+  if (!ACCESS_TOKEN) return;
+  const idEsperado = fila.dataset.objetivo;
+  const vista = fila.dataset.vista === 'folder'
+    ? new google.picker.DocsView(google.picker.ViewId.FOLDERS).setSelectFolderEnabled(true)
+    : new google.picker.DocsView(google.picker.ViewId.SPREADSHEETS);
+
+  const picker = new google.picker.PickerBuilder()
+    .addView(vista)
+    .setOAuthToken(ACCESS_TOKEN)
+    .setCallback((data) => {
+      if (data.action !== google.picker.Action.PICKED) return;
+      const elegido = data.docs[0];
+      if (elegido.id === idEsperado) {
+        fijarEstado(fila, `Conectado ✓ (${elegido.name})`, 'ok');
+      } else {
+        fijarEstado(fila, `Elegiste otro archivo — prueba de nuevo`, 'error');
+      }
+    })
+    .build();
+  picker.setVisible(true);
+}
+
+document.querySelectorAll('.btn-conectar').forEach(btn => {
+  btn.disabled = true;
+  btn.addEventListener('click', () => abrirPicker(btn.closest('.fila-conectar')));
+});
+
+gapi.load('picker', cargarToken);
+</script>
+</body>
+</html>

@@ -5,3 +5,8 @@ node_modules/
 .vercel
 *.pem
 *.key
+
+# Clave de la cuenta de servicio de Google (nunca debe llegar al repo) —
+# explícito además de *.key/*.pem, por si algún día se guarda como .json suelto.
+json importante acceso sheet/
+*service-account*.json

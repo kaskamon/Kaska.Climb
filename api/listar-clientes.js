@@ -1,5 +1,5 @@
 const { google } = require('googleapis');
-const { driveComoEntrenador, gmailComoEntrenador, clienteOAuth, SCOPES } = require('../libs/google-oauth-entrenador.js');
+const { driveComoEntrenador, gmailComoEntrenador, clienteOAuth, SCOPES, GOOGLE_CLIENT_ID, obtenerAccessTokenEntrenador } = require('../libs/google-oauth-entrenador.js');
 const { verificarEntrenador } = require('../libs/sesion-cliente.js');
 
 // Correo donde llega el aviso de "cliente nuevo" — el mismo entrenador,
@@ -682,6 +682,21 @@ async function manejarDriveOAuthCallback(req, res) {
   }
 }
 
+// GET ?accion=drive-picker-token — access token corto para que
+// conectar-drive.html pueda abrir el selector nativo de Google Drive en el
+// navegador del entrenador (drive.file no da acceso a nada que la app no
+// haya creado hasta que el propio entrenador lo elige a mano ahí). Nunca se
+// guarda en ningún sitio, solo vive en memoria de esa pestaña.
+async function manejarDrivePickerToken(req, res) {
+  if (!exigirEntrenador(req, res)) return;
+  try {
+    const token = await obtenerAccessTokenEntrenador();
+    res.status(200).json({ success: true, accessToken: token, clientId: GOOGLE_CLIENT_ID });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
 module.exports = async (req, res) => {
   if (req.method === 'GET' && req.query && req.query.accion === 'drive-oauth-inicio') {
     return await manejarDriveOAuthInicio(req, res);
@@ -691,6 +706,9 @@ module.exports = async (req, res) => {
   }
   if (req.method === 'GET' && req.query && req.query.accion === 'backup-diario') {
     return await manejarBackupDiario(req, res);
+  }
+  if (req.method === 'GET' && req.query && req.query.accion === 'drive-picker-token') {
+    return await manejarDrivePickerToken(req, res);
   }
 
   if (req.method !== 'GET' && req.method !== 'POST') {

@@ -24,7 +24,16 @@ const REDIRECT_URI = 'https://kaska-climb.vercel.app/api/listar-clientes?accion=
 // en api/listar-clientes.js) — si se añade uno nuevo aquí, hay que repetir el
 // consentimiento una vez (el refresh token existente no cubre alcances que no
 // pidió en su momento).
-const SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/gmail.send'];
+//
+// drive.file (no "drive" a secas) a propósito: "drive" completo es un alcance
+// "restringido" para Google — verificarlo puede exigir una auditoría de
+// seguridad de pago. drive.file es "no sensible" (cero verificación) y solo
+// da acceso a archivos que la propia app crea, o que el entrenador elige a
+// mano con el selector nativo de Drive (ver conectar-drive.html) — por eso la
+// carpeta padre de clientes y los dos Sheets ya existentes (no creados por la
+// app) necesitan conectarse una vez ahí antes de que backup-diario o
+// crearCarpetaCliente puedan escribir dentro.
+const SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/gmail.send'];
 
 function clienteOAuth() {
   return new google.auth.OAuth2(GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET, REDIRECT_URI);
@@ -52,4 +61,14 @@ function gmailComoEntrenador() {
   return google.gmail({ version: 'v1', auth: authComoEntrenador() });
 }
 
-module.exports = { GOOGLE_CLIENT_ID, REDIRECT_URI, SCOPES, clienteOAuth, driveComoEntrenador, gmailComoEntrenador };
+// Access token corto (no el refresh token) para usar en el navegador del
+// entrenador — lo necesita conectar-drive.html para abrir el selector nativo
+// de Google Drive (Picker), que corre en el cliente y no puede usar el
+// refresh token directamente. Nunca se guarda, solo vive en memoria de esa
+// pestaña mientras dura la sesión de selección.
+async function obtenerAccessTokenEntrenador() {
+  const { token } = await authComoEntrenador().getAccessToken();
+  return token;
+}
+
+module.exports = { GOOGLE_CLIENT_ID, REDIRECT_URI, SCOPES, clienteOAuth, driveComoEntrenador, gmailComoEntrenador, obtenerAccessTokenEntrenador };
