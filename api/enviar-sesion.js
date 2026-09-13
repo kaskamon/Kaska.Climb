@@ -36,14 +36,12 @@ module.exports = async (req, res) => {
     const body = req.body || {};
     const { nombre, correo, fecha, mesociclo, pfInicial, fmaxDer, fmaxIzq, campos, pfFinal, unico } = body;
 
-    if (!nombre || !fecha || !mesociclo) {
-      return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (nombre, fecha o mesociclo).' });
+    if (!nombre || !fecha || !mesociclo || !correo) {
+      return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (nombre, correo, fecha o mesociclo).' });
     }
-    if (correo) {
-      const acceso = verificarAccesoCliente(req, correo);
-      if (!acceso.ok) {
-        return res.status(401).json({ success: false, error: acceso.error });
-      }
+    const acceso = verificarAccesoCliente(req, correo);
+    if (!acceso.ok) {
+      return res.status(401).json({ success: false, error: acceso.error });
     }
 
     const cfg = MESOCICLOS[mesociclo];

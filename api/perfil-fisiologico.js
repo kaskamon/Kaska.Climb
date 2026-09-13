@@ -1,4 +1,4 @@
-const { verificarAccesoCliente } = require('../libs/sesion-cliente.js');
+const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 
 // Perfil fisiológico (test de fuerza/resistencia) por cliente — lo consulta
@@ -75,7 +75,14 @@ async function manejarGet(req, res, sheets) {
 }
 
 // POST — publica (sobrescribe si coincide fecha) el perfil de un cliente.
+// Solo el entrenador publica esto (desde "Batería test.html") — el cliente
+// solo lee su propio historial (ver manejarGet).
 async function manejarPost(req, res, sheets) {
+  const acceso = verificarEntrenador(req);
+  if (!acceso.ok) {
+    return res.status(401).json({ success: false, error: acceso.error });
+  }
+
   const { cliente, fecha, modalidad, capacidades } = req.body || {};
 
   if (!cliente || !fecha || !modalidad || !capacidades) {

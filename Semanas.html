@@ -15,6 +15,7 @@
 <script src="libs/Sortable.min.js"></script>
 <script src="libs/clientes-selector.js"></script>
 <script src="libs/mesociclos-config.js"></script>
+<script src="libs/planificacion-semanas.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -777,10 +778,12 @@ document.addEventListener('click', e => {
 // eligen a mano arrastrando la caja que toque — no dependen de qué
 // mesociclo tenga esa semana, así que no hace falta calcularlos.
 
-// Macrociclos.html guarda cada bloque con una clave de fase en minúsculas
-// (fmax/desox/reox/aero/tap) distinta de la clave de mesociclo en mayúsculas
-// que usa el resto de la app (FMAX/DESOX/REOX/AERO/TAPERING) — se traduce aquí.
-const FASE_A_MESOCICLO = { fmax: 'FMAX', desox: 'DESOX', reox: 'REOX', aero: 'AERO', tap: 'TAPERING' };
+// Antes había aquí una copia propia de FASE_A_MESOCICLO/calcularFaseYSemana,
+// idéntica a la del backend por pura coincidencia de mantenimiento — ahora
+// viene de libs/planificacion-semanas.js (cargada arriba), fuente única
+// compartida con api/macrociclo.js y api/obtener-historial-sesiones.js, para
+// que nunca puedan divergir entre sí.
+const { calcularFaseYSemana } = window.PLANIFICACION_SEMANAS || {};
 
 let MESOCICLO_ACTUAL = null; // se rellena solo desde el macrociclo real del cliente
 let MESOCICLO_ORIGEN_TAPERING = null; // cualidad del bloque anterior, solo si esta semana es TAPERING
@@ -803,52 +806,6 @@ function resolverMesocicloCaja(tipo) {
   if (tipo === 'roca') return 'ROCA';
   if (tipo === 'descanso') return 'DESCANSO';
   return null;
-}
-
-// Dado el macrociclo real de un cliente (inicio + bloques [{fase,semanas}])
-// y el lunes de una semana (dd/mm/aaaa), calcula en qué bloque cae esa
-// semana y qué número de semana es dentro de ese bloque. Devuelve
-// fueraDeRango si la fecha es anterior al inicio o posterior al final del
-// macrociclo publicado.
-function calcularFaseYSemana(inicioISO, bloques, fechaLunesDDMMYYYY) {
-  const [yI, mI, dI] = inicioISO.split('-').map(Number);
-  const inicio = new Date(yI, mI - 1, dI);
-  const [dL, mL, yL] = fechaLunesDDMMYYYY.split('/').map(Number);
-  const lunes = new Date(yL, mL - 1, dL);
-
-  const diffDias = Math.round((lunes - inicio) / 86400000);
-  if (diffDias < 0) return { fueraDeRango: true, motivo: 'antes' };
-
-  const semanaGlobal = Math.floor(diffDias / 7) + 1;
-  let acumulado = 0;
-  const lista = bloques || [];
-  for (let idx = 0; idx < lista.length; idx++) {
-    const b = lista[idx];
-    const semanasBloque = Number(b.semanas) || 0;
-    if (semanaGlobal <= acumulado + semanasBloque) {
-      const mesociclo = FASE_A_MESOCICLO[b.fase] || String(b.fase || '').toUpperCase();
-      // Un tapering es una descarga del ciclo de calidad del que viene — si el
-      // bloque anterior es FMAX/REOX/DESOX/AERO, se ofrece como alternativa al
-      // "TAPERING" genérico para diseñar/publicar esa semana (ver
-      // recalcularMesocicloDesdeMacrociclo y #selectorCalidadTapering).
-      let origenTapering = null;
-      if (mesociclo === 'TAPERING' && idx > 0) {
-        const anterior = lista[idx - 1];
-        const mesocicloAnterior = FASE_A_MESOCICLO[anterior.fase] || String(anterior.fase || '').toUpperCase();
-        if (['FMAX', 'REOX', 'DESOX', 'AERO'].includes(mesocicloAnterior)) origenTapering = mesocicloAnterior;
-      }
-      return {
-        fueraDeRango: false,
-        mesociclo,
-        origenTapering,
-        semanaEnBloque: semanaGlobal - acumulado,
-        semanasBloque,
-        semanaGlobal,
-      };
-    }
-    acumulado += semanasBloque;
-  }
-  return { fueraDeRango: true, motivo: 'despues', semanaGlobal, totalSemanas: acumulado };
 }
 
 // Se ejecuta cada vez que cambia el cliente elegido o la fecha (lunes) de la
@@ -1326,9 +1283,22 @@ async function iniciarDesdeEnlaceDirecto() {
   const clienteParam = params.get('cliente');
   const fechaParam = params.get('fecha');
 
+  let clienteEncontrado = true;
   if (clienteParam) {
     inputPublicarClienteSemana.value = clienteParam;
-    localStorage.setItem('kaska_cliente_actual', clienteParam);
+    // El selector solo lista clientes Activos — si este cliente pasó a
+    // Inactivo entre que se generó el enlace (p.ej. desde Programación) y
+    // que se pulsó, el <select> no tiene esa opción y la asignación de
+    // arriba no hace nada, dejando el valor vacío. Sin este aviso, el clic
+    // automático de más abajo acabaría mostrando solo el alert genérico de
+    // "Indica el cliente", sin explicar por qué.
+    clienteEncontrado = inputPublicarClienteSemana.value === clienteParam;
+    if (clienteEncontrado) {
+      localStorage.setItem('kaska_cliente_actual', clienteParam);
+    } else {
+      document.getElementById('estadoPublicarSemana').innerHTML =
+        `<div class="error">El cliente ${clienteParam} no aparece en la lista (¿ha pasado a Inactivo?) — elígelo a mano si sigue siendo el correcto.</div>`;
+    }
   }
   if (fechaParam) {
     const [dd, mm, yyyy] = fechaParam.split('/');
@@ -1338,10 +1308,10 @@ async function iniciarDesdeEnlaceDirecto() {
       actualizarFecha(iso);
     }
   }
-  if (clienteParam || fechaParam) {
+  if (clienteEncontrado && (clienteParam || fechaParam)) {
     await recalcularMesocicloDesdeMacrociclo();
   }
-  if (clienteParam && fechaParam) {
+  if (clienteEncontrado && clienteParam && fechaParam) {
     document.getElementById('btnCargarUltimaSemana').click();
   }
 }

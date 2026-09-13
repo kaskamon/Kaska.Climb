@@ -1,3 +1,4 @@
+const { verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 
 // Plantillas libres creadas en Sesiones.html (sin cliente ni mesociclo — ver
@@ -126,6 +127,13 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // Solo el entrenador usa las plantillas libres de Sesiones.html — ni
+    // leerlas ni escribirlas tiene sentido para un cliente.
+    const acceso = verificarEntrenador(req);
+    if (!acceso.ok) {
+      return res.status(401).json({ success: false, error: acceso.error });
+    }
+
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {
       return res.status(500).json({
         success: false,

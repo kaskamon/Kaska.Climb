@@ -1,4 +1,5 @@
 const { COLUMNS, CATEGORIA_VISUAL } = require('../libs/mesociclos-config.js');
+const { verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
@@ -32,6 +33,13 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // Solo el entrenador puede publicar o borrar semanas de un cliente —
+    // esta es una herramienta de Semanas.html, nunca la llama el cliente.
+    const acceso = verificarEntrenador(req);
+    if (!acceso.ok) {
+      return res.status(401).json({ success: false, error: acceso.error });
+    }
+
     const { accion, cliente, fecha, mesociclo, sesion, semana, semanaMesociclo, origenTapering } = req.body || {};
 
     if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !process.env.GOOGLE_SERVICE_ACCOUNT_KEY) {

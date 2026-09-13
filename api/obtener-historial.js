@@ -154,7 +154,7 @@ module.exports = async (req, res) => {
       return res.status(200).json({ success: true, historial });
     }
 
-    // Sin mesociclo: los 4 con seguimiento real, agrupados — para el panel de
+    // Sin mesociclo: los 5 con seguimiento real, agrupados — para el panel de
     // Seguimiento (una pestaña por mesociclo, sin volver a pedir cada una).
     const porMesociclo = {};
     MESOCICLOS_CON_DATOS.forEach(m => {

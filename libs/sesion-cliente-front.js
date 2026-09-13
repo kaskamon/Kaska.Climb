@@ -3,7 +3,7 @@
  * (POST, tras comprobar el login de Google de verdad) vive aquí.
  *
  * OJO: el entrenador también puede estar viendo la página de OTRO cliente
- * (botón "Ver como cliente" de Clientes.html) — en ese caso la sesión
+ * (entrando desde el nombre del cliente en Programacion.html) — en ese caso la sesión
  * guardada es la suya propia, no la del cliente que está mirando, y aun así
  * debe poder ver sus datos (autenticado por su contraseña de entrenador,
  * que el navegador ya adjunta solo en cada fetch del mismo origen). Por eso

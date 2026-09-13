@@ -1,9 +1,17 @@
-// Puerto a Node de la misma lógica que ya usa Semanas.html (función
-// calcularFaseYSemana, cliente) para saber qué fase/mesociclo real le toca a
-// una semana concreta de un macrociclo. Se porta aquí, en vez de reimplementar
-// algo parecido, para que el cálculo del servidor (aviso de "semana sin
-// publicar" y la rejilla de Programación) coincida siempre con lo que ve el
-// entrenador al publicar en Semanas.html.
+// Fuente única de la lógica de "qué fase/semana le toca a un cliente en una
+// fecha concreta de su macrociclo" — la usan tanto el backend (api/macrociclo.js,
+// api/obtener-historial-sesiones.js) como Semanas.html (donde vivía esta misma
+// lógica duplicada antes de moverse aquí), para que nunca puedan divergir.
+//
+// Cargable desde Node (require) y desde el navegador (<script src="...">, deja
+// window.PLANIFICACION_SEMANAS), mismo patrón que libs/mesociclos-config.js.
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) {
+    module.exports = factory();
+  } else {
+    root.PLANIFICACION_SEMANAS = factory();
+  }
+})(typeof self !== 'undefined' ? self : this, function () {
 
 // Macrociclos.html guarda cada bloque con una clave de fase en minúsculas
 // (fmax/desox/reox/aero/tap) distinta de la clave de mesociclo en mayúsculas
@@ -95,7 +103,7 @@ function semanasDelMacrociclo(inicioISO, bloques) {
   return { totalSemanas: total, semanas };
 }
 
-module.exports = {
+return {
   FASE_A_MESOCICLO,
   parseFechaDDMMYYYY,
   formatFechaDDMMYYYY,
@@ -103,3 +111,5 @@ module.exports = {
   calcularFaseYSemana,
   semanasDelMacrociclo,
 };
+
+});
