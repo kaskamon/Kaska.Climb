@@ -11,6 +11,16 @@ const COL_CORREO = 34; // AI — mismo campo que escribe api/enviar-sesion.js
 // a propósito, así que nunca tienen nada que enseñar aquí.
 const MESOCICLOS_CON_DATOS = Object.keys(COLUMNS).filter(m => COLUMNS[m] && COLUMNS[m].pfInicial !== undefined);
 
+// "Dominadas con lastre" (columna E) — a diferencia de los campos de arriba,
+// no depende de que el mesociclo de ese día sea literalmente GYM-FMAX: ese
+// bloque puede aparecer en cualquier sesión de gimnasio (ver
+// api/enviar-sesion.js, COL_DOMINADAS_CON_LASTRE), así que se recoge por
+// columna con valor, sin filtrar por mesociclo.
+const COL_DOMINADAS_CON_LASTRE = 4;
+// Clave especial en porMesociclo (no es un mesociclo real) para esta serie —
+// Seguimiento.html la ofrece como variable extra dentro de la pestaña FMAX.
+const CLAVE_DOMINADAS = 'DOMINADAS_LASTRE';
+
 function parseFechaDDMMYYYY(s) {
   const [d, m, y] = (s || '').split('/').map(Number);
   if (!d || !m || !y) return null;
@@ -88,6 +98,13 @@ function extraerHistorialDeMesociclo(filas, cliente, mesociclo, max) {
     .slice(-max);
 }
 
+function extraerHistorialDominadas(filas, cliente, max) {
+  return filas
+    .filter(f => f[COL_CORREO] === cliente && f[COL_DOMINADAS_CON_LASTRE] !== undefined && f[COL_DOMINADAS_CON_LASTRE] !== '')
+    .map(f => ({ fecha: f[2], valor: Number(f[COL_DOMINADAS_CON_LASTRE]) }))
+    .slice(-max);
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, error: 'Método no permitido, usa GET.' });
@@ -143,6 +160,7 @@ module.exports = async (req, res) => {
     MESOCICLOS_CON_DATOS.forEach(m => {
       porMesociclo[m] = extraerHistorialDeMesociclo(filas, cliente, m, Number(limite) || 60);
     });
+    porMesociclo[CLAVE_DOMINADAS] = extraerHistorialDominadas(filas, cliente, Number(limite) || 60);
     res.status(200).json({ success: true, porMesociclo });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

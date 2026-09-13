@@ -219,6 +219,13 @@ function poblarSelectorVariable(){
   camposDelMesoActivo().forEach((c, i) => {
     opciones.push(`<option value="campo:${i}">${escapeHtml(c.label)} (${escapeHtml(c.match)})</option>`);
   });
+  // Dominadas con lastre no es un campo propio de FMAX (se registra en los
+  // días de gimnasio, no en la sesión de fuerza), pero el entrenador quiere
+  // verla desde la pestaña FMAX — por eso se añade aparte, no vía
+  // camposDelMesoActivo().
+  if(MESO_ACTIVO === 'FMAX'){
+    opciones.push('<option value="dominadas">Dominadas con lastre (días de gimnasio)</option>');
+  }
   opciones.push('<option value="resumen">Resumen (todos los datos)</option>');
   sel.innerHTML = opciones.join('');
   VARIABLE_ACTIVA = 'fuerza';
@@ -394,6 +401,15 @@ async function cargarCliente(email){
 function pintarDatos(){
   const panel = document.getElementById('panelDatos');
   if(!PORMESOCICLO) return;
+
+  // Dominadas con lastre vive en su propia serie (días de gimnasio, no de
+  // fuerza) — se pinta antes de mirar el historial de FMAX, que puede estar
+  // vacío sin que eso signifique que no hay dominadas que enseñar.
+  if(VARIABLE_ACTIVA === 'dominadas'){
+    pintarPanelDominadas(panel);
+    return;
+  }
+
   const historial = (PORMESOCICLO[MESO_ACTIVO] || []).filter(h => h.entrenada);
 
   if(!historial.length){
@@ -521,6 +537,56 @@ function pintarPanelCampo(panel, historial, indice){
     </div>`;
 
   dibujarGraficaCampo(document.getElementById('chartPF'), historial, indice, color, tipo);
+}
+
+// Dominadas con lastre — no es un campo de la sesión de FMAX en sí, se
+// registra en los días de gimnasio (GYM-FMAX/GYM-ANTAGONISTAS, el bloque
+// "Fmax tracción" puede aparecer en cualquiera de los dos) — por eso llega
+// en su propia clave de porMesociclo en vez de dentro de FMAX.campos, y este
+// panel no depende de si hay sesiones de FMAX entrenadas o no.
+function pintarPanelDominadas(panel){
+  const datos = PORMESOCICLO['DOMINADAS_LASTRE'] || [];
+  const cfgUnico = window.MESOCICLOS_CONFIG && window.MESOCICLOS_CONFIG.FIELD_MAP['GYM-FMAX'] && window.MESOCICLOS_CONFIG.FIELD_MAP['GYM-FMAX'].unico;
+  const etiqueta = (cfgUnico && cfgUnico.label) || 'Dominadas con lastre';
+
+  if(!datos.length){
+    panel.innerHTML = '<div class="estado-panel">Este cliente todavía no tiene series de dominadas con lastre registradas.</div>';
+    return;
+  }
+
+  const ultimo = datos[datos.length - 1];
+  const primero = datos[0];
+  const media = datos.reduce((s,d) => s + d.valor, 0) / datos.length;
+  const primerEsCero = primero.valor === 0;
+  const tendenciaPct = primerEsCero ? null : ((ultimo.valor - primero.valor) / primero.valor * 100);
+  const deltaAbsoluto = ultimo.valor - primero.valor;
+  const tendenciaPositiva = primerEsCero ? deltaAbsoluto >= 0 : tendenciaPct >= 0;
+  const tendenciaTexto = primerEsCero
+    ? `${deltaAbsoluto >= 0 ? '+' : ''}${deltaAbsoluto}`
+    : `${tendenciaPct >= 0 ? '+' : ''}${tendenciaPct.toFixed(1)}<small>%</small>`;
+
+  panel.innerHTML = `
+    <div class="stat-tiles">
+      <div class="stat-tile"><div class="k">${escapeHtml(etiqueta)} media</div><div class="v">${media.toFixed(1)}</div></div>
+      <div class="stat-tile">
+        <div class="k">Tendencia (${datos.length} ses.)</div>
+        <div class="v" style="color:${tendenciaPositiva?'var(--moss-light)':'var(--danger)'};">${tendenciaTexto}</div>
+        <div class="delta ${tendenciaPositiva?'up':'down'}">${tendenciaPositiva?'↑ progresando':'↓ en descenso'}</div>
+      </div>
+      <div class="stat-tile"><div class="k">Último valor</div><div class="v">${ultimo.valor}</div></div>
+      <div class="stat-tile"><div class="k">Sesiones con dato</div><div class="v">${datos.length}</div></div>
+    </div>
+    <div class="chart-shell">
+      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
+    </div>
+    <div class="tabla-datos-wrap">
+      <table class="tabla-datos">
+        <thead><tr><th>Fecha</th><th>${escapeHtml(etiqueta)}</th></tr></thead>
+        <tbody>${datos.map(d => `<tr><td>${escapeHtml(d.fecha)}</td><td>${d.valor}</td></tr>`).join('')}</tbody>
+      </table>
+    </div>`;
+
+  dibujarGraficaCampo(document.getElementById('chartPF'), datos.map(d => ({ fecha: d.fecha, campos: [d.valor] })), 0, MESO_COLORS.FMAX, undefined);
 }
 
 // Resumen — todos los datos de este mesociclo en una sola tabla (PFinicial,
