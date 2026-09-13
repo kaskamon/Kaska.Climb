@@ -771,7 +771,7 @@ document.getElementById('btnRevisarSemanaSiguiente').addEventListener('click', a
     if (data.success) {
       estadoEl.className = 'estado-caducados ok';
       estadoEl.textContent = data.pendientes.length
-        ? `${data.pendientes.length} sin publicar (semana del ${data.semanaProxima}).`
+        ? `${data.pendientes.length} sin publicar (semana del ${data.semanaProxima}): ${data.pendientes.map(p => p.nombre || p.correo).join(', ')}`
         : `Todo publicado para el ${data.semanaProxima}.`;
     } else {
       estadoEl.className = 'estado-caducados error';
