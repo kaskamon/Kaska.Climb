@@ -84,6 +84,7 @@
   }
   .btn-cambiar-semana:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
   .btn-cambiar-semana:disabled{ opacity:0.5; cursor:default; }
+  a.btn-cambiar-semana{ display:inline-block; text-decoration:none; }
 
   .dia{
     background:rgba(38,45,40,0.55); border:1px solid rgba(242,237,225,0.12);
@@ -150,6 +151,7 @@
     <div class="meso-info" id="mesoInfoTxt" hidden></div>
     <div class="rango-fila">
       <span class="rango"><b>Fecha:</b> <span id="rangoTxt"></span></span>
+      <a class="btn-cambiar-semana" id="btnAtras" href="../Programacion.html" hidden>← Atrás</a>
       <button type="button" class="btn-cambiar-semana" id="btnCambiarSemana" hidden></button>
     </div>
   </div>
@@ -342,15 +344,19 @@ async function cargar(){
     document.getElementById('estadoCarga').hidden = true;
     document.getElementById('wrap').hidden = false;
 
-    // El botón para ver la semana siguiente es solo para el entrenador
-    // (usando "Ver como cliente") — el cliente real ni siquiera debe verlo.
+    // El botón para ver la semana siguiente, y el de volver a Programación,
+    // son solo para el entrenador (entra desde ahí al pinchar un cliente) —
+    // el cliente real ni siquiera debe verlos.
     const btnCambiar = document.getElementById('btnCambiarSemana');
+    const btnAtras = document.getElementById('btnAtras');
     if(data.esEntrenador){
       btnCambiar.hidden = false;
       btnCambiar.textContent = viendoSemanaSiguiente ? '← Semana actual' : 'Siguiente semana';
       btnCambiar.disabled = false;
+      btnAtras.hidden = false;
     } else {
       btnCambiar.hidden = true;
+      btnAtras.hidden = true;
     }
   }catch(err){
     mostrarError('Error de red al cargar tu semana: ' + err.message);
