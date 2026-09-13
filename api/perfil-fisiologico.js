@@ -1,5 +1,5 @@
-const { google } = require('googleapis');
 const { verificarAccesoCliente } = require('../libs/sesion-cliente.js');
+const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 
 // Perfil fisiológico (test de fuerza/resistencia) por cliente — lo consulta
 // el propio cliente en cliente/perfil-fisiologico.html (histórico, para las
@@ -29,14 +29,7 @@ function parseFechaDDMMYYYY(s) {
 }
 
 function authSheets() {
-  const auth = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
-    },
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-  return auth.getClient().then(authClient => google.sheets({ version: 'v4', auth: authClient }));
+  return authSheetsCacheado(SCOPE_LECTURA_ESCRITURA);
 }
 
 // GET ?cliente=&modalidad= — historial completo (uno por fecha) de ese cliente/modalidad.

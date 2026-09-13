@@ -1,6 +1,6 @@
-const { google } = require('googleapis');
 const { COLUMNS } = require('../libs/mesociclos-config.js');
 const { verificarAccesoCliente } = require('../libs/sesion-cliente.js');
+const { authSheets, SCOPE_SOLO_LECTURA } = require('../libs/sheets-auth.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 // Pestaña nueva (hay que crearla a mano en el Sheet) donde Semanas.html / Sesiones.html
@@ -39,15 +39,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
-    const authClient = await auth.getClient();
-    const sheets = google.sheets({ version: 'v4', auth: authClient });
+    const sheets = await authSheets(SCOPE_SOLO_LECTURA);
 
     let filas;
     try {

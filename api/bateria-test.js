@@ -1,5 +1,5 @@
-const { google } = require('googleapis');
 const { verificarEntrenador } = require('../libs/sesion-cliente.js');
+const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 
 // Batería de test completa (Batería test.html) — sustituye el ir exportando/
 // importando archivos JSON sueltos. Columnas: A marcaTemporal, B correo,
@@ -15,14 +15,7 @@ const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Bateria_Test';
 
 function authSheets() {
-  const auth = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
-    },
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-  return auth.getClient().then(authClient => google.sheets({ version: 'v4', auth: authClient }));
+  return authSheetsCacheado(SCOPE_LECTURA_ESCRITURA);
 }
 
 // GET ?cliente=correo — el perfil de batería más reciente de ese cliente (o null si no tiene).

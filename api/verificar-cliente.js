@@ -1,5 +1,5 @@
-const { google } = require('googleapis');
 const { crearToken } = require('../libs/sesion-cliente.js');
+const { authSheets, SCOPE_SOLO_LECTURA } = require('../libs/sheets-auth.js');
 
 // Google Sheet DISTINTO al de sesiones — es el formulario de alta de clientes
 // ("Base de datos clientes"), con una fila por cliente.
@@ -77,15 +77,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
-    const authClient = await auth.getClient();
-    const sheets = google.sheets({ version: 'v4', auth: authClient });
+    const sheets = await authSheets(SCOPE_SOLO_LECTURA);
 
     // POST — login real: recibe el idToken crudo de Google (no un correo
     // suelto), lo verifica contra el propio Google, y si el correo

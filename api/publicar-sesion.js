@@ -1,5 +1,5 @@
-const { google } = require('googleapis');
 const { COLUMNS, CATEGORIA_VISUAL } = require('../libs/mesociclos-config.js');
+const { authSheets, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 // Misma pestaña que lee api/obtener-sesion.js. Columnas: A marcaTemporal,
@@ -41,15 +41,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-    const authClient = await auth.getClient();
-    const sheets = google.sheets({ version: 'v4', auth: authClient });
+    const sheets = await authSheets(SCOPE_LECTURA_ESCRITURA);
 
     // Borra TODA la semana ya publicada de un cliente (los 7 días, sea lo
     // que sea lo que tengan) — para cuando se publica algo por error y no

@@ -1,5 +1,6 @@
-const { google } = require('googleapis');
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
+const { lunesDe } = require('../libs/planificacion-semanas.js');
+const { authSheets, SCOPE_SOLO_LECTURA } = require('../libs/sheets-auth.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Respuestas de formulario 1';
@@ -24,35 +25,29 @@ function parseMarcaTemporal(s) {
   return new Date(Number(y), Number(mes) - 1, Number(d), Number(h), Number(min), Number(sec || 0)).getTime();
 }
 
-// GET ?accion=recientes — últimas `limite` sesiones registradas por
-// CUALQUIER cliente, más recientes primero, para el panel de notificaciones
-// de Seguimiento.html. Solo entrenador (ve datos de todos los clientes, no
-// de uno).
+// GET ?accion=recientes — sesiones registradas por CUALQUIER cliente desde el
+// lunes de esta semana hasta ahora, más recientes primero, para el panel de
+// notificaciones de Seguimiento.html. Solo entrenador (ve datos de todos los
+// clientes, no de uno).
 async function manejarRecientes(req, res, sheets) {
   const acceso = verificarEntrenador(req);
   if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
-
-  const limite = Number(req.query.limite) || 50;
 
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range: `'${SHEET_NAME}'!A:AI`,
   });
   const filas = resp.data.values || [];
+  const inicioSemana = lunesDe(new Date()).getTime();
 
-  // Antes se filtraba comparando la marcaTemporal analizada contra "hace
-  // menos de N días" — pero eso escondía cualquier fila cuya marcaTemporal
-  // no encajara exactamente con el formato esperado (p.ej. filas antiguas
-  // escritas de otra forma), dejando el panel con muchas menos sesiones de
-  // las que de verdad hay. El Sheet ya está en orden de inserción real
-  // (siempre cronológico, a diferencia de la fecha DE LA SESIÓN en sí), así
-  // que basta con quedarse con las últimas `limite` filas tal cual —
-  // marcaTemporalMs solo se usa después para el texto "hace X" y el aviso
-  // de "nuevo", nunca para decidir si una fila entra o no en la lista.
+  // Se necesita la marcaTemporal analizada para saber si algo es "de esta
+  // semana" — a diferencia de la versión anterior (que solo cogía las
+  // últimas filas tal cual), aquí una marcaTemporal sin interpretar sí queda
+  // fuera, porque no hay forma de saber a qué semana pertenece.
   const sesiones = filas
-    .slice(-limite)
-    .reverse()
-    .map(f => ({ marcaTemporal: f[0], marcaTemporalMs: parseMarcaTemporal(f[0]), nombre: f[1], fecha: f[2], mesociclo: f[3], correo: f[COL_CORREO] }));
+    .map(f => ({ marcaTemporal: f[0], marcaTemporalMs: parseMarcaTemporal(f[0]), nombre: f[1], fecha: f[2], mesociclo: f[3], correo: f[COL_CORREO] }))
+    .filter(s => s.marcaTemporalMs && s.marcaTemporalMs >= inicioSemana)
+    .sort((a, b) => b.marcaTemporalMs - a.marcaTemporalMs);
 
   res.status(200).json({ success: true, sesiones });
 }
@@ -106,15 +101,7 @@ module.exports = async (req, res) => {
       });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
-    });
-    const authClient = await auth.getClient();
-    const sheets = google.sheets({ version: 'v4', auth: authClient });
+    const sheets = await authSheets(SCOPE_SOLO_LECTURA);
 
     if (accion === 'recientes') return await manejarRecientes(req, res, sheets);
     return await manejarHistorialCliente(req, res, sheets);

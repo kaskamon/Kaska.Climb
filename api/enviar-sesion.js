@@ -1,6 +1,6 @@
-const { google } = require('googleapis');
 const { COLUMNS: MESOCICLOS } = require('../libs/mesociclos-config.js');
 const { verificarAccesoCliente } = require('../libs/sesion-cliente.js');
+const { authSheets, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Respuestas de formulario 1';
@@ -51,15 +51,7 @@ module.exports = async (req, res) => {
       return res.status(400).json({ success: false, error: `El mesociclo "${mesociclo}" todavía no está conectado al Sheet.` });
     }
 
-    const auth = new google.auth.GoogleAuth({
-      credentials: {
-        client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-        private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
-      },
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-    const authClient = await auth.getClient();
-    const sheets = google.sheets({ version: 'v4', auth: authClient });
+    const sheets = await authSheets(SCOPE_LECTURA_ESCRITURA);
 
     const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
     // Por si algún valor llega como texto con coma decimal (teclado en

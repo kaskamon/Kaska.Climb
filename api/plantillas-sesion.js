@@ -1,4 +1,4 @@
-const { google } = require('googleapis');
+const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 
 // Plantillas libres creadas en Sesiones.html (sin cliente ni mesociclo — ver
 // esa página) — pestaña propia, distinta de Sesiones_Programadas (que es
@@ -9,14 +9,7 @@ const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Plantillas_Sesiones';
 
 function authSheets() {
-  const auth = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
-    },
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-  return auth.getClient().then(authClient => google.sheets({ version: 'v4', auth: authClient }));
+  return authSheetsCacheado(SCOPE_LECTURA_ESCRITURA);
 }
 
 // A diferencia de las demás pestañas del Sheet (creadas a mano en su día),

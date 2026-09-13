@@ -131,12 +131,12 @@
       <span class="estado-caducados" id="estadoSemanaSiguiente"></span>
       <button class="icon-btn" id="btnRevisarSemanaSiguiente" type="button">Revisar semana siguiente</button>
       <div class="wrap-campana">
-        <button class="icon-btn" id="btnNotificaciones" type="button" title="Sesiones registradas recientemente">
+        <button class="icon-btn" id="btnNotificaciones" type="button" title="Sesiones registradas esta semana">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span class="badge-notif" id="badgeNotificaciones" hidden>0</span>
         </button>
         <div class="panel-notif" id="panelNotificaciones">
-          <div class="cab-notif">Sesiones registradas recientemente</div>
+          <div class="cab-notif">Sesiones registradas esta semana</div>
           <div id="contenidoNotificaciones"><div class="vacio-notif">Cargando…</div></div>
         </div>
       </div>
@@ -826,7 +826,7 @@ async function cargarNotificaciones(){
     badge.textContent = nuevas;
 
     if (!sesionesRecientesCache.length) {
-      cont.innerHTML = `<div class="vacio-notif">Sin sesiones registradas en los últimos días.</div>`;
+      cont.innerHTML = `<div class="vacio-notif">Sin sesiones registradas esta semana.</div>`;
       return;
     }
     cont.innerHTML = sesionesRecientesCache.map(s => `

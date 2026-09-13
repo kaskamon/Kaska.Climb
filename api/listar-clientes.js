@@ -1,5 +1,5 @@
-const { google } = require('googleapis');
 const { driveComoEntrenador, clienteOAuth, SCOPES, GOOGLE_CLIENT_ID, obtenerAccessTokenEntrenador } = require('../libs/google-oauth-entrenador.js');
+const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 const {
   CORREO_ENTRENADOR,
   enviarCorreoComoEntrenador,
@@ -41,14 +41,7 @@ const CAMPOS_EDITABLES = ['estado', 'telefono', 'fechaNacimiento', 'lesion', 'mo
 const DRIVE_PARENT_ID = '16Ef_byfR5qhWQgn5YvEej3Nem8uGljBO';
 
 function authSheets() {
-  const auth = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
-    },
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-  return auth.getClient().then(authClient => google.sheets({ version: 'v4', auth: authClient }));
+  return authSheetsCacheado(SCOPE_LECTURA_ESCRITURA);
 }
 
 // GET — lista de clientes. Por defecto (como siempre): solo activos, 4 campos,

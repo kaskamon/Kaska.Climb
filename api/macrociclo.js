@@ -1,5 +1,5 @@
-const { google } = require('googleapis');
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
+const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 const { calcularFaseYSemana, semanasDelMacrociclo, lunesDe, parseFechaDDMMYYYY, formatFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
 
 // Planificación de macrociclo por cliente (Macrociclos.html) — hoja principal,
@@ -21,14 +21,7 @@ const CLIENTES_SHEET_NAME = 'Respuestas de formulario 1';
 const COL_CLIENTES = { estado: 1, nombre: 3, apellidos: 4, correo: 6 };
 
 function authSheets() {
-  const auth = new google.auth.GoogleAuth({
-    credentials: {
-      client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      private_key: process.env.GOOGLE_SERVICE_ACCOUNT_KEY.replace(/\\n/g, '\n'),
-    },
-    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-  });
-  return auth.getClient().then(authClient => google.sheets({ version: 'v4', auth: authClient }));
+  return authSheetsCacheado(SCOPE_LECTURA_ESCRITURA);
 }
 
 // GET ?cliente=correo — el macrociclo más reciente de ese cliente.
