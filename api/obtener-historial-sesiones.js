@@ -25,10 +25,10 @@ function parseMarcaTemporal(s) {
   return new Date(Number(y), Number(mes) - 1, Number(d), Number(h), Number(min), Number(sec || 0)).getTime();
 }
 
-// GET ?accion=recientes — sesiones registradas por CUALQUIER cliente desde el
-// lunes de esta semana hasta ahora, más recientes primero, para el panel de
-// notificaciones de Seguimiento.html. Solo entrenador (ve datos de todos los
-// clientes, no de uno).
+// GET ?accion=recientes — sesiones de la semana actual (lunes a domingo) de
+// CUALQUIER cliente, más recientes primero, para el panel de notificaciones
+// de Seguimiento.html. Solo entrenador (ve datos de todos los clientes, no
+// de uno).
 async function manejarRecientes(req, res, sheets) {
   const acceso = verificarEntrenador(req);
   if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
@@ -39,15 +39,25 @@ async function manejarRecientes(req, res, sheets) {
   });
   const filas = resp.data.values || [];
   const inicioSemana = lunesDe(new Date()).getTime();
+  const finSemana = inicioSemana + 7 * 86400000;
 
-  // Se necesita la marcaTemporal analizada para saber si algo es "de esta
-  // semana" — a diferencia de la versión anterior (que solo cogía las
-  // últimas filas tal cual), aquí una marcaTemporal sin interpretar sí queda
-  // fuera, porque no hay forma de saber a qué semana pertenece.
+  // "De esta semana" se decide por la fecha DE LA SESIÓN (columna C, siempre
+  // dd/mm/aaaa — el mismo campo que ya usa manejarHistorialCliente más abajo
+  // y que se sabe fiable), no por la marcaTemporal (columna A, con hora):
+  // esa marcaTemporal la escribe el navegador del cliente con
+  // toLocaleString(), cuyo formato exacto puede variar según entorno, y
+  // exigir que encajara con un patrón concreto para decidir si una fila
+  // entraba o no dejaba fuera sesiones reales de esta semana con demasiada
+  // facilidad. marcaTemporalMs se sigue calculando, pero solo para el texto
+  // "hace X" y para ordenar — nunca para filtrar.
   const sesiones = filas
-    .map(f => ({ marcaTemporal: f[0], marcaTemporalMs: parseMarcaTemporal(f[0]), nombre: f[1], fecha: f[2], mesociclo: f[3], correo: f[COL_CORREO] }))
-    .filter(s => s.marcaTemporalMs && s.marcaTemporalMs >= inicioSemana)
-    .sort((a, b) => b.marcaTemporalMs - a.marcaTemporalMs);
+    .map(f => {
+      const fechaMs = parseFechaDDMMYYYY(f[2]);
+      return { marcaTemporal: f[0], marcaTemporalMs: parseMarcaTemporal(f[0]), nombre: f[1], fecha: f[2], mesociclo: f[3], correo: f[COL_CORREO], _fechaMs: fechaMs };
+    })
+    .filter(s => s._fechaMs !== null && s._fechaMs >= inicioSemana && s._fechaMs < finSemana)
+    .sort((a, b) => (b.marcaTemporalMs ?? b._fechaMs) - (a.marcaTemporalMs ?? a._fechaMs))
+    .map(({ _fechaMs, ...resto }) => resto);
 
   res.status(200).json({ success: true, sesiones });
 }
