@@ -856,17 +856,6 @@ document.getElementById('btnRevisarSemanaSiguiente').addEventListener('click', a
 const CLAVE_ULTIMA_VISTA = 'kc_sesiones_vistas_ts';
 let sesionesRecientesCache = [];
 
-function tiempoRelativo(ms){
-  if (!ms) return 'fecha desconocida';
-  const minutos = Math.round((Date.now() - ms) / 60000);
-  if (minutos < 1) return 'ahora mismo';
-  if (minutos < 60) return `hace ${minutos} min`;
-  const horas = Math.round(minutos / 60);
-  if (horas < 24) return `hace ${horas} h`;
-  const dias = Math.round(horas / 24);
-  return `hace ${dias} día${dias === 1 ? '' : 's'}`;
-}
-
 async function cargarNotificaciones(){
   const cont = document.getElementById('contenidoNotificaciones');
   const badge = document.getElementById('badgeNotificaciones');
@@ -898,7 +887,7 @@ async function cargarNotificaciones(){
     cont.innerHTML = sesionesRecientesCache.map(s => `
       <div class="fila-notif${s.marcaTemporalMs > ultimaVista ? ' nueva' : ''}">
         <div class="linea1">${escapeHtml(s.nombre || s.correo)} — ${escapeHtml(s.mesociclo || '—')}</div>
-        <div class="linea2">Sesión del ${escapeHtml(s.fecha || '—')} · registrada ${tiempoRelativo(s.marcaTemporalMs)}</div>
+        <div class="linea2">Sesión del ${escapeHtml(s.fecha || '—')}</div>
       </div>`).join('');
   } catch (e) {
     cont.innerHTML = `<div class="vacio-notif">Error de red: ${escapeHtml(e.message)}</div>`;
