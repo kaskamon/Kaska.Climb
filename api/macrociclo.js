@@ -1,6 +1,5 @@
 const { google } = require('googleapis');
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
-const { CORREO_ENTRENADOR, enviarCorreoComoEntrenador, avisarFalloTareaProgramada, exigirEntrenadorOCron } = require('../libs/entrenador-notificaciones.js');
 const { calcularFaseYSemana, semanasDelMacrociclo, lunesDe, parseFechaDDMMYYYY, formatFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
 
 // Planificación de macrociclo por cliente (Macrociclos.html) — hoja principal,
@@ -19,7 +18,7 @@ const SESIONES_PROGRAMADAS_SHEET = 'Sesiones_Programadas';
 // api/listar-clientes.js.
 const CLIENTES_SPREADSHEET_ID = '10RasiExEFgUtGuFOeSCvnJWdMhtJZA3i0TSdChmkFv8';
 const CLIENTES_SHEET_NAME = 'Respuestas de formulario 1';
-const COL_CLIENTES = { estado: 1, nombre: 3, correo: 6 };
+const COL_CLIENTES = { estado: 1, nombre: 3, apellidos: 4, correo: 6 };
 
 function authSheets() {
   const auth = new google.auth.GoogleAuth({
@@ -152,7 +151,10 @@ async function datosBaseParaRevision(sheets) {
 
   const clientesActivos = (respClientes.data.values || [])
     .filter(f => (f[COL_CLIENTES.estado] || '').trim().toLowerCase() === 'activo' && (f[COL_CLIENTES.correo] || '').trim())
-    .map(f => ({ correo: (f[COL_CLIENTES.correo] || '').trim(), nombre: (f[COL_CLIENTES.nombre] || '').trim() }));
+    .map(f => ({
+      correo: (f[COL_CLIENTES.correo] || '').trim(),
+      nombre: [(f[COL_CLIENTES.nombre] || '').trim(), (f[COL_CLIENTES.apellidos] || '').trim()].filter(Boolean).join(' '),
+    }));
 
   // Último macrociclo (por orden de fila) de cada cliente — igual que hace
   // manejarGet más arriba, pero para todos los clientes de una vez.
@@ -176,14 +178,16 @@ async function datosBaseParaRevision(sheets) {
   return { clientesActivos, macrociclosPorCorreo, semanasPublicadas };
 }
 
-// GET ?accion=revisar-semana-siguiente — a mano (botón en Clientes.html) o
-// por el cron de sábado/domingo (vercel.json). Compara, para cada cliente
-// activo con macrociclo, si la semana que empieza el próximo lunes (la
-// primera que aún no ha llegado) está publicada en Sesiones_Programadas; si
-// no lo está y el macrociclo todavía la cubre, se avisa por correo. No revisa
-// huecos de semanas anteriores, solo esa.
+// GET ?accion=revisar-semana-siguiente — botón "Revisar semana siguiente" en
+// Seguimiento.html. Compara, para cada cliente activo con macrociclo, si la
+// semana que empieza el próximo lunes (la primera que aún no ha llegado)
+// está publicada en Sesiones_Programadas. No revisa huecos de semanas
+// anteriores, solo esa. Solo a mano — sin cron ni correo: el entrenador
+// prefiere mirarlo en la app cuando le convenga, no que le lleguen avisos.
 async function manejarRevisarSemanaSiguiente(req, res, sheets) {
-  if (!exigirEntrenadorOCron(req, res)) return;
+  const acceso = verificarEntrenador(req);
+  if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
+
   try {
     const { clientesActivos, macrociclosPorCorreo, semanasPublicadas } = await datosBaseParaRevision(sheets);
 
@@ -201,21 +205,8 @@ async function manejarRevisarSemanaSiguiente(req, res, sheets) {
       if (!semanasPublicadas.has(key)) pendientes.push({ correo: c.correo, nombre: c.nombre });
     });
 
-    if (pendientes.length) {
-      const asunto = `${pendientes.length} cliente${pendientes.length === 1 ? '' : 's'} sin la semana del ${proximoLunesStr} publicada`;
-      const cuerpo = [
-        `Todavía no tienen publicada la semana que empieza el ${proximoLunesStr}:`,
-        '',
-        ...pendientes.map(p => `- ${p.nombre || p.correo} (${p.correo})`),
-      ].join('\r\n');
-      try {
-        await enviarCorreoComoEntrenador(CORREO_ENTRENADOR, asunto, cuerpo);
-      } catch (e) { /* no debe tumbar la respuesta si falla solo el envío del correo */ }
-    }
-
     res.status(200).json({ success: true, semanaProxima: proximoLunesStr, pendientes });
   } catch (e) {
-    await avisarFalloTareaProgramada('Revisión de semana siguiente sin publicar', e.message);
     res.status(500).json({ success: false, error: e.message });
   }
 }

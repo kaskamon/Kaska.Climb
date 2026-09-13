@@ -15,24 +15,24 @@ function parseFechaDDMMYYYY(s) {
 // `new Date().toLocaleString('es-ES', {timeZone:'Europe/Madrid'})`, formato
 // "d/m/aaaa, HH:MM:SS" sin ceros a la izquierda — distinto del de la fecha de
 // sesión (columna C, siempre dd/mm/aaaa), así que necesita su propio parser.
+// Tolerante con la coma y los segundos por si alguna fila se escribió con
+// una variante ligeramente distinta del formato.
 function parseMarcaTemporal(s) {
-  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4}),\s*(\d{1,2}):(\d{2}):(\d{2})$/.exec(s || '');
+  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec((s || '').trim());
   if (!m) return null;
-  const [, d, mes, y, h, min, sec] = m.map(Number);
-  return new Date(y, mes - 1, d, h, min, sec).getTime();
+  const [, d, mes, y, h, min, sec] = m;
+  return new Date(Number(y), Number(mes) - 1, Number(d), Number(h), Number(min), Number(sec || 0)).getTime();
 }
 
-// GET ?accion=recientes — sesiones registradas por CUALQUIER cliente en los
-// últimos `dias` días (por defecto 30), más recientes primero, para el panel
-// de notificaciones de Clientes.html. Solo entrenador (ve datos de todos los
-// clientes, no de uno).
+// GET ?accion=recientes — últimas `limite` sesiones registradas por
+// CUALQUIER cliente, más recientes primero, para el panel de notificaciones
+// de Seguimiento.html. Solo entrenador (ve datos de todos los clientes, no
+// de uno).
 async function manejarRecientes(req, res, sheets) {
   const acceso = verificarEntrenador(req);
   if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
 
-  const dias = Number(req.query.dias) || 30;
   const limite = Number(req.query.limite) || 50;
-  const desde = Date.now() - dias * 86400000;
 
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
@@ -40,11 +40,19 @@ async function manejarRecientes(req, res, sheets) {
   });
   const filas = resp.data.values || [];
 
+  // Antes se filtraba comparando la marcaTemporal analizada contra "hace
+  // menos de N días" — pero eso escondía cualquier fila cuya marcaTemporal
+  // no encajara exactamente con el formato esperado (p.ej. filas antiguas
+  // escritas de otra forma), dejando el panel con muchas menos sesiones de
+  // las que de verdad hay. El Sheet ya está en orden de inserción real
+  // (siempre cronológico, a diferencia de la fecha DE LA SESIÓN en sí), así
+  // que basta con quedarse con las últimas `limite` filas tal cual —
+  // marcaTemporalMs solo se usa después para el texto "hace X" y el aviso
+  // de "nuevo", nunca para decidir si una fila entra o no en la lista.
   const sesiones = filas
-    .map(f => ({ marcaTemporal: f[0], marcaTemporalMs: parseMarcaTemporal(f[0]), nombre: f[1], fecha: f[2], mesociclo: f[3], correo: f[COL_CORREO] }))
-    .filter(s => s.marcaTemporalMs && s.marcaTemporalMs >= desde)
-    .sort((a, b) => b.marcaTemporalMs - a.marcaTemporalMs)
-    .slice(0, limite);
+    .slice(-limite)
+    .reverse()
+    .map(f => ({ marcaTemporal: f[0], marcaTemporalMs: parseMarcaTemporal(f[0]), nombre: f[1], fecha: f[2], mesociclo: f[3], correo: f[COL_CORREO] }));
 
   res.status(200).json({ success: true, sesiones });
 }

@@ -7,14 +7,6 @@
     {
       "path": "/api/listar-clientes?accion=backup-diario",
       "schedule": "0 5 * * *"
-    },
-    {
-      "path": "/api/macrociclo?accion=revisar-semana-siguiente",
-      "schedule": "0 7 * * 6"
-    },
-    {
-      "path": "/api/macrociclo?accion=revisar-semana-siguiente",
-      "schedule": "0 7 * * 0"
     }
   ]
 }
