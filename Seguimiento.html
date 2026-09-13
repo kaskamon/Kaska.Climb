@@ -41,10 +41,14 @@
   .estado-caducados.error{ color:var(--danger); }
 
   .wrap-campana{ position:relative; }
+  /* Punto verde (no un número) en la esquina de la campana, a la altura donde
+     irían unas comillas de apertura — la propia campana también se pone en
+     verde mientras haya alguna notificación sin leer; vuelve a su aspecto
+     normal (el mismo de siempre) en cuanto no queda ninguna. */
+  #btnNotificaciones.tiene-nuevas{ color:var(--moss-light); border-color:var(--moss-light); }
   .badge-notif{
-    position:absolute; top:-6px; right:-6px; min-width:17px; height:17px; padding:0 4px;
-    background:var(--danger); color:var(--chalk); font-size:10px; font-weight:800;
-    border-radius:99px; display:flex; align-items:center; justify-content:center; line-height:1;
+    position:absolute; top:-3px; right:-3px; width:9px; height:9px;
+    background:var(--moss-light); border-radius:50%; border:2px solid var(--stone-800);
   }
   .badge-notif[hidden]{ display:none; }
   .panel-notif{
@@ -54,10 +58,16 @@
   }
   .panel-notif.abierto{ display:block; }
   .panel-notif .cab-notif{ padding:10px 12px 8px; font-size:11px; font-weight:800; letter-spacing:0.6px; text-transform:uppercase; color:var(--chalk-faint); }
-  .fila-notif{ padding:10px 12px; border-radius:9px; font-size:12.5px; }
+  .fila-notif{
+    padding:10px 12px; border-radius:9px; font-size:12.5px; cursor:pointer;
+    border:none; background:none; width:100%; text-align:left; font-family:inherit; display:block;
+  }
+  .fila-notif:hover{ background:rgba(242,237,225,0.06); }
   .fila-notif + .fila-notif{ margin-top:2px; }
-  .fila-notif.nueva{ background:rgba(124,144,112,0.10); }
+  .fila-notif.no-leida{ background:rgba(124,144,112,0.10); }
+  .fila-notif.no-leida:hover{ background:rgba(124,144,112,0.16); }
   .fila-notif .linea1{ font-weight:700; color:var(--chalk); }
+  .fila-notif.no-leida .linea1{ color:var(--moss-light); font-weight:800; }
   .fila-notif .linea2{ color:var(--chalk-faint); font-size:11px; margin-top:2px; }
   .vacio-notif{ padding:24px 14px; text-align:center; color:var(--chalk-faint); font-size:12.5px; }
 
@@ -133,7 +143,7 @@
       <div class="wrap-campana">
         <button class="icon-btn" id="btnNotificaciones" type="button" title="Sesiones registradas esta semana">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <span class="badge-notif" id="badgeNotificaciones" hidden>0</span>
+          <span class="badge-notif" id="badgeNotificaciones" hidden></span>
         </button>
         <div class="panel-notif" id="panelNotificaciones">
           <div class="cab-notif">Sesiones registradas esta semana</div>
@@ -849,16 +859,70 @@ document.getElementById('btnRevisarSemanaSiguiente').addEventListener('click', a
   }
 });
 
-// Panel de "sesiones registradas recientemente" — el estado de "visto" es
-// solo de este navegador (localStorage), no del Sheet: no hace falta ninguna
-// columna nueva ni escritura extra, y cada vez que se abre el panel se
-// considera todo visto.
-const CLAVE_ULTIMA_VISTA = 'kc_sesiones_vistas_ts';
+// Panel de "sesiones registradas esta semana" — a diferencia de antes (una
+// única marca de tiempo que consideraba "todo visto" solo con abrir el
+// panel), cada notificación lleva su propio estado de leída/no leída,
+// guardado en este navegador (localStorage, no en el Sheet — nunca hace
+// falta ninguna columna ni escritura extra). Se marca leída solo al pinchar
+// esa notificación en concreto, que además te lleva directo al meso de ese
+// cliente.
+const CLAVE_NOTIF_LEIDAS = 'kc_notif_leidas';
 let sesionesRecientesCache = [];
+
+function claveNotif(s){ return `${s.correo}|${s.fecha}|${s.mesociclo}`; }
+
+function cargarLeidas(){
+  try { return new Set(JSON.parse(localStorage.getItem(CLAVE_NOTIF_LEIDAS) || '[]')); }
+  catch (e) { return new Set(); }
+}
+
+// Guarda, y de paso descarta cualquier clave que ya no corresponda a
+// ninguna notificación de la semana actual — si no, esta lista solo crecería
+// para siempre sin ningún propósito (la semana que viene esas sesiones ya
+// no aparecen de todos modos).
+function guardarLeidas(set){
+  const vigentes = new Set(sesionesRecientesCache.map(claveNotif));
+  const podadas = new Set(Array.from(set).filter(k => vigentes.has(k)));
+  try { localStorage.setItem(CLAVE_NOTIF_LEIDAS, JSON.stringify(Array.from(podadas))); } catch (e) {}
+  return podadas;
+}
+
+function marcarNotificacionLeida(s){
+  const leidas = cargarLeidas();
+  leidas.add(claveNotif(s));
+  guardarLeidas(leidas);
+}
+
+// Solo estos mesociclos tienen su propia pestaña en esta página — el resto
+// (GYM-ANTAGONISTAS, ROCA, DESCANSO) no tiene una vista propia a la que ir.
+const MESOS_CON_TAB = ['FMAX', 'REOX', 'DESOX', 'AERO', 'TAPERING'];
+
+function renderNotificaciones(){
+  const cont = document.getElementById('contenidoNotificaciones');
+  const badge = document.getElementById('badgeNotificaciones');
+  const btn = document.getElementById('btnNotificaciones');
+  const leidas = cargarLeidas();
+
+  const hayNoLeidas = sesionesRecientesCache.some(s => !leidas.has(claveNotif(s)));
+  badge.hidden = !hayNoLeidas;
+  btn.classList.toggle('tiene-nuevas', hayNoLeidas);
+
+  if (!sesionesRecientesCache.length) {
+    cont.innerHTML = `<div class="vacio-notif">Sin sesiones registradas esta semana.</div>`;
+    return;
+  }
+  cont.innerHTML = sesionesRecientesCache.map((s, i) => {
+    const leida = leidas.has(claveNotif(s));
+    return `
+      <button type="button" class="fila-notif${leida ? ' leida' : ' no-leida'}" data-indice="${i}">
+        <div class="linea1">${escapeHtml(s.nombre || s.correo)} — ${escapeHtml(s.mesociclo || '—')}</div>
+        <div class="linea2">Sesión del ${escapeHtml(s.fecha || '—')}</div>
+      </button>`;
+  }).join('');
+}
 
 async function cargarNotificaciones(){
   const cont = document.getElementById('contenidoNotificaciones');
-  const badge = document.getElementById('badgeNotificaciones');
   try {
     const res = await fetch('/api/obtener-historial-sesiones?accion=recientes');
     const data = await res.json();
@@ -867,41 +931,57 @@ async function cargarNotificaciones(){
       return;
     }
     sesionesRecientesCache = data.sesiones;
-
-    let ultimaVista = Number(localStorage.getItem(CLAVE_ULTIMA_VISTA));
-    if (!ultimaVista) {
-      // Primera vez que se usa el panel: no marcar como "nuevo" todo el
-      // historial ya existente, solo lo que llegue a partir de ahora.
-      ultimaVista = Date.now();
-      localStorage.setItem(CLAVE_ULTIMA_VISTA, String(ultimaVista));
-    }
-
-    const nuevas = sesionesRecientesCache.filter(s => s.marcaTemporalMs > ultimaVista).length;
-    badge.hidden = nuevas === 0;
-    badge.textContent = nuevas;
-
-    if (!sesionesRecientesCache.length) {
-      cont.innerHTML = `<div class="vacio-notif">Sin sesiones registradas esta semana.</div>`;
-      return;
-    }
-    cont.innerHTML = sesionesRecientesCache.map(s => `
-      <div class="fila-notif${s.marcaTemporalMs > ultimaVista ? ' nueva' : ''}">
-        <div class="linea1">${escapeHtml(s.nombre || s.correo)} — ${escapeHtml(s.mesociclo || '—')}</div>
-        <div class="linea2">Sesión del ${escapeHtml(s.fecha || '—')}</div>
-      </div>`).join('');
+    renderNotificaciones();
   } catch (e) {
     cont.innerHTML = `<div class="vacio-notif">Error de red: ${escapeHtml(e.message)}</div>`;
   }
 }
 
+// Pinchar una notificación: la marca leída, selecciona a ese cliente y salta
+// directamente a su meso (o, si era un día de gimnasio con dominadas, a
+// FMAX con "Dominadas con lastre" ya elegido) — sin necesidad de ir a
+// escoger nada a mano.
+async function irANotificacion(s){
+  marcarNotificacionLeida(s);
+  renderNotificaciones();
+
+  document.getElementById('selectorCliente').value = s.correo;
+  localStorage.setItem('kaska_cliente_actual', s.correo);
+
+  let mesoDestino = s.mesociclo;
+  let variableDestino = null;
+  if (mesoDestino === 'GYM-FMAX') {
+    mesoDestino = 'FMAX';
+    variableDestino = 'dominadas';
+  } else if (!MESOS_CON_TAB.includes(mesoDestino)) {
+    // GYM-ANTAGONISTAS/ROCA/DESCANSO no tienen pestaña propia — nos quedamos
+    // en la que ya estuviera activa, al menos el cliente sí queda elegido.
+    mesoDestino = MESO_ACTIVO;
+  }
+  MESO_ACTIVO = mesoDestino;
+  pintarTabs();
+  poblarSelectorVariable();
+  if (variableDestino) {
+    VARIABLE_ACTIVA = variableDestino;
+    document.getElementById('selectorVariable').value = variableDestino;
+  }
+
+  panelNotificaciones.classList.remove('abierto');
+  await cargarCliente(s.correo);
+  document.getElementById('panelDatos').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.getElementById('contenidoNotificaciones').addEventListener('click', (e) => {
+  const fila = e.target.closest('.fila-notif');
+  if (!fila) return;
+  const s = sesionesRecientesCache[Number(fila.dataset.indice)];
+  if (s) irANotificacion(s);
+});
+
 const panelNotificaciones = document.getElementById('panelNotificaciones');
 document.getElementById('btnNotificaciones').addEventListener('click', (e) => {
   e.stopPropagation();
   panelNotificaciones.classList.toggle('abierto');
-  if (panelNotificaciones.classList.contains('abierto')) {
-    localStorage.setItem(CLAVE_ULTIMA_VISTA, String(Date.now()));
-    document.getElementById('badgeNotificaciones').hidden = true;
-  }
 });
 document.addEventListener('click', (e) => {
   if (!panelNotificaciones.contains(e.target) && e.target.id !== 'btnNotificaciones') {
