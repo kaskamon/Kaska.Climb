@@ -941,7 +941,6 @@ function fechaParaDiaIndice(indiceDia) {
 
 /* ================= PUBLICAR SEMANA COMPLETA ================= */
 const inputPublicarClienteSemana = document.getElementById('publicarClienteSemana');
-cargarSelectorClientes(inputPublicarClienteSemana);
 inputPublicarClienteSemana.addEventListener('change', () => recalcularMesocicloDesdeMacrociclo());
 
 // Derivado de CATEGORIA_VISUAL (libs/mesociclos-config.js) en vez de una
@@ -1314,6 +1313,39 @@ document.getElementById('btnBorrarSemana').addEventListener('click', async () =>
     estadoDiv.innerHTML = `<div class="error">Error de red: ${e.message}</div>`;
   }
 });
+
+// Entrada directa desde Programacion.html: al pinchar una semana concreta de
+// un cliente (publicada o no), ese enlace trae ?cliente=&fecha= (el lunes,
+// dd/mm/aaaa) — se preseleccionan aquí y se intenta cargar lo ya publicado
+// esa semana. Si no hay nada publicado, el propio botón "Cargar" ya avisa de
+// que está vacía, igual que si se pulsara a mano.
+async function iniciarDesdeEnlaceDirecto() {
+  await cargarSelectorClientes(inputPublicarClienteSemana);
+
+  const params = new URLSearchParams(window.location.search);
+  const clienteParam = params.get('cliente');
+  const fechaParam = params.get('fecha');
+
+  if (clienteParam) {
+    inputPublicarClienteSemana.value = clienteParam;
+    localStorage.setItem('kaska_cliente_actual', clienteParam);
+  }
+  if (fechaParam) {
+    const [dd, mm, yyyy] = fechaParam.split('/');
+    if (dd && mm && yyyy) {
+      const iso = `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`;
+      document.getElementById('hiddenDate').value = iso;
+      actualizarFecha(iso);
+    }
+  }
+  if (clienteParam || fechaParam) {
+    await recalcularMesocicloDesdeMacrociclo();
+  }
+  if (clienteParam && fechaParam) {
+    document.getElementById('btnCargarUltimaSemana').click();
+  }
+}
+iniciarDesdeEnlaceDirecto();
 
 window.onload = () => {
   act();

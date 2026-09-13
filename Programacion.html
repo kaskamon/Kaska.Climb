@@ -113,11 +113,18 @@
   .fila-ejercicio .nombre-ej{ color:var(--chalk); }
   .fila-ejercicio .series-ej{ color:var(--chalk-dim); font-variant-numeric:tabular-nums; flex:0 0 auto; }
   .notas-ej{ font-size:11px; color:var(--chalk-faint); font-style:italic; padding:0 0 5px; margin-top:-3px; }
+  .modal-semana .acciones-modal{ display:flex; gap:10px; margin-top:18px; }
   .modal-semana .btn-cerrar-modal{
-    margin-top:18px; background:var(--moss); color:var(--stone-900); border:none; font-weight:800;
+    background:var(--moss); color:var(--stone-900); border:none; font-weight:800;
     font-size:12px; letter-spacing:0.4px; text-transform:uppercase; padding:10px 18px; border-radius:9px;
     cursor:pointer; font-family:inherit;
   }
+  .modal-semana .btn-secundario-modal{
+    background:transparent; border:1px solid var(--line-strong); color:var(--chalk-dim); font-weight:800;
+    font-size:12px; letter-spacing:0.4px; text-transform:uppercase; padding:10px 18px; border-radius:9px;
+    cursor:pointer; font-family:inherit; text-decoration:none; display:inline-flex; align-items:center;
+  }
+  .modal-semana .btn-secundario-modal:hover{ border-color:var(--moss); color:var(--chalk); }
 </style>
 </head>
 <body>
@@ -155,7 +162,10 @@
     <div class="sub-modal" id="modalSemanaSub"></div>
     <div id="modalSemanaDias"></div>
     <div id="modalSemanaDetalleSesion"></div>
-    <button class="btn-cerrar-modal" id="btnCerrarModalSemana">Cerrar</button>
+    <div class="acciones-modal">
+      <a class="btn-secundario-modal" id="btnAbrirEnSemanas" href="#" target="_blank" rel="noopener">Abrir en Semanas</a>
+      <button class="btn-cerrar-modal" id="btnCerrarModalSemana">Cerrar</button>
+    </div>
   </div>
 </div>
 
@@ -252,6 +262,9 @@ async function abrirDetalleSemana(correo, nombre, fechaLunes, semanaGlobal){
   document.getElementById('modalSemanaSub').textContent = `${nombre} · semana del ${fechaLunes}`;
   document.getElementById('modalSemanaDias').innerHTML = '<div class="estado-carga" style="padding:20px;">Cargando…</div>';
   document.getElementById('modalSemanaDetalleSesion').innerHTML = '';
+  // "Abrir en Semanas" lleva el cliente y el lunes de esta semana ya
+  // preseleccionados — ya esté publicada o no, ahí es donde se diseña/edita.
+  document.getElementById('btnAbrirEnSemanas').href = 'Semanas.html?' + new URLSearchParams({ cliente: correo, fecha: fechaLunes }).toString();
   overlaySemana.classList.add('abierto');
   try {
     const res = await fetch('/api/obtener-semana?' + new URLSearchParams({ cliente: correo, fecha: fechaLunes }));
