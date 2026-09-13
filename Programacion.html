@@ -60,11 +60,36 @@
   .semanas-scroll{ display:flex; gap:5px; overflow-x:auto; padding:14px 16px; align-items:center; }
   .semana-celda{
     flex:0 0 38px; height:42px; border-radius:7px; display:flex; align-items:center; justify-content:center;
-    font-size:10.5px; font-weight:800; color:var(--stone-900); cursor:default; position:relative;
+    font-size:10.5px; font-weight:800; color:var(--stone-900); cursor:pointer; position:relative;
+    transition:transform .1s ease;
   }
+  .semana-celda:hover{ transform:translateY(-2px); }
   .semana-celda.pendiente{ background:transparent; border:2px solid var(--danger); color:var(--danger); }
   .semana-celda.historica{ background:rgba(255,255,255,0.05); border:1px solid var(--line-strong); color:var(--chalk-faint); }
   .semana-celda.hoy{ box-shadow:0 0 0 2px var(--chalk); }
+
+  .overlay-semana{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:100;
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .overlay-semana.abierto{ display:flex; }
+  .modal-semana{
+    background:var(--stone-800); border:1px solid var(--line-strong); border-radius:16px;
+    max-width:460px; width:100%; padding:22px 24px; box-shadow:0 20px 50px rgba(0,0,0,0.4);
+  }
+  .modal-semana h3{ font-size:16px; color:var(--chalk); margin-bottom:2px; }
+  .modal-semana .sub-modal{ font-size:11.5px; color:var(--chalk-faint); margin-bottom:16px; }
+  .fila-dia{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:9px 0; border-bottom:1px solid var(--line); font-size:13px; }
+  .fila-dia:last-child{ border-bottom:none; }
+  .nombre-dia small{ display:block; font-weight:400; color:var(--chalk-faint); font-size:10.5px; margin-top:1px; }
+  .contenido-dia{ display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; }
+  .etiqueta-meso{ font-size:10.5px; font-weight:800; color:var(--stone-900); padding:4px 9px; border-radius:99px; }
+  .sin-publicar{ font-size:11.5px; color:var(--chalk-faint); font-style:italic; }
+  .modal-semana .btn-cerrar-modal{
+    margin-top:18px; background:var(--moss); color:var(--stone-900); border:none; font-weight:800;
+    font-size:12px; letter-spacing:0.4px; text-transform:uppercase; padding:10px 18px; border-radius:9px;
+    cursor:pointer; font-family:inherit;
+  }
 </style>
 </head>
 <body>
@@ -94,6 +119,15 @@
   <div class="card">
     <div class="leyenda" id="leyenda"></div>
     <div id="contenidoGrid"><div class="estado-carga">Cargando programación…</div></div>
+  </div>
+</div>
+
+<div class="overlay-semana" id="overlaySemana">
+  <div class="modal-semana">
+    <h3 id="modalSemanaTitulo">Semana</h3>
+    <div class="sub-modal" id="modalSemanaSub"></div>
+    <div id="modalSemanaDias"></div>
+    <button class="btn-cerrar-modal" id="btnCerrarModalSemana">Cerrar</button>
   </div>
 </div>
 
@@ -157,7 +191,9 @@ async function cargarGrid(){
             }
             if (esHoy) clase += ' hoy';
             const titulo = `Semana ${s.semanaGlobal} · ${s.mesociclo || '—'} · ${s.fechaLunes}${s.publicada ? ' · publicada' : (s.historica ? ' · sin datos' : ' · sin publicar')}`;
-            return `<div class="${clase}" style="${estilo}" title="${escapeHtml(titulo)}" data-hoy="${esHoy ? '1' : ''}">${s.semanaGlobal}</div>`;
+            return `<div class="${clase}" style="${estilo}" title="${escapeHtml(titulo)}" data-hoy="${esHoy ? '1' : ''}"
+              data-correo="${escapeHtml(c.correo)}" data-nombre="${escapeHtml(c.nombre || c.correo)}"
+              data-fecha-lunes="${escapeHtml(s.fechaLunes)}" data-semana="${escapeHtml(String(s.semanaGlobal))}">${s.semanaGlobal}</div>`;
           }).join('')}
         </div>
       </div>`).join('');
@@ -172,6 +208,54 @@ async function cargarGrid(){
     cont.innerHTML = `<div class="vacio">Error de red: ${escapeHtml(e.message)}</div>`;
   }
 }
+
+// Detalle de una semana concreta: días + qué está publicado cada día. Reusa
+// /api/obtener-semana (el mismo que ya usa cliente/semana.html), pasándole el
+// lunes de la semana pulsada como fecha de referencia — no hace falta ningún
+// endpoint nuevo para esto.
+const DIAS_SEMANA = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const overlaySemana = document.getElementById('overlaySemana');
+
+async function abrirDetalleSemana(correo, nombre, fechaLunes, semanaGlobal){
+  document.getElementById('modalSemanaTitulo').textContent = `Semana ${semanaGlobal}`;
+  document.getElementById('modalSemanaSub').textContent = `${nombre} · semana del ${fechaLunes}`;
+  document.getElementById('modalSemanaDias').innerHTML = '<div class="estado-carga" style="padding:20px;">Cargando…</div>';
+  overlaySemana.classList.add('abierto');
+  try {
+    const res = await fetch('/api/obtener-semana?' + new URLSearchParams({ cliente: correo, fecha: fechaLunes }));
+    const data = await res.json();
+    const cont = document.getElementById('modalSemanaDias');
+    if (!data.success) {
+      cont.innerHTML = `<div class="vacio" style="padding:16px 0;">${escapeHtml(data.error || 'No se pudo cargar.')}</div>`;
+      return;
+    }
+    const porFecha = new Map();
+    (data.sesiones || []).forEach(s => {
+      if (!porFecha.has(s.fecha)) porFecha.set(s.fecha, []);
+      porFecha.get(s.fecha).push(s.mesociclo);
+    });
+    cont.innerHTML = data.dias.map((fecha, i) => {
+      const mesos = porFecha.get(fecha) || [];
+      const contenido = mesos.length
+        ? mesos.map(m => `<span class="etiqueta-meso" style="background:${(CATEGORIA_VISUAL && CATEGORIA_VISUAL[m] && CATEGORIA_VISUAL[m].color) || '#888'}">${escapeHtml(m)}</span>`).join('')
+        : '<span class="sin-publicar">Sin publicar</span>';
+      return `<div class="fila-dia"><span class="nombre-dia">${DIAS_SEMANA[i]}<small>${escapeHtml(fecha)}</small></span><span class="contenido-dia">${contenido}</span></div>`;
+    }).join('');
+  } catch (e) {
+    document.getElementById('modalSemanaDias').innerHTML = `<div class="vacio" style="padding:16px 0;">Error de red: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+document.getElementById('contenidoGrid').addEventListener('click', (e) => {
+  const celda = e.target.closest('.semana-celda');
+  if (!celda) return;
+  abrirDetalleSemana(celda.dataset.correo, celda.dataset.nombre, celda.dataset.fechaLunes, celda.dataset.semana);
+});
+
+function cerrarDetalleSemana(){ overlaySemana.classList.remove('abierto'); }
+document.getElementById('btnCerrarModalSemana').addEventListener('click', cerrarDetalleSemana);
+overlaySemana.addEventListener('click', (e) => { if (e.target === overlaySemana) cerrarDetalleSemana(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrarDetalleSemana(); });
 
 pintarLeyenda();
 cargarGrid();
