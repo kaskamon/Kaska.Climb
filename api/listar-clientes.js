@@ -1,10 +1,12 @@
 const { google } = require('googleapis');
-const { driveComoEntrenador, gmailComoEntrenador, clienteOAuth, SCOPES, GOOGLE_CLIENT_ID, obtenerAccessTokenEntrenador } = require('../libs/google-oauth-entrenador.js');
-const { verificarEntrenador } = require('../libs/sesion-cliente.js');
-
-// Correo donde llega el aviso de "cliente nuevo" — el mismo entrenador,
-// mandado desde su propia cuenta (ver enviarAvisoNuevoCliente).
-const CORREO_ENTRENADOR = 'kaskamon@gmail.com';
+const { driveComoEntrenador, clienteOAuth, SCOPES, GOOGLE_CLIENT_ID, obtenerAccessTokenEntrenador } = require('../libs/google-oauth-entrenador.js');
+const {
+  CORREO_ENTRENADOR,
+  enviarCorreoComoEntrenador,
+  avisarFalloTareaProgramada,
+  exigirEntrenador,
+  exigirEntrenadorOCron,
+} = require('../libs/entrenador-notificaciones.js');
 
 // Mismo Sheet que usa api/verificar-cliente.js (la base de alta de clientes,
 // distinta del Sheet de sesiones).
@@ -411,35 +413,6 @@ async function crearCarpetaCliente(nombreCompleto, correoCliente) {
   return `https://drive.google.com/drive/folders/${carpetaId}`;
 }
 
-// Mismo mecanismo de construcción y envío para los dos correos de abajo —
-// siempre desde la propia cuenta del entrenador (ver libs/google-oauth-entrenador.js).
-async function enviarCorreoComoEntrenador(destinatario, asunto, cuerpo) {
-  const gmail = gmailComoEntrenador();
-  const mensajeCrudo = [
-    `To: ${destinatario}`,
-    `Subject: =?UTF-8?B?${Buffer.from(asunto, 'utf8').toString('base64')}?=`,
-    `Content-Type: text/plain; charset="UTF-8"`,
-    ``,
-    cuerpo,
-  ].join('\r\n');
-  const raw = Buffer.from(mensajeCrudo, 'utf8').toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  await gmail.users.messages.send({ userId: 'me', requestBody: { raw } });
-}
-
-// Aviso por correo cuando una tarea programada (cron) falla del todo — sin
-// esto, un fallo se queda solo en los logs de Vercel, que nadie mira a
-// diario, y el entrenador nunca se entera de que algo dejó de funcionar.
-// Best-effort: si hasta el propio aviso falla, no hay más que hacer aquí.
-async function avisarFalloTareaProgramada(nombreTarea, mensajeError) {
-  try {
-    await enviarCorreoComoEntrenador(
-      CORREO_ENTRENADOR,
-      `Fallo en tarea programada: ${nombreTarea}`,
-      `La tarea "${nombreTarea}" no se ha podido completar hoy:\r\n\r\n${mensajeError}`
-    );
-  } catch (e) { /* nada más que hacer si hasta el aviso falla */ }
-}
-
 // Correo de bienvenida al cliente — mismo texto que ya teníais probado en el
 // script de Apps Script, incluidas las instrucciones para instalarla como PWA.
 async function enviarBienvenidaCliente(correoCliente, nombreCliente, urlCarpeta) {
@@ -596,28 +569,6 @@ async function manejarAlta(req, res, sheets) {
   }
 
   res.status(200).json({ success: true, message: 'Alta registrada correctamente.' });
-}
-
-// Exige la contraseña del entrenador para ?accion=drive-oauth-inicio/callback
-// — a diferencia del resto de este archivo (llamadas AJAX desde páginas ya
-// protegidas por middleware.js, o el alta pública), estas dos se visitan
-// directamente en el navegador, así que se protegen a sí mismas con el mismo
-// popup nativo (WWW-Authenticate) que usa el resto del área de entrenador.
-function exigirEntrenador(req, res) {
-  if (verificarEntrenador(req).ok) return true;
-  res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Kaska.Climb"' });
-  res.end('Acceso restringido — zona de entrenador.');
-  return false;
-}
-
-// Igual que exigirEntrenador, pero acepta también el CRON_SECRET que Vercel
-// manda solo en sus propias llamadas programadas (ver vercel.json) — para
-// las acciones que se disparan solas cada día además de a mano.
-function exigirEntrenadorOCron(req, res) {
-  const cabecera = req.headers && req.headers.authorization;
-  const esCron = !!process.env.CRON_SECRET && cabecera === `Bearer ${process.env.CRON_SECRET}`;
-  if (esCron) return true;
-  return exigirEntrenador(req, res);
 }
 
 function paginaResultado(titulo, cuerpoHtml) {

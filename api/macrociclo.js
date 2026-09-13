@@ -1,5 +1,7 @@
 const { google } = require('googleapis');
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
+const { CORREO_ENTRENADOR, enviarCorreoComoEntrenador, avisarFalloTareaProgramada, exigirEntrenadorOCron } = require('../libs/entrenador-notificaciones.js');
+const { calcularFaseYSemana, semanasDelMacrociclo, lunesDe, parseFechaDDMMYYYY, formatFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
 
 // Planificación de macrociclo por cliente (Macrociclos.html) — hoja principal,
 // distinta de la de sesiones/historial. Columnas: A marcaTemporal, B correo,
@@ -11,6 +13,13 @@ const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-
 // del mismo cliente. "Cargar" siempre trae el más reciente.
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Macrociclos_Cliente';
+const SESIONES_PROGRAMADAS_SHEET = 'Sesiones_Programadas';
+
+// Sheet de clientes (distinto del de sesiones/macrociclos) — mismo que usa
+// api/listar-clientes.js.
+const CLIENTES_SPREADSHEET_ID = '10RasiExEFgUtGuFOeSCvnJWdMhtJZA3i0TSdChmkFv8';
+const CLIENTES_SHEET_NAME = 'Respuestas de formulario 1';
+const COL_CLIENTES = { estado: 1, nombre: 3, correo: 6 };
 
 function authSheets() {
   const auth = new google.auth.GoogleAuth({
@@ -130,6 +139,134 @@ async function manejarPost(req, res, sheets) {
   res.status(200).json({ success: true, message: 'Macrociclo publicado correctamente.' });
 }
 
+// Una única lectura (en paralelo) de clientes activos + todos los
+// macrociclos + todas las semanas ya publicadas — la usan tanto el aviso de
+// "semana siguiente sin publicar" como la rejilla de Programación, para no
+// repetir una llamada a Sheets por cliente.
+async function datosBaseParaRevision(sheets) {
+  const [respClientes, respMacros, respProgramadas] = await Promise.all([
+    sheets.spreadsheets.values.get({ spreadsheetId: CLIENTES_SPREADSHEET_ID, range: `'${CLIENTES_SHEET_NAME}'!A:N` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NAME}'!A:F` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SESIONES_PROGRAMADAS_SHEET}'!A:D` }),
+  ]);
+
+  const clientesActivos = (respClientes.data.values || [])
+    .filter(f => (f[COL_CLIENTES.estado] || '').trim().toLowerCase() === 'activo' && (f[COL_CLIENTES.correo] || '').trim())
+    .map(f => ({ correo: (f[COL_CLIENTES.correo] || '').trim(), nombre: (f[COL_CLIENTES.nombre] || '').trim() }));
+
+  // Último macrociclo (por orden de fila) de cada cliente — igual que hace
+  // manejarGet más arriba, pero para todos los clientes de una vez.
+  const macrociclosPorCorreo = new Map();
+  (respMacros.data.values || []).forEach(f => {
+    const correo = (f[1] || '').trim().toLowerCase();
+    if (!correo) return;
+    let bloques;
+    try { bloques = JSON.parse(f[5] || '[]'); } catch (e) { return; }
+    macrociclosPorCorreo.set(correo, { nombre: f[2] || '', inicio: f[3] || '', fin: f[4] || '', bloques });
+  });
+
+  const semanasPublicadas = new Set(); // "correo|timestampDelLunes"
+  (respProgramadas.data.values || []).forEach(f => {
+    const correo = (f[1] || '').trim().toLowerCase();
+    const fechaFila = parseFechaDDMMYYYY(f[2]);
+    if (!correo || !fechaFila) return;
+    semanasPublicadas.add(correo + '|' + lunesDe(fechaFila).getTime());
+  });
+
+  return { clientesActivos, macrociclosPorCorreo, semanasPublicadas };
+}
+
+// GET ?accion=revisar-semana-siguiente — a mano (botón en Clientes.html) o
+// por el cron de sábado/domingo (vercel.json). Compara, para cada cliente
+// activo con macrociclo, si la semana que empieza el próximo lunes (la
+// primera que aún no ha llegado) está publicada en Sesiones_Programadas; si
+// no lo está y el macrociclo todavía la cubre, se avisa por correo. No revisa
+// huecos de semanas anteriores, solo esa.
+async function manejarRevisarSemanaSiguiente(req, res, sheets) {
+  if (!exigirEntrenadorOCron(req, res)) return;
+  try {
+    const { clientesActivos, macrociclosPorCorreo, semanasPublicadas } = await datosBaseParaRevision(sheets);
+
+    const proximoLunes = lunesDe(new Date());
+    proximoLunes.setDate(proximoLunes.getDate() + 7);
+    const proximoLunesStr = formatFechaDDMMYYYY(proximoLunes);
+
+    const pendientes = [];
+    clientesActivos.forEach(c => {
+      const plan = macrociclosPorCorreo.get(c.correo.toLowerCase());
+      if (!plan || !plan.inicio) return;
+      const calc = calcularFaseYSemana(plan.inicio, plan.bloques, proximoLunesStr);
+      if (calc.fueraDeRango) return; // el macrociclo no cubre esa semana (aún no empieza o ya terminó)
+      const key = c.correo.toLowerCase() + '|' + proximoLunes.getTime();
+      if (!semanasPublicadas.has(key)) pendientes.push({ correo: c.correo, nombre: c.nombre });
+    });
+
+    if (pendientes.length) {
+      const asunto = `${pendientes.length} cliente${pendientes.length === 1 ? '' : 's'} sin la semana del ${proximoLunesStr} publicada`;
+      const cuerpo = [
+        `Todavía no tienen publicada la semana que empieza el ${proximoLunesStr}:`,
+        '',
+        ...pendientes.map(p => `- ${p.nombre || p.correo} (${p.correo})`),
+      ].join('\r\n');
+      try {
+        await enviarCorreoComoEntrenador(CORREO_ENTRENADOR, asunto, cuerpo);
+      } catch (e) { /* no debe tumbar la respuesta si falla solo el envío del correo */ }
+    }
+
+    res.status(200).json({ success: true, semanaProxima: proximoLunesStr, pendientes });
+  } catch (e) {
+    await avisarFalloTareaProgramada('Revisión de semana siguiente sin publicar', e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+// GET ?accion=grid — datos para la rejilla visual de Programacion.html: por
+// cada cliente activo con macrociclo, el desglose semana a semana con su fase
+// y si está publicada. Llamada AJAX desde una página ya protegida por
+// middleware.js, así que basta con el 401 JSON de verificarEntrenador (no
+// hace falta el popup WWW-Authenticate de exigirEntrenador).
+async function manejarGrid(req, res, sheets) {
+  const acceso = verificarEntrenador(req);
+  if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
+
+  try {
+    const { clientesActivos, macrociclosPorCorreo, semanasPublicadas } = await datosBaseParaRevision(sheets);
+
+    // Las filas de Sesiones_Programadas más viejas que esta ventana pueden
+    // haber sido podadas por api/publicar-sesion.js (que borra, por cliente,
+    // lo anterior a hoy-7d al publicar) sin que eso signifique que esa semana
+    // nunca se publicó — no se puede distinguir, así que no se marcan en rojo.
+    const cortePorAntiguedad = lunesDe(new Date());
+    cortePorAntiguedad.setDate(cortePorAntiguedad.getDate() - 7);
+
+    const clientes = clientesActivos
+      .map(c => {
+        const plan = macrociclosPorCorreo.get(c.correo.toLowerCase());
+        if (!plan || !plan.inicio) return null;
+        const { totalSemanas, semanas } = semanasDelMacrociclo(plan.inicio, plan.bloques);
+        return {
+          correo: c.correo,
+          nombre: c.nombre || plan.nombre,
+          totalSemanas,
+          semanas: semanas.map(s => {
+            const lunesFecha = parseFechaDDMMYYYY(s.fechaLunes);
+            const key = c.correo.toLowerCase() + '|' + lunesFecha.getTime();
+            return {
+              ...s,
+              publicada: semanasPublicadas.has(key),
+              historica: lunesFecha < cortePorAntiguedad,
+            };
+          }),
+        };
+      })
+      .filter(Boolean);
+
+    res.status(200).json({ success: true, clientes });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Método no permitido, usa GET o POST.' });
@@ -143,6 +280,9 @@ module.exports = async (req, res) => {
       });
     }
     const sheets = await authSheets();
+    const accion = req.query && req.query.accion;
+    if (req.method === 'GET' && accion === 'revisar-semana-siguiente') return await manejarRevisarSemanaSiguiente(req, res, sheets);
+    if (req.method === 'GET' && accion === 'grid') return await manejarGrid(req, res, sheets);
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     return await manejarPost(req, res, sheets);
   } catch (error) {
