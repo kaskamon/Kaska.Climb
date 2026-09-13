@@ -60,8 +60,9 @@
   .nombre-cliente-grid{
     position:sticky; left:0; z-index:1; background:var(--stone-800); flex:0 0 190px;
     padding:14px 16px; display:flex; flex-direction:column; justify-content:center; gap:2px;
-    border-right:1px solid var(--line-strong);
+    border-right:1px solid var(--line-strong); text-decoration:none; cursor:pointer; transition:background .15s ease;
   }
+  .nombre-cliente-grid:hover{ background:var(--stone-700); }
   .nombre-cliente-grid .nombre{ font-weight:700; font-size:13px; color:var(--chalk); }
   .nombre-cliente-grid .correo{ font-size:10.5px; color:var(--chalk-faint); }
   .semanas-scroll{ display:flex; gap:5px; padding:14px 16px; align-items:center; flex:0 0 auto; }
@@ -200,10 +201,10 @@ async function cargarGrid(){
     const hoyStr = lunesDeHoy();
     cont.innerHTML = data.clientes.map(c => `
       <div class="fila-cliente">
-        <div class="nombre-cliente-grid">
+        <a class="nombre-cliente-grid" href="cliente/semana.html?${new URLSearchParams({ cliente: c.correo, nombre: c.nombre || c.correo }).toString()}" target="_blank" rel="noopener" title="Abrir su página tal como la ve">
           <span class="nombre">${escapeHtml(c.nombre || c.correo)}</span>
           <span class="correo">${escapeHtml(c.correo)}</span>
-        </div>
+        </a>
         <div class="semanas-scroll" data-cliente="${escapeHtml(c.correo)}">
           ${c.semanas.map(s => {
             const esHoy = s.fechaLunes === hoyStr;

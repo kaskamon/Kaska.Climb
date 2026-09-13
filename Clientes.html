@@ -349,7 +349,6 @@ function render(){
       <td>${escapeHtml(c.telefono || '—')}</td>
       <td>${celdaVencimiento(c)}</td>
       <td>
-        <a class="btn-fila" href="cliente/semana.html?${new URLSearchParams({cliente:c.email, nombre:c.nombreCompleto}).toString()}" target="_blank" rel="noopener" title="Abrir su página tal como la ve">Ver como cliente</a>
         <button class="btn-fila" data-sumar="1" data-correo="${escapeHtml(c.email)}" title="Renovación mensual">+1 mes</button>
         <button class="btn-fila${c.lesion ? ' tiene-lesion' : ''}" data-lesion="${escapeHtml(c.email)}" title="Ver ¿Lesión?">Lesiones</button>
         <button class="btn-fila" data-editar="${escapeHtml(c.email)}">${editando ? 'Cerrar' : 'Editar'}</button>
