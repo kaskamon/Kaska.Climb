@@ -39,8 +39,15 @@
   .cabecera-pagina h2{ font-size:26px; }
   .cabecera-pagina p{ color:var(--chalk-dim); font-size:13.5px; margin:6px 0 0; max-width:70ch; }
 
-  .card{ background:rgba(38,45,40,0.55); border:1px solid var(--line-strong); border-radius:18px; backdrop-filter:blur(8px); overflow:hidden; }
+  .card{ background:rgba(38,45,40,0.55); border:1px solid var(--line-strong); border-radius:18px; backdrop-filter:blur(8px); }
   .estado-carga, .vacio{ text-align:center; padding:60px 20px; color:var(--chalk-dim); }
+
+  /* Una sola barra de desplazamiento para toda la rejilla (no una por
+     cliente) — con muchos clientes, arrastrar el scroll fila a fila era
+     tedioso; ahora todas se mueven juntas. width:max-content + min-width:100%
+     en cada fila hace que el ancho real de la más larga determine el
+     scrollWidth de este contenedor compartido. */
+  #contenidoGrid{ overflow-x:auto; border-radius:18px; }
 
   .leyenda{ display:flex; flex-wrap:wrap; gap:14px; padding:18px 26px; border-bottom:1px solid var(--line-strong); font-size:11.5px; color:var(--chalk-dim); }
   .leyenda .item{ display:flex; align-items:center; gap:7px; }
@@ -48,7 +55,7 @@
   .leyenda .muestra.pendiente{ background:transparent; border:2px solid var(--danger); }
   .leyenda .muestra.historica{ background:rgba(255,255,255,0.06); border:1px solid var(--line-strong); }
 
-  .fila-cliente{ display:flex; border-bottom:1px solid var(--line); }
+  .fila-cliente{ display:flex; border-bottom:1px solid var(--line); width:max-content; min-width:100%; }
   .fila-cliente:last-child{ border-bottom:none; }
   .nombre-cliente-grid{
     position:sticky; left:0; z-index:1; background:var(--stone-800); flex:0 0 190px;
@@ -57,7 +64,7 @@
   }
   .nombre-cliente-grid .nombre{ font-weight:700; font-size:13px; color:var(--chalk); }
   .nombre-cliente-grid .correo{ font-size:10.5px; color:var(--chalk-faint); }
-  .semanas-scroll{ display:flex; gap:5px; overflow-x:auto; padding:14px 16px; align-items:center; }
+  .semanas-scroll{ display:flex; gap:5px; padding:14px 16px; align-items:center; flex:0 0 auto; }
   .semana-celda{
     flex:0 0 38px; height:42px; border-radius:7px; display:flex; align-items:center; justify-content:center;
     font-size:10.5px; font-weight:800; color:var(--stone-900); cursor:pointer; position:relative;
@@ -93,13 +100,18 @@
 
   .detalle-sesion{
     margin-top:14px; padding-top:14px; border-top:1px dashed var(--line-strong);
+    max-height:280px; overflow-y:auto;
   }
   .detalle-sesion .cab-detalle{ font-size:11px; font-weight:800; letter-spacing:0.5px; text-transform:uppercase; color:var(--chalk-faint); margin-bottom:10px; }
-  .detalle-sesion .fila-dato{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:6px 0; font-size:12.5px; }
-  .detalle-sesion .fila-dato .k{ color:var(--chalk-dim); }
-  .detalle-sesion .fila-dato .v{ font-weight:700; font-variant-numeric:tabular-nums; }
-  .detalle-sesion .aviso-no-entrenada{ color:var(--amber); font-size:11.5px; margin-top:8px; }
   .detalle-sesion .sin-datos{ font-size:12.5px; color:var(--chalk-faint); font-style:italic; }
+  .bloque-programado{ margin-bottom:14px; }
+  .bloque-programado:last-child{ margin-bottom:0; }
+  .titulo-bloque{ font-weight:700; font-size:13px; color:var(--chalk); }
+  .desc-bloque{ font-size:11.5px; color:var(--chalk-faint); margin-top:2px; margin-bottom:6px; }
+  .fila-ejercicio{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:5px 0; border-bottom:1px solid var(--line); font-size:12.5px; }
+  .fila-ejercicio .nombre-ej{ color:var(--chalk); }
+  .fila-ejercicio .series-ej{ color:var(--chalk-dim); font-variant-numeric:tabular-nums; flex:0 0 auto; }
+  .notas-ej{ font-size:11px; color:var(--chalk-faint); font-style:italic; padding:0 0 5px; margin-top:-3px; }
   .modal-semana .btn-cerrar-modal{
     margin-top:18px; background:var(--moss); color:var(--stone-900); border:none; font-weight:800;
     font-size:12px; letter-spacing:0.4px; text-transform:uppercase; padding:10px 18px; border-radius:9px;
@@ -152,14 +164,7 @@ function escapeHtml(str){
   return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-const { CATEGORIA_VISUAL, COLUMNS, FIELD_MAP } = window.MESOCICLOS_CONFIG || {};
-
-// Mismo criterio que api/obtener-historial.js (MESOCICLOS_CON_DATOS): solo
-// estos mesociclos guardan PFinicial/PFfinal/campos numéricos — el resto
-// (GYM-FMAX, GYM-ANTAGONISTAS, ROCA, DESCANSO) solo dejan la fila programada,
-// sin datos que revisar (GYM-FMAX sí guarda "Dominadas con lastre", pero hoy
-// ninguna vista de la app lo expone todavía — ver Seguimiento.html).
-const MESOCICLOS_CON_DATOS = COLUMNS ? Object.keys(COLUMNS).filter(m => COLUMNS[m] && COLUMNS[m].pfInicial !== undefined) : [];
+const { CATEGORIA_VISUAL } = window.MESOCICLOS_CONFIG || {};
 
 function lunesDeHoy(){
   const hoy = new Date();
@@ -221,12 +226,12 @@ async function cargarGrid(){
         </div>
       </div>`).join('');
 
-    // Centra cada fila en la semana de "hoy" al cargar, para no tener que
-    // buscarla a mano en macrociclos largos.
-    cont.querySelectorAll('.semanas-scroll').forEach(fila => {
-      const celdaHoy = fila.querySelector('[data-hoy="1"]');
-      if (celdaHoy) celdaHoy.scrollIntoView({ inline: 'center', block: 'nearest' });
-    });
+    // Centra la vista en la semana de "hoy" al cargar, para no tener que
+    // buscarla a mano en macrociclos largos. El scroll ahora es uno solo para
+    // toda la rejilla, así que basta con centrar en la primera que encontremos
+    // (normalmente coincide entre clientes con macrociclos parecidos).
+    const primeraCeldaHoy = cont.querySelector('[data-hoy="1"]');
+    if (primeraCeldaHoy) primeraCeldaHoy.scrollIntoView({ inline: 'center', block: 'nearest' });
   } catch (e) {
     cont.innerHTML = `<div class="vacio">Error de red: ${escapeHtml(e.message)}</div>`;
   }
@@ -279,13 +284,36 @@ document.getElementById('contenidoGrid').addEventListener('click', (e) => {
   abrirDetalleSemana(celda.dataset.correo, celda.dataset.nombre, celda.dataset.fechaLunes, celda.dataset.semana);
 });
 
-// Datos de cada sesión ya registrada por el cliente — se pincha una etiqueta
-// de mesociclo dentro del detalle de semana para revisarlos, reusando
-// /api/obtener-historial (el mismo que alimenta Seguimiento.html) en vez de
-// un endpoint nuevo. Se cachea por cliente dentro de esta apertura del modal,
-// para no repetir la llamada si se pinchan varios días seguidos.
-let cacheHistorial = null;
-let cacheHistorialCorreo = null;
+// Sesión PROGRAMADA (lo que diseñó el entrenador), no los datos que haya
+// rellenado el cliente — se pincha una etiqueta de mesociclo dentro del
+// detalle de semana y se trae el guion exacto de ese día vía
+// /api/obtener-sesion (el mismo formato que exporta Sesiones.html: partes de
+// tipo "bloque_ejercicios" con su lista de ejercicios, o "cabecera_separadora"
+// como simple título de sección).
+function renderSesionProgramada(mesociclo, fecha, sesion){
+  const cabecera = `<div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div>`;
+  const partes = (sesion && sesion.partes) || [];
+  const bloques = partes.filter(p => p.tipo === 'bloque_ejercicios');
+
+  if (!bloques.length) {
+    return `<div class="detalle-sesion">${cabecera}<div class="sin-datos">${escapeHtml((sesion && sesion.tituloPrincipal) || 'Sin bloques de ejercicios en esta sesión.')}</div></div>`;
+  }
+
+  return `<div class="detalle-sesion">${cabecera}
+    ${bloques.map(b => `
+      <div class="bloque-programado">
+        <div class="titulo-bloque">${escapeHtml(b.titulo || '—')}</div>
+        ${b.descripcion ? `<div class="desc-bloque">${escapeHtml(b.descripcion)}</div>` : ''}
+        ${(b.ejercicios || []).map(ej => `
+          <div class="fila-ejercicio">
+            <span class="nombre-ej">${escapeHtml(ej.nombre || '—')}</span>
+            <span class="series-ej">${escapeHtml(ej.series || '—')}</span>
+          </div>
+          ${ej.notas ? `<div class="notas-ej">${escapeHtml(ej.notas)}</div>` : ''}
+        `).join('')}
+      </div>`).join('')}
+  </div>`;
+}
 
 async function mostrarDetalleSesion(fecha, mesociclo, boton){
   document.querySelectorAll('.etiqueta-meso.activa').forEach(b => b.classList.remove('activa'));
@@ -293,43 +321,14 @@ async function mostrarDetalleSesion(fecha, mesociclo, boton){
   const cont = document.getElementById('modalSemanaDetalleSesion');
   cont.innerHTML = `<div class="detalle-sesion"><div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div><div class="sin-datos">Cargando…</div></div>`;
 
-  if (!MESOCICLOS_CON_DATOS.includes(mesociclo)) {
-    cont.innerHTML = `<div class="detalle-sesion"><div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div><div class="sin-datos">Este tipo de sesión no registra datos numéricos, solo queda marcada como programada.</div></div>`;
-    return;
-  }
-
   try {
-    if (cacheHistorialCorreo !== clienteActualCorreo) {
-      const res = await fetch('/api/obtener-historial?' + new URLSearchParams({ cliente: clienteActualCorreo, limite: '300' }));
-      cacheHistorial = await res.json();
-      cacheHistorialCorreo = clienteActualCorreo;
-    }
-    if (!cacheHistorial.success) {
-      cont.innerHTML = `<div class="detalle-sesion"><div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div><div class="sin-datos">${escapeHtml(cacheHistorial.error || 'No se pudo cargar.')}</div></div>`;
+    const res = await fetch('/api/obtener-sesion?' + new URLSearchParams({ cliente: clienteActualCorreo, fecha, mesociclo }));
+    const data = await res.json();
+    if (!data.success) {
+      cont.innerHTML = `<div class="detalle-sesion"><div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div><div class="sin-datos">${escapeHtml(data.error || 'No se pudo cargar.')}</div></div>`;
       return;
     }
-    const entrada = (cacheHistorial.porMesociclo[mesociclo] || []).find(s => s.fecha === fecha);
-    if (!entrada) {
-      cont.innerHTML = `<div class="detalle-sesion"><div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div><div class="sin-datos">El cliente todavía no ha registrado esta sesión.</div></div>`;
-      return;
-    }
-
-    const camposCfg = (FIELD_MAP && FIELD_MAP[mesociclo] && FIELD_MAP[mesociclo].campos) || [];
-    const filasDatos = [];
-    filasDatos.push(['PFinicial', entrada.pfInicial]);
-    if (entrada.fmaxIzq !== undefined) filasDatos.push(['Fmax 5" izq.', entrada.fmaxIzq + ' N']);
-    if (entrada.fmaxDer !== undefined) filasDatos.push(['Fmax 5" der.', entrada.fmaxDer + ' N']);
-    (entrada.campos || []).forEach((valor, i) => {
-      if (valor === undefined) return;
-      filasDatos.push([camposCfg[i] ? camposCfg[i].label : `Campo ${i + 1}`, valor]);
-    });
-    if (entrada.pfFinal !== undefined) filasDatos.push(['PFfinal', entrada.pfFinal]);
-
-    cont.innerHTML = `<div class="detalle-sesion">
-      <div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div>
-      ${filasDatos.map(([k, v]) => `<div class="fila-dato"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v))}</span></div>`).join('')}
-      ${entrada.entrenada === false ? '<div class="aviso-no-entrenada">Sesión bloqueada por baja recuperación — no se llegó a entrenar.</div>' : ''}
-    </div>`;
+    cont.innerHTML = renderSesionProgramada(mesociclo, fecha, data.sesion);
   } catch (e) {
     cont.innerHTML = `<div class="detalle-sesion"><div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div><div class="sin-datos">Error de red: ${escapeHtml(e.message)}</div></div>`;
   }
