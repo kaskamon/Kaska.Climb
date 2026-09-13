@@ -83,8 +83,23 @@
   .fila-dia:last-child{ border-bottom:none; }
   .nombre-dia small{ display:block; font-weight:400; color:var(--chalk-faint); font-size:10.5px; margin-top:1px; }
   .contenido-dia{ display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; }
-  .etiqueta-meso{ font-size:10.5px; font-weight:800; color:var(--stone-900); padding:4px 9px; border-radius:99px; }
+  .etiqueta-meso{
+    font-size:10.5px; font-weight:800; color:var(--stone-900); padding:4px 9px; border-radius:99px;
+    border:2px solid transparent; cursor:pointer; font-family:inherit; transition:transform .1s ease;
+  }
+  .etiqueta-meso:hover{ transform:translateY(-1px); }
+  .etiqueta-meso.activa{ border-color:var(--chalk); }
   .sin-publicar{ font-size:11.5px; color:var(--chalk-faint); font-style:italic; }
+
+  .detalle-sesion{
+    margin-top:14px; padding-top:14px; border-top:1px dashed var(--line-strong);
+  }
+  .detalle-sesion .cab-detalle{ font-size:11px; font-weight:800; letter-spacing:0.5px; text-transform:uppercase; color:var(--chalk-faint); margin-bottom:10px; }
+  .detalle-sesion .fila-dato{ display:flex; align-items:center; justify-content:space-between; gap:14px; padding:6px 0; font-size:12.5px; }
+  .detalle-sesion .fila-dato .k{ color:var(--chalk-dim); }
+  .detalle-sesion .fila-dato .v{ font-weight:700; font-variant-numeric:tabular-nums; }
+  .detalle-sesion .aviso-no-entrenada{ color:var(--amber); font-size:11.5px; margin-top:8px; }
+  .detalle-sesion .sin-datos{ font-size:12.5px; color:var(--chalk-faint); font-style:italic; }
   .modal-semana .btn-cerrar-modal{
     margin-top:18px; background:var(--moss); color:var(--stone-900); border:none; font-weight:800;
     font-size:12px; letter-spacing:0.4px; text-transform:uppercase; padding:10px 18px; border-radius:9px;
@@ -127,6 +142,7 @@
     <h3 id="modalSemanaTitulo">Semana</h3>
     <div class="sub-modal" id="modalSemanaSub"></div>
     <div id="modalSemanaDias"></div>
+    <div id="modalSemanaDetalleSesion"></div>
     <button class="btn-cerrar-modal" id="btnCerrarModalSemana">Cerrar</button>
   </div>
 </div>
@@ -136,7 +152,14 @@ function escapeHtml(str){
   return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-const { CATEGORIA_VISUAL } = window.MESOCICLOS_CONFIG || {};
+const { CATEGORIA_VISUAL, COLUMNS, FIELD_MAP } = window.MESOCICLOS_CONFIG || {};
+
+// Mismo criterio que api/obtener-historial.js (MESOCICLOS_CON_DATOS): solo
+// estos mesociclos guardan PFinicial/PFfinal/campos numéricos — el resto
+// (GYM-FMAX, GYM-ANTAGONISTAS, ROCA, DESCANSO) solo dejan la fila programada,
+// sin datos que revisar (GYM-FMAX sí guarda "Dominadas con lastre", pero hoy
+// ninguna vista de la app lo expone todavía — ver Seguimiento.html).
+const MESOCICLOS_CON_DATOS = COLUMNS ? Object.keys(COLUMNS).filter(m => COLUMNS[m] && COLUMNS[m].pfInicial !== undefined) : [];
 
 function lunesDeHoy(){
   const hoy = new Date();
@@ -216,10 +239,14 @@ async function cargarGrid(){
 const DIAS_SEMANA = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 const overlaySemana = document.getElementById('overlaySemana');
 
+let clienteActualCorreo = null;
+
 async function abrirDetalleSemana(correo, nombre, fechaLunes, semanaGlobal){
+  clienteActualCorreo = correo;
   document.getElementById('modalSemanaTitulo').textContent = `Semana ${semanaGlobal}`;
   document.getElementById('modalSemanaSub').textContent = `${nombre} · semana del ${fechaLunes}`;
   document.getElementById('modalSemanaDias').innerHTML = '<div class="estado-carga" style="padding:20px;">Cargando…</div>';
+  document.getElementById('modalSemanaDetalleSesion').innerHTML = '';
   overlaySemana.classList.add('abierto');
   try {
     const res = await fetch('/api/obtener-semana?' + new URLSearchParams({ cliente: correo, fecha: fechaLunes }));
@@ -237,7 +264,7 @@ async function abrirDetalleSemana(correo, nombre, fechaLunes, semanaGlobal){
     cont.innerHTML = data.dias.map((fecha, i) => {
       const mesos = porFecha.get(fecha) || [];
       const contenido = mesos.length
-        ? mesos.map(m => `<span class="etiqueta-meso" style="background:${(CATEGORIA_VISUAL && CATEGORIA_VISUAL[m] && CATEGORIA_VISUAL[m].color) || '#888'}">${escapeHtml(m)}</span>`).join('')
+        ? mesos.map(m => `<button class="etiqueta-meso" style="background:${(CATEGORIA_VISUAL && CATEGORIA_VISUAL[m] && CATEGORIA_VISUAL[m].color) || '#888'}" data-fecha="${escapeHtml(fecha)}" data-mesociclo="${escapeHtml(m)}">${escapeHtml(m)}</button>`).join('')
         : '<span class="sin-publicar">Sin publicar</span>';
       return `<div class="fila-dia"><span class="nombre-dia">${DIAS_SEMANA[i]}<small>${escapeHtml(fecha)}</small></span><span class="contenido-dia">${contenido}</span></div>`;
     }).join('');
@@ -250,6 +277,68 @@ document.getElementById('contenidoGrid').addEventListener('click', (e) => {
   const celda = e.target.closest('.semana-celda');
   if (!celda) return;
   abrirDetalleSemana(celda.dataset.correo, celda.dataset.nombre, celda.dataset.fechaLunes, celda.dataset.semana);
+});
+
+// Datos de cada sesión ya registrada por el cliente — se pincha una etiqueta
+// de mesociclo dentro del detalle de semana para revisarlos, reusando
+// /api/obtener-historial (el mismo que alimenta Seguimiento.html) en vez de
+// un endpoint nuevo. Se cachea por cliente dentro de esta apertura del modal,
+// para no repetir la llamada si se pinchan varios días seguidos.
+let cacheHistorial = null;
+let cacheHistorialCorreo = null;
+
+async function mostrarDetalleSesion(fecha, mesociclo, boton){
+  document.querySelectorAll('.etiqueta-meso.activa').forEach(b => b.classList.remove('activa'));
+  boton.classList.add('activa');
+  const cont = document.getElementById('modalSemanaDetalleSesion');
+  cont.innerHTML = `<div class="detalle-sesion"><div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div><div class="sin-datos">Cargando…</div></div>`;
+
+  if (!MESOCICLOS_CON_DATOS.includes(mesociclo)) {
+    cont.innerHTML = `<div class="detalle-sesion"><div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div><div class="sin-datos">Este tipo de sesión no registra datos numéricos, solo queda marcada como programada.</div></div>`;
+    return;
+  }
+
+  try {
+    if (cacheHistorialCorreo !== clienteActualCorreo) {
+      const res = await fetch('/api/obtener-historial?' + new URLSearchParams({ cliente: clienteActualCorreo, limite: '300' }));
+      cacheHistorial = await res.json();
+      cacheHistorialCorreo = clienteActualCorreo;
+    }
+    if (!cacheHistorial.success) {
+      cont.innerHTML = `<div class="detalle-sesion"><div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div><div class="sin-datos">${escapeHtml(cacheHistorial.error || 'No se pudo cargar.')}</div></div>`;
+      return;
+    }
+    const entrada = (cacheHistorial.porMesociclo[mesociclo] || []).find(s => s.fecha === fecha);
+    if (!entrada) {
+      cont.innerHTML = `<div class="detalle-sesion"><div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div><div class="sin-datos">El cliente todavía no ha registrado esta sesión.</div></div>`;
+      return;
+    }
+
+    const camposCfg = (FIELD_MAP && FIELD_MAP[mesociclo] && FIELD_MAP[mesociclo].campos) || [];
+    const filasDatos = [];
+    filasDatos.push(['PFinicial', entrada.pfInicial]);
+    if (entrada.fmaxIzq !== undefined) filasDatos.push(['Fmax 5" izq.', entrada.fmaxIzq + ' N']);
+    if (entrada.fmaxDer !== undefined) filasDatos.push(['Fmax 5" der.', entrada.fmaxDer + ' N']);
+    (entrada.campos || []).forEach((valor, i) => {
+      if (valor === undefined) return;
+      filasDatos.push([camposCfg[i] ? camposCfg[i].label : `Campo ${i + 1}`, valor]);
+    });
+    if (entrada.pfFinal !== undefined) filasDatos.push(['PFfinal', entrada.pfFinal]);
+
+    cont.innerHTML = `<div class="detalle-sesion">
+      <div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div>
+      ${filasDatos.map(([k, v]) => `<div class="fila-dato"><span class="k">${escapeHtml(k)}</span><span class="v">${escapeHtml(String(v))}</span></div>`).join('')}
+      ${entrada.entrenada === false ? '<div class="aviso-no-entrenada">Sesión bloqueada por baja recuperación — no se llegó a entrenar.</div>' : ''}
+    </div>`;
+  } catch (e) {
+    cont.innerHTML = `<div class="detalle-sesion"><div class="cab-detalle">${escapeHtml(mesociclo)} · ${escapeHtml(fecha)}</div><div class="sin-datos">Error de red: ${escapeHtml(e.message)}</div></div>`;
+  }
+}
+
+document.getElementById('modalSemanaDias').addEventListener('click', (e) => {
+  const boton = e.target.closest('.etiqueta-meso');
+  if (!boton) return;
+  mostrarDetalleSesion(boton.dataset.fecha, boton.dataset.mesociclo, boton);
 });
 
 function cerrarDetalleSemana(){ overlaySemana.classList.remove('abierto'); }
