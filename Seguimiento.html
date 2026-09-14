@@ -1004,10 +1004,16 @@ function asegurarOpcionCliente(correo, nombre){
 
 // Pinchar una notificación: la marca leída y selecciona a ese cliente — las
 // de sesión, además, saltan directamente a su meso (o, si era un día de
-// gimnasio con dominadas, a FMAX con "Dominadas con lastre" ya elegido).
+// gimnasio con dominadas, a FMAX con "Dominadas con lastre" ya elegido); las
+// de cliente pasado a inactivo llevan a Clientes, filtrado a ese cliente.
 async function irANotificacion(n){
   marcarNotificacionLeida(n);
   renderNotificaciones();
+
+  if (n.tipo === 'inactivo') {
+    location.href = 'Clientes.html?correo=' + encodeURIComponent(n.correo);
+    return;
+  }
 
   asegurarOpcionCliente(n.correo, n.nombre);
   document.getElementById('selectorCliente').value = n.correo;

@@ -444,6 +444,12 @@ document.getElementById('btnRevisarCaducados').addEventListener('click', async (
   }
 });
 
+const correoDeepLink = new URLSearchParams(location.search).get('correo');
+if (correoDeepLink) {
+  textoBusqueda = correoDeepLink;
+  document.getElementById('buscador').value = correoDeepLink;
+}
+
 cargarClientes();
 </script>
 </body>
