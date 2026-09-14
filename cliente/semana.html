@@ -262,6 +262,16 @@ async function cargar(){
       return;
     }
 
+    // Si el propio cliente (no el entrenador viendo "como cliente" — ese
+    // envía TOKEN vacío y usa su contraseña, nunca debe quedar bloqueado
+    // aquí) ha pasado a Inactivo, se le saca — sin esto, con la sesión ya
+    // iniciada seguiría teniendo acceso normal hasta que el token caducara
+    // solo (hasta 30 días), aunque el entrenador ya le hubiera dado de baja.
+    if(resCliente.status === 403 && TOKEN){
+      mostrarError('Tu cuenta de cliente ya no está activa. Contacta con tu entrenador si crees que es un error.');
+      return;
+    }
+
     let driveUrl = null;
     try{
       const dataCliente = await resCliente.json();
