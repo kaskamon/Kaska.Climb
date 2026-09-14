@@ -36,9 +36,6 @@
   }
   .icon-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
 
-  .estado-caducados{ font-size:11.5px; color:var(--chalk-faint); }
-  .estado-caducados.ok{ color:var(--moss-light); }
-  .estado-caducados.error{ color:var(--danger); }
 
   .wrap-campana{ position:relative; }
   /* Punto verde (no un número) en la esquina de la campana, a la altura donde
@@ -145,8 +142,6 @@
       <h1>Seguimiento</h1>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
-      <span class="estado-caducados" id="estadoSemanaSiguiente"></span>
-      <button class="icon-btn" id="btnRevisarSemanaSiguiente" type="button">Revisar semana siguiente</button>
       <div class="wrap-campana">
         <button class="icon-btn" id="btnNotificaciones" type="button" title="Notificaciones">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -852,28 +847,6 @@ document.getElementById('selectorVariable').addEventListener('change', (e) => {
   sel.addEventListener('change', () => cargarCliente(sel.value));
   if(sel.value) cargarCliente(sel.value);
 })();
-
-document.getElementById('btnRevisarSemanaSiguiente').addEventListener('click', async () => {
-  const estadoEl = document.getElementById('estadoSemanaSiguiente');
-  estadoEl.className = 'estado-caducados';
-  estadoEl.textContent = 'Revisando...';
-  try {
-    const res = await fetch('/api/macrociclo?accion=revisar-semana-siguiente');
-    const data = await res.json();
-    if (data.success) {
-      estadoEl.className = 'estado-caducados ok';
-      estadoEl.textContent = data.pendientes.length
-        ? `${data.pendientes.length} sin publicar (semana del ${data.semanaProxima}): ${data.pendientes.map(p => p.nombre || p.correo).join(', ')}`
-        : `Todo publicado para el ${data.semanaProxima}.`;
-    } else {
-      estadoEl.className = 'estado-caducados error';
-      estadoEl.textContent = data.error || 'No se pudo revisar.';
-    }
-  } catch (e) {
-    estadoEl.className = 'estado-caducados error';
-    estadoEl.textContent = 'Error de red: ' + e.message;
-  }
-});
 
 // Panel de notificaciones — dos tipos: sesiones registradas esta semana, y
 // clientes que han pasado a Inactivo (a mano o por el aviso automático de

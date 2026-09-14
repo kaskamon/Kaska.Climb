@@ -1,6 +1,6 @@
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
-const { calcularFaseYSemana, semanasDelMacrociclo, lunesDe, parseFechaDDMMYYYY, formatFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
+const { semanasDelMacrociclo, lunesDe, parseFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
 
 // Planificación de macrociclo por cliente (Macrociclos.html) — hoja principal,
 // distinta de la de sesiones/historial. Columnas: A marcaTemporal, B correo,
@@ -180,39 +180,6 @@ async function datosBaseParaRevision(sheets) {
   return { clientesActivos, macrociclosPorCorreo, semanasPublicadas };
 }
 
-// GET ?accion=revisar-semana-siguiente — botón "Revisar semana siguiente" en
-// Seguimiento.html. Compara, para cada cliente activo con macrociclo, si la
-// semana que empieza el próximo lunes (la primera que aún no ha llegado)
-// está publicada en Sesiones_Programadas. No revisa huecos de semanas
-// anteriores, solo esa. Solo a mano — sin cron ni correo: el entrenador
-// prefiere mirarlo en la app cuando le convenga, no que le lleguen avisos.
-async function manejarRevisarSemanaSiguiente(req, res, sheets) {
-  const acceso = verificarEntrenador(req);
-  if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
-
-  try {
-    const { clientesActivos, macrociclosPorCorreo, semanasPublicadas } = await datosBaseParaRevision(sheets);
-
-    const proximoLunes = lunesDe(new Date());
-    proximoLunes.setDate(proximoLunes.getDate() + 7);
-    const proximoLunesStr = formatFechaDDMMYYYY(proximoLunes);
-
-    const pendientes = [];
-    clientesActivos.forEach(c => {
-      const plan = macrociclosPorCorreo.get(c.correo.toLowerCase());
-      if (!plan || !plan.inicio) return;
-      const calc = calcularFaseYSemana(plan.inicio, plan.bloques, proximoLunesStr);
-      if (calc.fueraDeRango) return; // el macrociclo no cubre esa semana (aún no empieza o ya terminó)
-      const key = c.correo.toLowerCase() + '|' + proximoLunes.getTime();
-      if (!semanasPublicadas.has(key)) pendientes.push({ correo: c.correo, nombre: c.nombre });
-    });
-
-    res.status(200).json({ success: true, semanaProxima: proximoLunesStr, pendientes });
-  } catch (e) {
-    res.status(500).json({ success: false, error: e.message });
-  }
-}
-
 // GET ?accion=grid — datos para la rejilla visual de Programacion.html: por
 // cada cliente activo con macrociclo, el desglose semana a semana con su fase
 // y si está publicada. Llamada AJAX desde una página ya protegida por
@@ -274,7 +241,6 @@ module.exports = async (req, res) => {
     }
     const sheets = await authSheets();
     const accion = req.query && req.query.accion;
-    if (req.method === 'GET' && accion === 'revisar-semana-siguiente') return await manejarRevisarSemanaSiguiente(req, res, sheets);
     if (req.method === 'GET' && accion === 'grid') return await manejarGrid(req, res, sheets);
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     return await manejarPost(req, res, sheets);
