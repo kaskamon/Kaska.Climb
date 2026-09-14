@@ -160,9 +160,9 @@
         <input type="text" id="buscador" placeholder="Buscar por nombre o email…">
       </div>
       <div class="filtros" id="filtros">
-        <button class="chip-filtro activo" data-filtro="todos">Todos</button>
-        <button class="chip-filtro" data-filtro="activo">Activos</button>
+        <button class="chip-filtro activo" data-filtro="activo">Activos</button>
         <button class="chip-filtro" data-filtro="inactivo">Inactivos</button>
+        <button class="chip-filtro" data-filtro="todos">Todos</button>
       </div>
     </div>
 
@@ -183,7 +183,7 @@
 
 <script>
 let TODOS_LOS_CLIENTES = [];
-let filtroEstado = 'todos';
+let filtroEstado = 'activo';
 let textoBusqueda = '';
 let correoEditando = null;
 
@@ -448,6 +448,9 @@ const correoDeepLink = new URLSearchParams(location.search).get('correo');
 if (correoDeepLink) {
   textoBusqueda = correoDeepLink;
   document.getElementById('buscador').value = correoDeepLink;
+  filtroEstado = 'todos';
+  document.querySelectorAll('.chip-filtro').forEach(c => c.classList.remove('activo'));
+  document.querySelector('[data-filtro="todos"]').classList.add('activo');
 }
 
 cargarClientes();
