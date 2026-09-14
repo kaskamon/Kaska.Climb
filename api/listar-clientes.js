@@ -244,9 +244,8 @@ function parseFechaDDMMYYYY(str) {
 
 // GET ?accion=revisar-caducados — pasa a Inactivo a los clientes Activos cuya
 // fecha de fin ya venció, y avisa por correo si ha marcado alguno. La
-// dispara sola vercel.json cada día (con el CRON_SECRET que manda Vercel
-// automáticamente), o el botón "Revisar caducados ahora" de Clientes.html
-// (con la contraseña de entrenador de siempre).
+// dispara sola vercel.json cada día, con el CRON_SECRET que manda Vercel
+// automáticamente — ya no hay botón manual, solo el cron.
 async function manejarRevisarCaducados(req, res, sheets) {
   if (!exigirEntrenadorOCron(req, res)) return;
 
