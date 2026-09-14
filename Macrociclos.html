@@ -322,8 +322,12 @@
         if (entrada === null) return;
 
         const nueva = parseInt(entrada);
-        if (!nueva || nueva < 1) {
-            alert('Introduce un número de semanas válido.');
+        // Límite superior generoso (2 años) pero real — sin él, un número
+        // escrito mal a mano (p.ej. de más ceros) puede hacer que la rejilla
+        // de Programación tarde en cargar o falle para TODOS los clientes,
+        // no solo el de este macrociclo, porque calcula semana a semana.
+        if (!nueva || nueva < 1 || nueva > 104) {
+            alert('Introduce un número de semanas válido (entre 1 y 104).');
             return;
         }
 

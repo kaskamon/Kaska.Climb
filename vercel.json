@@ -8,5 +8,10 @@
       "path": "/api/listar-clientes?accion=backup-diario",
       "schedule": "0 5 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/listar-clientes.js": {
+      "maxDuration": 30
+    }
+  }
 }

@@ -444,7 +444,17 @@ function pintarPanelFuerza(panel, historial){
   const ultimo = historial[historial.length - 1];
   const primero = historial[0];
   const media = Math.round(historial.reduce((s,h) => s + h.pfInicial, 0) / historial.length);
-  const tendencia = primero.pfInicial ? ((ultimo.pfInicial - primero.pfInicial) / primero.pfInicial * 100) : 0;
+  // primero.pfInicial === 0 es un valor real (igual que en pintarPanelPfPct/
+  // pintarPanelCampo) — con denominador 0 no hay % que calcular, así que se
+  // muestra la diferencia absoluta en vez de forzar un "0%" que parecería
+  // "sin cambios" cuando en realidad no se puede saber.
+  const primerEsCero = primero.pfInicial === 0;
+  const deltaAbsoluto = ultimo.pfInicial - primero.pfInicial;
+  const tendenciaPct = primerEsCero ? null : ((ultimo.pfInicial - primero.pfInicial) / primero.pfInicial * 100);
+  const tendenciaPositiva = primerEsCero ? deltaAbsoluto >= 0 : tendenciaPct >= 0;
+  const tendenciaTexto = primerEsCero
+    ? `${deltaAbsoluto >= 0 ? '+' : ''}${deltaAbsoluto}<small>N</small>`
+    : `${tendenciaPct >= 0 ? '+' : ''}${tendenciaPct.toFixed(1)}<small>%</small>`;
   const noRecuperadas = (PORMESOCICLO[MESO_ACTIVO] || []).filter(h => !h.entrenada).length;
 
   panel.innerHTML = `
@@ -452,8 +462,8 @@ function pintarPanelFuerza(panel, historial){
       <div class="stat-tile"><div class="k">PFinicial medio</div><div class="v">${media}<small>N</small></div></div>
       <div class="stat-tile">
         <div class="k">Tendencia (${historial.length} ses.)</div>
-        <div class="v" style="color:${tendencia>=0?'var(--moss-light)':'var(--danger)'};">${tendencia>=0?'+':''}${tendencia.toFixed(1)}<small>%</small></div>
-        <div class="delta ${tendencia>=0?'up':'down'}">${tendencia>=0?'↑ progresando':'↓ en descenso'}</div>
+        <div class="v" style="color:${tendenciaPositiva?'var(--moss-light)':'var(--danger)'};">${tendenciaTexto}</div>
+        <div class="delta ${tendenciaPositiva?'up':'down'}">${tendenciaPositiva?'↑ progresando':'↓ en descenso'}</div>
       </div>
       <div class="stat-tile"><div class="k">Última PFinicial</div><div class="v">${ultimo.pfInicial}<small>N</small></div></div>
       <div class="stat-tile"><div class="k">Sesiones no recuperadas</div><div class="v">${noRecuperadas}<small>/${historial.length + noRecuperadas}</small></div></div>

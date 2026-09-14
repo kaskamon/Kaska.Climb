@@ -90,6 +90,15 @@ async function manejarPost(req, res, sheets) {
   if (!correo || !nombre || !Array.isArray(bloques)) {
     return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (correo, nombre o bloques).' });
   }
+  // Límite por bloque (no solo cosmético en Macrociclos.html): la rejilla de
+  // Programación (accion=grid) calcula semana a semana TODOS los clientes en
+  // una sola petición — un número desorbitado aquí puede hacer que esa
+  // petición se quede colgada o falle para todo el mundo, no solo para este
+  // cliente.
+  const semanasInvalidas = bloques.some(b => !Number.isFinite(Number(b.semanas)) || Number(b.semanas) < 1 || Number(b.semanas) > 104);
+  if (semanasInvalidas) {
+    return res.status(400).json({ success: false, error: 'Cada bloque debe durar entre 1 y 104 semanas.' });
+  }
 
   const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
   const correoNorm = correo.trim().toLowerCase();
