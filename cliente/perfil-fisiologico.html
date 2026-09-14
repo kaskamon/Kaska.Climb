@@ -331,7 +331,7 @@ function renderComparacion(modalidad, perfiles){
 async function cargar(){
   try{
     const [resCliente, ] = await Promise.all([
-      fetch('/api/verificar-cliente?email=' + encodeURIComponent(CLIENTE)),
+      fetch('/api/verificar-cliente?' + new URLSearchParams({ email: CLIENTE, token: TOKEN }).toString()),
     ]);
     const dataCliente = await resCliente.json();
     if(!dataCliente.success){

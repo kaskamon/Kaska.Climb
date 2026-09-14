@@ -1,4 +1,5 @@
 const { driveComoEntrenador, clienteOAuth, SCOPES, GOOGLE_CLIENT_ID, obtenerAccessTokenEntrenador } = require('../libs/google-oauth-entrenador.js');
+const { verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 const {
   CORREO_ENTRENADOR,
@@ -49,6 +50,16 @@ function authSheets() {
 // ?completo=1: todos los clientes (activos e inactivos) con todas las
 // columnas, para la tabla de gestión de Clientes.html.
 async function manejarGet(req, res, sheets) {
+  // Lista completa de clientes (nombre, teléfono, ¿lesión?, fecha de
+  // nacimiento, enlace a su carpeta de Drive...) — solo el entrenador, nunca
+  // público. El alta de un cliente nuevo (accion:'alta') es una rama
+  // distinta del router, con su propia contraseña (ALTA_PASSWORD), no pasa
+  // por aquí.
+  const acceso = verificarEntrenador(req);
+  if (!acceso.ok) {
+    return res.status(401).json({ success: false, error: acceso.error });
+  }
+
   let filas;
   try {
     const resp = await sheets.spreadsheets.values.get({
@@ -115,6 +126,13 @@ async function manejarGet(req, res, sheets) {
 // telefono, fechaNacimiento, lesion, modalidad, disponibilidad, drive } } (solo
 // hace falta incluir los campos que se quieran cambiar).
 async function manejarPost(req, res, sheets) {
+  // Editar un cliente ya existente (incluido su estado Activo/Inactivo) —
+  // solo el entrenador.
+  const acceso = verificarEntrenador(req);
+  if (!acceso.ok) {
+    return res.status(401).json({ success: false, error: acceso.error });
+  }
+
   const { correo, campos } = req.body || {};
   if (!correo || !campos || typeof campos !== 'object') {
     return res.status(400).json({ success: false, error: 'Faltan datos (correo o campos).' });
@@ -165,6 +183,13 @@ async function manejarPost(req, res, sheets) {
 // POST (accion: 'eliminar') — borra por completo la fila de un cliente
 // (limpieza de datos de prueba, altas erróneas...). Body: { accion:'eliminar', correo }.
 async function manejarEliminar(req, res, sheets) {
+  // Borra la fila de un cliente por completo — solo el entrenador, y de
+  // forma irreversible, así que el guardián va lo primero de todo.
+  const acceso = verificarEntrenador(req);
+  if (!acceso.ok) {
+    return res.status(401).json({ success: false, error: acceso.error });
+  }
+
   const { correo } = req.body || {};
   if (!correo) {
     return res.status(400).json({ success: false, error: 'Falta el correo del cliente a eliminar.' });
@@ -472,7 +497,12 @@ async function manejarAlta(req, res, sheets) {
   if (!codigoAcceso || codigoAcceso !== process.env.ALTA_PASSWORD) {
     return res.status(401).json({ success: false, error: 'Código de acceso incorrecto — pídeselo a tu entrenador.' });
   }
-  if (!nombre || !apellidos || !correo || !String(correo).includes('@')) {
+  // Mismo patrón que alta.html en el navegador — ahí solo protege de que el
+  // cliente se equivoque al escribir; aquí, al ser la comprobación real del
+  // servidor, además evita que un correo con espacios o saltos de línea
+  // (\r\n) acabe colándose como identificador del cliente o en la cabecera
+  // "To:" de sus correos.
+  if (!nombre || !apellidos || !correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(correo))) {
     return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (nombre, apellidos o un correo válido).' });
   }
 

@@ -8,6 +8,16 @@
 const contenedorPartes = document.getElementById('contenedor-partes');
 const inputTituloPrincipal = document.getElementById('titulo-entreno-principal');
 
+// Título/descripción de parte y nombre/series/notas de cada ejercicio se
+// insertan con innerHTML más abajo — hoy solo puede escribirlos el
+// entrenador (Sesiones.html/Semanas.html exigen su contraseña desde el
+// backend), pero se escapan igual como defensa en profundidad: si el día de
+// mañana cualquier otro origen (una plantilla, un import) alimentara este
+// motor, un "<script>" en un nombre de ejercicio no debe poder ejecutarse.
+function escapeHtmlEditor(str) {
+  return (str == null ? '' : String(str)).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 let contadorPartes = 0;
 
 document.addEventListener('input', (e) => {
@@ -54,7 +64,7 @@ function crearCabeceraUI(tituloTexto) {
   div.className = 'cabecera-principal-empresa';
   div.innerHTML = `
     <div class="contenedor-titulo-principal">
-      <input type="text" class="input-titulo-gran-formato" value="${tituloTexto}">
+      <input type="text" class="input-titulo-gran-formato" value="${escapeHtmlEditor(tituloTexto)}">
     </div>
     <div class="zona-ordenar no-print" style="gap: 5px; align-items:center;">
       <button class="btn-orden btn-subir-cabecera" title="Subir">▲</button>
@@ -87,8 +97,8 @@ function crearParteUI(tituloVal = '', descripcionVal = '', ejerciciosLista = [])
         <button class="btn-orden btn-subir-parte" title="Subir parte">▲</button>
         <button class="btn-orden btn-bajar-parte" title="Bajar parte">▼</button>
       </div>
-      <div class="input-titulo celda-cabecera-editable" contenteditable="true" placeholder="Ej: Parte ${contadorPartes} - Movilidad">${tituloVal}</div>
-      <div class="input-descripcion celda-cabecera-editable" contenteditable="true" placeholder="Explicación general de esta parte...">${descripcionVal}</div>
+      <div class="input-titulo celda-cabecera-editable" contenteditable="true" placeholder="Ej: Parte ${contadorPartes} - Movilidad">${escapeHtmlEditor(tituloVal)}</div>
+      <div class="input-descripcion celda-cabecera-editable" contenteditable="true" placeholder="Explicación general de esta parte...">${escapeHtmlEditor(descripcionVal)}</div>
       <button class="btn-accion btn-eliminar btn-eliminar-parte">Eliminar Parte</button>
     </div>
     <table class="tabla-ejercicios">
@@ -111,9 +121,9 @@ function crearParteUI(tituloVal = '', descripcionVal = '', ejerciciosLista = [])
   function añadirFilaEjercicio(ej = { nombre: '', series: '', notas: '' }) {
     const fila = document.createElement('tr');
     fila.innerHTML = `
-      <td class="celda-editable" contenteditable="true" placeholder="Nombre del ejercicio">${ej.nombre}</td>
-      <td class="celda-editable" contenteditable="true" placeholder="Ej: 3x10">${ej.series}</td>
-      <td class="celda-editable" contenteditable="true" placeholder="Notas...">${ej.notas}</td>
+      <td class="celda-editable" contenteditable="true" placeholder="Nombre del ejercicio">${escapeHtmlEditor(ej.nombre)}</td>
+      <td class="celda-editable" contenteditable="true" placeholder="Ej: 3x10">${escapeHtmlEditor(ej.series)}</td>
+      <td class="celda-editable" contenteditable="true" placeholder="Notas...">${escapeHtmlEditor(ej.notas)}</td>
       <td style="white-space: nowrap;">
         <button class="btn-orden btn-subir-ej" title="Subir ejercicio">▲</button>
         <button class="btn-orden btn-bajar-ej" title="Bajar ejercicio">▼</button>

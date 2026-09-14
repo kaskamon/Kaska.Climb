@@ -8,10 +8,16 @@ const CORREO_ENTRENADOR = 'kaskamon@gmail.com';
 
 // Mismo mecanismo de construcción y envío para cualquier correo del
 // entrenador a sí mismo o a un cliente — siempre desde su propia cuenta.
+// "destinatario" puede venir, en última instancia, de un campo que rellena
+// un desconocido en el formulario público de alta (api/listar-clientes.js,
+// manejarAlta) — se le quita cualquier salto de línea antes de meterlo en
+// la cabecera "To:", para que no se puedan colar cabeceras extra (p.ej. un
+// Bcc:) escribiendo un correo con \r\n dentro.
 async function enviarCorreoComoEntrenador(destinatario, asunto, cuerpo) {
   const gmail = gmailComoEntrenador();
+  const destinatarioSeguro = String(destinatario).replace(/[\r\n]+/g, ' ').trim();
   const mensajeCrudo = [
-    `To: ${destinatario}`,
+    `To: ${destinatarioSeguro}`,
     `Subject: =?UTF-8?B?${Buffer.from(asunto, 'utf8').toString('base64')}?=`,
     `Content-Type: text/plain; charset="UTF-8"`,
     ``,

@@ -252,7 +252,7 @@ async function cargar(){
     const qsSemana = new URLSearchParams({ cliente: CLIENTE, fecha: fechaReferenciaDDMMYYYY(), token: TOKEN });
     const [resSemana, resCliente] = await Promise.all([
       fetch('/api/obtener-semana?' + qsSemana.toString()),
-      fetch('/api/verificar-cliente?email=' + encodeURIComponent(CLIENTE)),
+      fetch('/api/verificar-cliente?' + new URLSearchParams({ email: CLIENTE, token: TOKEN }).toString()),
     ]);
     if(resSemana.status === 401){ manejarSesionInvalida(); return; }
     const data = await resSemana.json();

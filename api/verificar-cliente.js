@@ -1,4 +1,4 @@
-const { crearToken } = require('../libs/sesion-cliente.js');
+const { crearToken, verificarAccesoCliente } = require('../libs/sesion-cliente.js');
 const { authSheets, SCOPE_SOLO_LECTURA } = require('../libs/sheets-auth.js');
 
 // Google Sheet DISTINTO al de sesiones — es el formulario de alta de clientes
@@ -118,12 +118,18 @@ module.exports = async (req, res) => {
       });
     }
 
-    // GET — consulta de datos básicos por correo (sin emitir token). La usan
-    // páginas que ya han pasado su propia comprobación de sesión antes de
-    // llegar aquí; no sirve por sí sola para autenticar a nadie.
+    // GET — consulta de datos básicos por correo (sin emitir token nuevo).
+    // Exige el propio token del cliente (o la contraseña del entrenador) —
+    // si no, cualquiera que supiera o adivinara un correo podía sacar
+    // nombre, teléfono de contacto indirecto, modalidad, etc. sin haber
+    // iniciado sesión de verdad.
     const { email } = req.query || {};
     if (!email) {
       return res.status(400).json({ success: false, error: 'Falta el parámetro email.' });
+    }
+    const acceso = verificarAccesoCliente(req, email);
+    if (!acceso.ok) {
+      return res.status(401).json({ success: false, error: acceso.error });
     }
 
     let fila;
