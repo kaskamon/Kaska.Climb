@@ -723,30 +723,27 @@ function abrirSelectorFecha() {
 function actualizarFecha(val) {
   if (!val) return;
 
-  let [y, m, d] = val.split('-').map(Number);
-  const fecha = new Date(y, m - 1, d);
-  const diaSemana = fecha.getDay(); // 0=Dom, 1=Lun, ... 6=Sáb
+  const [y, m, d] = val.split('-').map(Number);
+  const fechaElegida = new Date(y, m - 1, d);
 
   // La "Fecha" es siempre el lunes de la semana (fechaParaDiaIndice suma el
   // índice de cada día a partir de aquí) — si se elige otro día de la
   // semana por error, toda la tabla se publica desplazada (el lunes que
   // diseñaste pasa a aparecer con la fecha de ese otro día). Lo corregimos
-  // aquí mismo, al lunes de esa misma semana, en vez de dejar que se publique así.
-  if (diaSemana !== 1) {
-    const offset = diaSemana === 0 ? -6 : 1 - diaSemana;
-    fecha.setDate(fecha.getDate() + offset);
-    y = fecha.getFullYear();
-    m = fecha.getMonth() + 1;
-    d = fecha.getDate();
-    const yyyy = String(y).padStart(4, '0');
-    const mm = String(m).padStart(2, '0');
-    const dd = String(d).padStart(2, '0');
+  // aquí mismo, al lunes de esa misma semana (misma función que ya usa el
+  // backend, vía libs/planificacion-semanas.js — nunca una copia propia),
+  // en vez de dejar que se publique así.
+  const lunes = lunesDe(fechaElegida);
+  if (lunes.getTime() !== fechaElegida.getTime()) {
+    const yyyy = String(lunes.getFullYear()).padStart(4, '0');
+    const mm = String(lunes.getMonth() + 1).padStart(2, '0');
+    const dd = String(lunes.getDate()).padStart(2, '0');
     document.getElementById('hiddenDate').value = `${yyyy}-${mm}-${dd}`;
   }
 
-  const ddStr = String(d).padStart(2, '0');
-  const mmStr = String(m).padStart(2, '0');
-  document.getElementById('displayDate').innerText = `${ddStr}/${mmStr}/${y}`;
+  const ddStr = String(lunes.getDate()).padStart(2, '0');
+  const mmStr = String(lunes.getMonth() + 1).padStart(2, '0');
+  document.getElementById('displayDate').innerText = `${ddStr}/${mmStr}/${lunes.getFullYear()}`;
 
   // El recálculo ya NO se dispara aquí dentro — cada llamador lo hace
   // explícitamente después (antes se disparaba aquí Y otra vez a mano en
@@ -783,7 +780,7 @@ document.addEventListener('click', e => {
 // viene de libs/planificacion-semanas.js (cargada arriba), fuente única
 // compartida con api/macrociclo.js y api/obtener-historial-sesiones.js, para
 // que nunca puedan divergir entre sí.
-const { calcularFaseYSemana } = window.PLANIFICACION_SEMANAS || {};
+const { calcularFaseYSemana, lunesDe } = window.PLANIFICACION_SEMANAS || {};
 
 let MESOCICLO_ACTUAL = null; // se rellena solo desde el macrociclo real del cliente
 let MESOCICLO_ORIGEN_TAPERING = null; // cualidad del bloque anterior, solo si esta semana es TAPERING

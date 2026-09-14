@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="libs/mesociclos-config.js"></script>
+<script src="libs/planificacion-semanas.js"></script>
 <style>
   :root{
     --stone-900:#1c211e; --stone-800:#262d28; --stone-700:#333b34;
@@ -52,7 +53,7 @@
   .leyenda{ display:flex; flex-wrap:wrap; gap:14px; padding:18px 26px; border-bottom:1px solid var(--line-strong); font-size:11.5px; color:var(--chalk-dim); }
   .leyenda .item{ display:flex; align-items:center; gap:7px; }
   .leyenda .muestra{ width:14px; height:14px; border-radius:4px; flex:0 0 auto; }
-  .leyenda .muestra.pendiente{ background:transparent; border:2px solid var(--danger); }
+  .leyenda .muestra.pendiente{ background:transparent; border:2px solid var(--chalk-faint); }
   .leyenda .muestra.historica{ background:rgba(255,255,255,0.06); border:1px solid var(--line-strong); }
 
   .fila-cliente{ display:flex; border-bottom:1px solid var(--line); width:max-content; min-width:100%; }
@@ -72,7 +73,7 @@
     transition:transform .1s ease;
   }
   .semana-celda:hover{ transform:translateY(-2px); }
-  .semana-celda.pendiente{ background:transparent; border:2px solid var(--danger); color:var(--danger); }
+  .semana-celda.pendiente{ background:transparent; border:2px solid var(--line-strong); }
   .semana-celda.historica{ background:rgba(255,255,255,0.05); border:1px solid var(--line-strong); color:var(--chalk-faint); }
   .semana-celda.hoy{ box-shadow:0 0 0 2px var(--chalk); }
 
@@ -175,14 +176,13 @@ function escapeHtml(str){
 }
 
 const { CATEGORIA_VISUAL } = window.MESOCICLOS_CONFIG || {};
+// Misma fuente que ya usa el backend (api/macrociclo.js) y Semanas.html para
+// "qué lunes toca" — antes esta página tenía su propia copia de la misma
+// cuenta, con riesgo de desincronizarse si se tocaba una sin la otra.
+const { lunesDe, formatFechaDDMMYYYY } = window.PLANIFICACION_SEMANAS || {};
 
 function lunesDeHoy(){
-  const hoy = new Date();
-  const diaSemana = hoy.getDay();
-  const offset = diaSemana === 0 ? -6 : 1 - diaSemana;
-  const lunes = new Date(hoy);
-  lunes.setDate(lunes.getDate() + offset);
-  return `${String(lunes.getDate()).padStart(2,'0')}/${String(lunes.getMonth()+1).padStart(2,'0')}/${lunes.getFullYear()}`;
+  return formatFechaDDMMYYYY(lunesDe(new Date()));
 }
 
 function pintarLeyenda(){
@@ -190,7 +190,7 @@ function pintarLeyenda(){
   document.getElementById('leyenda').innerHTML = fases.map(f => `
     <div class="item"><span class="muestra" style="background:${(CATEGORIA_VISUAL && CATEGORIA_VISUAL[f] && CATEGORIA_VISUAL[f].color) || '#888'}"></span>${f}</div>
   `).join('') + `
-    <div class="item"><span class="muestra pendiente"></span>Sin publicar</div>
+    <div class="item"><span class="muestra pendiente"></span>Sin publicar <small style="opacity:0.7;">(contorno del color de su fase)</small></div>
     <div class="item"><span class="muestra historica"></span>Histórica / sin datos fiables</div>
   `;
 }
@@ -220,12 +220,17 @@ async function cargarGrid(){
             const esHoy = s.fechaLunes === hoyStr;
             let clase = 'semana-celda';
             let estilo = '';
+            const colorMeso = (CATEGORIA_VISUAL && CATEGORIA_VISUAL[s.mesociclo] && CATEGORIA_VISUAL[s.mesociclo].color) || '#888';
             if (s.historica) {
               clase += ' historica';
             } else if (!s.publicada) {
+              // Sin publicar: hueco, pero con el contorno del color de la
+              // fase que le toca según el macrociclo — así se ve de un
+              // vistazo QUÉ falta publicar, no solo que falta algo.
               clase += ' pendiente';
+              estilo = `border-color:${colorMeso}; color:${colorMeso};`;
             } else {
-              estilo = `background:${(CATEGORIA_VISUAL && CATEGORIA_VISUAL[s.mesociclo] && CATEGORIA_VISUAL[s.mesociclo].color) || '#888'}`;
+              estilo = `background:${colorMeso}`;
             }
             if (esHoy) clase += ' hoy';
             const titulo = `Semana ${s.semanaGlobal} · ${s.mesociclo || '—'} · ${s.fechaLunes}${s.publicada ? ' · publicada' : (s.historica ? ' · sin datos' : ' · sin publicar')}`;
