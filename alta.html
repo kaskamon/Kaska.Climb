@@ -97,6 +97,16 @@
   .modalidad-opt .t{ font-weight:800; font-size:13.5px; color:var(--chalk); margin-bottom:2px; }
   .modalidad-opt .d{ font-size:11.5px; color:var(--chalk-faint); }
 
+  .check-condiciones{
+    display:flex; align-items:flex-start; gap:12px; cursor:pointer;
+    background:var(--stone-800); border:1px solid var(--line-strong); border-radius:10px;
+    padding:14px 16px; transition:border-color .15s ease;
+  }
+  .check-condiciones input{ margin-top:2px; width:16px; height:16px; flex-shrink:0; accent-color:var(--moss); }
+  .check-condiciones span{ font-size:13px; line-height:1.6; color:var(--chalk-dim); }
+  .check-condiciones a{ color:var(--moss-light); }
+  .campo.invalido .check-condiciones{ border-color:var(--danger); }
+
   .btn-enviar{
     width:100%; background:var(--moss); color:var(--stone-900); border:none;
     font-weight:800; font-size:13.5px; letter-spacing:0.5px; text-transform:uppercase;
@@ -219,9 +229,9 @@
         </div>
 
         <div class="campo" id="campo-condiciones">
-          <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; text-transform:none; font-weight:400; font-size:13px; color:var(--chalk-dim);">
-            <input type="checkbox" id="aceptaCondiciones" style="margin-top:3px; accent-color:var(--moss);">
-            <span>He leído y acepto la <a href="privacidad.html" target="_blank" style="color:var(--moss-light);">política de privacidad</a> y el <a href="responsabilidad.html" target="_blank" style="color:var(--moss-light);">aviso de responsabilidad</a>.</span>
+          <label class="check-condiciones">
+            <input type="checkbox" id="aceptaCondiciones">
+            <span>He leído y acepto la <a href="privacidad.html" target="_blank">política de privacidad</a> y el <a href="responsabilidad.html" target="_blank">aviso de responsabilidad</a>.</span>
           </label>
           <span class="error-msg">Tienes que aceptar ambos documentos para continuar</span>
         </div>
