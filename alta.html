@@ -218,6 +218,14 @@
           </div>
         </div>
 
+        <div class="campo" id="campo-condiciones">
+          <label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; text-transform:none; font-weight:400; font-size:13px; color:var(--chalk-dim);">
+            <input type="checkbox" id="aceptaCondiciones" style="margin-top:3px; accent-color:var(--moss);">
+            <span>He leído y acepto la <a href="privacidad.html" target="_blank" style="color:var(--moss-light);">política de privacidad</a> y el <a href="responsabilidad.html" target="_blank" style="color:var(--moss-light);">aviso de responsabilidad</a>.</span>
+          </label>
+          <span class="error-msg">Tienes que aceptar ambos documentos para continuar</span>
+        </div>
+
         <button type="submit" class="btn-enviar" id="btnEnviar">Enviar solicitud</button>
       </form>
     </div>
@@ -265,6 +273,8 @@ document.getElementById('formAlta').addEventListener('submit', async (e) => {
   marcarError('apellidos', !apellidos); if(!apellidos) valido = false;
   const correoValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo);
   marcarError('correo', !correoValido); if(!correoValido) valido = false;
+  const aceptaCondiciones = document.getElementById('aceptaCondiciones').checked;
+  marcarError('condiciones', !aceptaCondiciones); if(!aceptaCondiciones) valido = false;
   if(!valido) return;
 
   const modalidadEl = document.querySelector('.modalidad-opt.on');
@@ -292,6 +302,7 @@ document.getElementById('formAlta').addEventListener('submit', async (e) => {
         modalidad: modalidadEl ? modalidadEl.dataset.valor : '',
         disponibilidad,
         lesion: document.getElementById('lesion').value.trim(),
+        aceptaCondiciones,
       }),
     });
     const data = await res.json();

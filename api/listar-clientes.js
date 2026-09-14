@@ -23,7 +23,7 @@ const SHEET_NAME = 'Respuestas de formulario 1';
 const COL = {
   marcaTemporal: 0, estado: 1, duracion: 2, nombre: 3, apellidos: 4, telefono: 5,
   correo: 6, fechaNacimiento: 7, lesion: 8, modalidad: 9, disponibilidad: 10, drive: 11,
-  fechaInicio: 12, fechaFin: 13,
+  fechaInicio: 12, fechaFin: 13, condicionesAceptadas: 14,
 };
 
 // Campos que se pueden editar desde Clientes.html — Correo es el identificador
@@ -64,7 +64,7 @@ async function manejarGet(req, res, sheets) {
   try {
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `'${SHEET_NAME}'!A:N`,
+      range: `'${SHEET_NAME}'!A:O`,
     });
     filas = resp.data.values || [];
   } catch (e) {
@@ -115,6 +115,7 @@ async function manejarGet(req, res, sheets) {
         marcaTemporal: (f[COL.marcaTemporal] || '').trim(),
         fechaInicio: (f[COL.fechaInicio] || '').trim(),
         fechaFin: (f[COL.fechaFin] || '').trim(),
+        condicionesAceptadas: (f[COL.condicionesAceptadas] || '').trim(),
       };
     })
     .sort((a, b) => a.nombreCompleto.localeCompare(b.nombreCompleto, 'es'));
@@ -488,7 +489,7 @@ async function enviarAvisoNuevoCliente(datos) {
 // pero ese disparador nunca ve las altas que llegan por esta API (no son un
 // envío real del Google Form), así que la carpeta se dejaba de crear en silencio.
 async function manejarAlta(req, res, sheets) {
-  const { codigoAcceso, nombre, apellidos, correo, telefono, fechaNacimiento, modalidad, disponibilidad, lesion } = req.body || {};
+  const { codigoAcceso, nombre, apellidos, correo, telefono, fechaNacimiento, modalidad, disponibilidad, lesion, aceptaCondiciones } = req.body || {};
 
   if (!process.env.ALTA_PASSWORD) {
     return res.status(500).json({ success: false, error: 'Falta configurar ALTA_PASSWORD en Vercel.' });
@@ -503,6 +504,12 @@ async function manejarAlta(req, res, sheets) {
   // "To:" de sus correos.
   if (!nombre || !apellidos || !correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(correo))) {
     return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (nombre, apellidos o un correo válido).' });
+  }
+  // Igual que arriba: el checkbox de alta.html ya bloquea el envío en el
+  // navegador, pero la comprobación que de verdad vale como evidencia de que
+  // se aceptó es esta, no la del cliente.
+  if (aceptaCondiciones !== true) {
+    return res.status(400).json({ success: false, error: 'Tienes que aceptar la política de privacidad y el aviso de responsabilidad para darte de alta.' });
   }
 
   let filas;
@@ -528,7 +535,7 @@ async function manejarAlta(req, res, sheets) {
   const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
   const disponibilidadTexto = Array.isArray(disponibilidad) ? disponibilidad.join(', ') : (disponibilidad || '');
 
-  const fila = new Array(14).fill('');
+  const fila = new Array(15).fill('');
   fila[COL.marcaTemporal] = marcaTemporal;
   fila[COL.estado] = 'Activo';
   fila[COL.nombre] = nombre;
@@ -539,6 +546,11 @@ async function manejarAlta(req, res, sheets) {
   fila[COL.lesion] = lesion || '';
   fila[COL.modalidad] = modalidad || '';
   fila[COL.disponibilidad] = disponibilidadTexto;
+  // Evidencia de consentimiento: la fecha es la misma que marcaTemporal (el
+  // checkbox es obligatorio para llegar hasta aquí, así que el alta y la
+  // aceptación ocurren en el mismo instante) — basta con dejar constancia de
+  // que se aceptó, sin duplicar la fecha en otra columna.
+  fila[COL.condicionesAceptadas] = 'Sí';
 
   // Escribimos en la fila exacta que le toca (ya sabemos cuántas filas reales
   // hay por el values.get de arriba) en vez de usar values.append: este Sheet
@@ -550,7 +562,7 @@ async function manejarAlta(req, res, sheets) {
   try {
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `'${SHEET_NAME}'!A${filaInsertada}:N${filaInsertada}`,
+      range: `'${SHEET_NAME}'!A${filaInsertada}:O${filaInsertada}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [fila] },
     });
