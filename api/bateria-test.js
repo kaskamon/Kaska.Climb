@@ -1,5 +1,6 @@
 const { verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
+const { sanearFormula } = require('../libs/sheets-sanitize.js');
 
 // Batería de test completa (Batería test.html) — sustituye el ir exportando/
 // importando archivos JSON sueltos. Columnas: A marcaTemporal, B correo,
@@ -83,7 +84,7 @@ async function manejarPost(req, res, sheets) {
 
   const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
   const correoNorm = correo.trim().toLowerCase();
-  const fila = [marcaTemporal, correo.trim(), nombre || '', fecha, JSON.stringify(datos)];
+  const fila = [marcaTemporal, sanearFormula(correo.trim()), sanearFormula(nombre || ''), sanearFormula(fecha), JSON.stringify(datos)];
 
   try {
     let filaExistente = null;

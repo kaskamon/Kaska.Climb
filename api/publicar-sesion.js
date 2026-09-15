@@ -1,6 +1,7 @@
 const { COLUMNS, CATEGORIA_VISUAL } = require('../libs/mesociclos-config.js');
 const { verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
+const { sanearFormula } = require('../libs/sheets-sanitize.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 // Misma pestaña que lee api/obtener-sesion.js. Columnas: A marcaTemporal,
@@ -151,7 +152,7 @@ module.exports = async (req, res) => {
       range: `'${SHEET_NAME}'!A:H`,
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
-      requestBody: { values: [[marcaTemporal, cliente, fecha, mesociclo, semana || '', JSON.stringify(sesion), semanaMesociclo || '', origenTapering || '']] },
+      requestBody: { values: [[marcaTemporal, sanearFormula(cliente), sanearFormula(fecha), sanearFormula(mesociclo), sanearFormula(semana || ''), JSON.stringify(sesion), sanearFormula(semanaMesociclo || ''), sanearFormula(origenTapering || '')]] },
     });
 
     // Arranque automático del contrato: la primera vez que se publica un

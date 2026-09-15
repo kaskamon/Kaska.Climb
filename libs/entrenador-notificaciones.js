@@ -1,5 +1,6 @@
 const { gmailComoEntrenador } = require('./google-oauth-entrenador.js');
 const { verificarEntrenador } = require('./sesion-cliente.js');
+const { sanearFormula } = require('./sheets-sanitize.js');
 
 // Correo donde llega el aviso de "cliente nuevo", los fallos de tareas
 // programadas, etc. — el mismo entrenador, mandado desde su propia cuenta
@@ -41,6 +42,37 @@ async function avisarFalloTareaProgramada(nombreTarea, mensajeError) {
   } catch (e) { /* nada más que hacer si hasta el aviso falla */ }
 }
 
+// Deja constancia del resultado de la última ejecución de una tarea
+// programada (backup diario, revisión de caducados) en la pestaña
+// "Estado_Sistema" del Sheet de Clientes (hay que crearla a mano, igual que
+// otras pestañas de la app — columnas: A tarea, B ok (Sí/No), C mensaje,
+// D fecha). A diferencia del aviso por correo, esto solo depende de la
+// cuenta de servicio (la misma que ya usa toda la app para leer/escribir
+// Sheets) — nunca del token OAuth del propio entrenador, que es justo lo que
+// puede romperse en silencio con el tiempo. Así, aunque el correo de aviso
+// falle porque el OAuth está roto, esto se sigue escribiendo, y Clientes.html
+// puede mostrarlo como un aviso visible la próxima vez que se abra la app.
+// Nunca lanza — si la pestaña ni siquiera existe todavía, no debe romper la
+// tarea programada en sí, que ya tiene su propio manejo de errores.
+async function registrarEstadoTarea(sheets, spreadsheetId, tarea, ok, mensaje) {
+  const SHEET_ESTADO = 'Estado_Sistema';
+  try {
+    const resp = await sheets.spreadsheets.values.get({ spreadsheetId, range: `'${SHEET_ESTADO}'!A:A` });
+    const filas = resp.data.values || [];
+    const idx = filas.findIndex(f => (f[0] || '').trim() === tarea);
+    const filaDestino = idx !== -1 ? idx + 1 : filas.length + 1;
+    const fecha = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `'${SHEET_ESTADO}'!A${filaDestino}:D${filaDestino}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [[tarea, ok ? 'Sí' : 'No', sanearFormula((mensaje || '').toString().slice(0, 500)), fecha]] },
+    });
+  } catch (e) {
+    console.error(`No se pudo registrar el estado de la tarea "${tarea}": ${e.message}`);
+  }
+}
+
 // Exige la contraseña del entrenador para acciones que se visitan
 // directamente en el navegador (no llamadas AJAX desde una página ya
 // protegida por middleware.js) — se protegen a sí mismas con el mismo popup
@@ -66,6 +98,7 @@ module.exports = {
   CORREO_ENTRENADOR,
   enviarCorreoComoEntrenador,
   avisarFalloTareaProgramada,
+  registrarEstadoTarea,
   exigirEntrenador,
   exigirEntrenadorOCron,
 };

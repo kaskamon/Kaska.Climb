@@ -1,4 +1,5 @@
 const { verificarEntrenador } = require('../libs/sesion-cliente.js');
+const { sanearFormula } = require('../libs/sheets-sanitize.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 
 // Plantillas libres creadas en Sesiones.html (sin cliente ni mesociclo — ver
@@ -84,7 +85,7 @@ async function manejarPost(req, res, sheets) {
 
   const nombreLimpio = String(nombre).trim();
   const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
-  const fila = [marcaTemporal, nombreLimpio, JSON.stringify(datos)];
+  const fila = [marcaTemporal, sanearFormula(nombreLimpio), JSON.stringify(datos)];
 
   let filas;
   try {

@@ -1,6 +1,7 @@
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 const { semanasDelMacrociclo, lunesDe, parseFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
+const { sanearFormula } = require('../libs/sheets-sanitize.js');
 
 // Planificación de macrociclo por cliente (Macrociclos.html) — hoja principal,
 // distinta de la de sesiones/historial. Columnas: A marcaTemporal, B correo,
@@ -102,7 +103,7 @@ async function manejarPost(req, res, sheets) {
 
   const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
   const correoNorm = correo.trim().toLowerCase();
-  const fila = [marcaTemporal, correo.trim(), nombre, inicio || '', fin || '', JSON.stringify(bloques)];
+  const fila = [marcaTemporal, sanearFormula(correo.trim()), sanearFormula(nombre), sanearFormula(inicio || ''), sanearFormula(fin || ''), JSON.stringify(bloques)];
 
   try {
     let filaExistente = null;

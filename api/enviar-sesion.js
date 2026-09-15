@@ -1,6 +1,7 @@
 const { COLUMNS: MESOCICLOS } = require('../libs/mesociclos-config.js');
 const { verificarAccesoCliente } = require('../libs/sesion-cliente.js');
 const { authSheets, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
+const { sanearFormula } = require('../libs/sheets-sanitize.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Respuestas de formulario 1';
@@ -65,10 +66,10 @@ module.exports = async (req, res) => {
 
     const fila = new Array(TOTAL_COLUMNAS).fill('');
     fila[0] = marcaTemporal; // A
-    fila[1] = nombre;        // B — nombre legible, para leer el Sheet a simple vista
-    fila[2] = fecha;         // C
-    fila[3] = mesociclo;     // D
-    if (correo) fila[COL_CORREO] = correo; // AI — identificador real, usado por obtener-historial.js
+    fila[1] = sanearFormula(nombre); // B — nombre legible, para leer el Sheet a simple vista
+    fila[2] = sanearFormula(fecha);  // C
+    fila[3] = sanearFormula(mesociclo); // D
+    if (correo) fila[COL_CORREO] = sanearFormula(correo); // AI — identificador real, usado por obtener-historial.js
 
     // Los valores de fuerza (N) viajan tal cual — es tu Sheet quien calcula el %
     // comparando con el historial real, no lo calculamos aquí.
@@ -146,7 +147,7 @@ module.exports = async (req, res) => {
         range: `'${BACKUP_SHEET_NAME}'!A:C`,
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
-        requestBody: { values: [[marcaTemporal, `${nombre} — ${mesociclo}`, JSON.stringify(body)]] },
+        requestBody: { values: [[marcaTemporal, sanearFormula(`${nombre} — ${mesociclo}`), JSON.stringify(body)]] },
       });
     } catch (e) {
       backupOk = false;

@@ -1,10 +1,12 @@
 const { driveComoEntrenador, clienteOAuth, SCOPES, GOOGLE_CLIENT_ID, obtenerAccessTokenEntrenador } = require('../libs/google-oauth-entrenador.js');
 const { verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
+const { sanearFormula } = require('../libs/sheets-sanitize.js');
 const {
   CORREO_ENTRENADOR,
   enviarCorreoComoEntrenador,
   avisarFalloTareaProgramada,
+  registrarEstadoTarea,
   exigirEntrenador,
   exigirEntrenadorOCron,
 } = require('../libs/entrenador-notificaciones.js');
@@ -13,6 +15,35 @@ const {
 // distinta del Sheet de sesiones).
 const SPREADSHEET_ID = '10RasiExEFgUtGuFOeSCvnJWdMhtJZA3i0TSdChmkFv8';
 const SHEET_NAME = 'Respuestas de formulario 1';
+
+// Límite de intentos fallidos del código de acceso del alta pública — un
+// contador simple en memoria por IP y por instancia caliente. No es un
+// rate-limit distribuido perfecto (se resetea en un arranque en frío, y cada
+// instancia concurrente tiene su propio contador), pero corta de raíz la
+// fuerza bruta trivial sin fricción que existía antes, que es el riesgo real
+// en un endpoint público protegido solo por una contraseña compartida.
+const intentosFallidosAlta = new Map();
+const VENTANA_INTENTOS_MS = 10 * 60 * 1000; // 10 minutos
+const MAX_INTENTOS_FALLIDOS = 5;
+
+function demasiadosIntentosAlta(ip) {
+  const registro = intentosFallidosAlta.get(ip);
+  if (!registro) return false;
+  if (Date.now() - registro.desde > VENTANA_INTENTOS_MS) {
+    intentosFallidosAlta.delete(ip);
+    return false;
+  }
+  return registro.cuenta >= MAX_INTENTOS_FALLIDOS;
+}
+function registrarIntentoFallidoAlta(ip) {
+  const ahora = Date.now();
+  const registro = intentosFallidosAlta.get(ip);
+  if (!registro || ahora - registro.desde > VENTANA_INTENTOS_MS) {
+    intentosFallidosAlta.set(ip, { cuenta: 1, desde: ahora });
+  } else {
+    registro.cuenta++;
+  }
+}
 
 // Columnas A-N del Sheet. M/N (fechaInicio/fechaFin) sustituyen a "duracion"
 // como forma de llevar el contrato: el entrenador pone la fecha real de
@@ -162,7 +193,7 @@ async function manejarPost(req, res, sheets) {
     .filter(campo => Object.prototype.hasOwnProperty.call(campos, campo))
     .map(campo => ({
       range: `'${SHEET_NAME}'!${LETRA_COL[campo]}${filaSheet}`,
-      values: [[campos[campo] === null || campos[campo] === undefined ? '' : String(campos[campo])]],
+      values: [[sanearFormula(campos[campo] === null || campos[campo] === undefined ? '' : String(campos[campo]))]],
     }));
 
   if (!data.length) {
@@ -243,6 +274,34 @@ function parseFechaDDMMYYYY(str) {
   return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
 }
 
+// GET ?accion=estado-sistema — última ejecución conocida de cada tarea
+// programada (ver registrarEstadoTarea en libs/entrenador-notificaciones.js).
+// Lo consulta Clientes.html al cargar para avisar si algo se quedó sin
+// completar. Si la pestaña "Estado_Sistema" todavía no existe (recién
+// desplegado, nadie la ha creado a mano aún) no es un error — simplemente no
+// hay nada que avisar todavía.
+async function manejarEstadoSistema(req, res, sheets) {
+  const acceso = verificarEntrenador(req);
+  if (!acceso.ok) {
+    return res.status(401).json({ success: false, error: acceso.error });
+  }
+  try {
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'Estado_Sistema'!A:D`,
+    });
+    const tareas = (resp.data.values || []).map(f => ({
+      tarea: (f[0] || '').trim(),
+      ok: ['sí', 'si'].includes((f[1] || '').trim().toLowerCase()),
+      mensaje: (f[2] || '').trim(),
+      fecha: (f[3] || '').trim(),
+    })).filter(t => t.tarea);
+    res.status(200).json({ success: true, tareas });
+  } catch (e) {
+    res.status(200).json({ success: true, tareas: [] });
+  }
+}
+
 // GET ?accion=revisar-caducados — pasa a Inactivo a los clientes Activos cuya
 // fecha de fin ya venció, y avisa por correo si ha marcado alguno. La
 // dispara sola vercel.json cada día, con el CRON_SECRET que manda Vercel
@@ -259,6 +318,7 @@ async function manejarRevisarCaducados(req, res, sheets) {
     filas = resp.data.values || [];
   } catch (e) {
     await avisarFalloTareaProgramada('Revisión de caducados', e.message);
+    await registrarEstadoTarea(sheets, SPREADSHEET_ID, 'Revisión de caducados', false, e.message);
     return res.status(500).json({ success: false, error: `No se pudo leer la base de datos de clientes (${e.message}).` });
   }
 
@@ -292,6 +352,7 @@ async function manejarRevisarCaducados(req, res, sheets) {
       });
     } catch (e) {
       await avisarFalloTareaProgramada('Revisión de caducados', e.message);
+      await registrarEstadoTarea(sheets, SPREADSHEET_ID, 'Revisión de caducados', false, e.message);
       return res.status(500).json({ success: false, error: `No se pudo actualizar los clientes caducados (${e.message}).` });
     }
 
@@ -311,6 +372,7 @@ async function manejarRevisarCaducados(req, res, sheets) {
     }
   }
 
+  await registrarEstadoTarea(sheets, SPREADSHEET_ID, 'Revisión de caducados', true, '');
   res.status(200).json({ success: true, marcados: caducados.length });
 }
 
@@ -379,9 +441,15 @@ async function manejarBackupDiario(req, res) {
     const carpetaId = await asegurarCarpetaBackups(drive);
     await copiarConRetencion(drive, carpetaId, SPREADSHEET_ID_SESIONES, 'Kaska.Climb (sesiones)');
     await copiarConRetencion(drive, carpetaId, SPREADSHEET_ID, 'Kaska.Climb (clientes)');
+    await registrarEstadoTarea(await authSheets(), SPREADSHEET_ID, 'Copia de seguridad diaria', true, '');
     res.status(200).json({ success: true, message: 'Copia de seguridad diaria completada.' });
   } catch (e) {
     await avisarFalloTareaProgramada('Copia de seguridad diaria', e.message);
+    // registrarEstadoTarea solo usa la cuenta de servicio (siempre más fiable
+    // que el OAuth del entrenador, que es justo lo que puede haber fallado
+    // arriba) — así este aviso sigue quedando escrito aunque el correo, el
+    // propio Drive, o el token OAuth estén rotos.
+    await registrarEstadoTarea(await authSheets(), SPREADSHEET_ID, 'Copia de seguridad diaria', false, e.message);
     res.status(500).json({ success: false, error: e.message });
   }
 }
@@ -494,7 +562,12 @@ async function manejarAlta(req, res, sheets) {
   if (!process.env.ALTA_PASSWORD) {
     return res.status(500).json({ success: false, error: 'Falta configurar ALTA_PASSWORD en Vercel.' });
   }
+  const ip = String((req.headers['x-forwarded-for'] || '').split(',')[0] || '').trim() || 'desconocida';
+  if (demasiadosIntentosAlta(ip)) {
+    return res.status(429).json({ success: false, error: 'Demasiados intentos fallidos. Espera unos minutos y vuelve a intentarlo.' });
+  }
   if (!codigoAcceso || codigoAcceso !== process.env.ALTA_PASSWORD) {
+    registrarIntentoFallidoAlta(ip);
     return res.status(401).json({ success: false, error: 'Código de acceso incorrecto — pídeselo a tu entrenador.' });
   }
   // Mismo patrón que alta.html en el navegador — ahí solo protege de que el
@@ -538,14 +611,14 @@ async function manejarAlta(req, res, sheets) {
   const fila = new Array(15).fill('');
   fila[COL.marcaTemporal] = marcaTemporal;
   fila[COL.estado] = 'Activo';
-  fila[COL.nombre] = nombre;
-  fila[COL.apellidos] = apellidos;
-  fila[COL.telefono] = telefono || '';
-  fila[COL.correo] = correo.trim();
-  fila[COL.fechaNacimiento] = fechaNacimiento || '';
-  fila[COL.lesion] = lesion || '';
-  fila[COL.modalidad] = modalidad || '';
-  fila[COL.disponibilidad] = disponibilidadTexto;
+  fila[COL.nombre] = sanearFormula(nombre);
+  fila[COL.apellidos] = sanearFormula(apellidos);
+  fila[COL.telefono] = sanearFormula(telefono || '');
+  fila[COL.correo] = sanearFormula(correo.trim());
+  fila[COL.fechaNacimiento] = sanearFormula(fechaNacimiento || '');
+  fila[COL.lesion] = sanearFormula(lesion || '');
+  fila[COL.modalidad] = sanearFormula(modalidad || '');
+  fila[COL.disponibilidad] = sanearFormula(disponibilidadTexto);
   // Evidencia de consentimiento: la fecha es la misma que marcaTemporal (el
   // checkbox es obligatorio para llegar hasta aquí, así que el alta y la
   // aceptación ocurren en el mismo instante) — basta con dejar constancia de
@@ -727,6 +800,7 @@ module.exports = async (req, res) => {
     }
     const sheets = await authSheets();
     if (req.method === 'GET' && req.query && req.query.accion === 'revisar-caducados') return await manejarRevisarCaducados(req, res, sheets);
+    if (req.method === 'GET' && req.query && req.query.accion === 'estado-sistema') return await manejarEstadoSistema(req, res, sheets);
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     if (req.body && req.body.accion === 'alta') return await manejarAlta(req, res, sheets);
     if (req.body && req.body.accion === 'eliminar') return await manejarEliminar(req, res, sheets);

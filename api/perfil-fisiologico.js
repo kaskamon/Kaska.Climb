@@ -1,5 +1,6 @@
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
+const { sanearFormula } = require('../libs/sheets-sanitize.js');
 
 // Perfil fisiológico (test de fuerza/resistencia) por cliente — lo consulta
 // el propio cliente en cliente/perfil-fisiologico.html (histórico, para las
@@ -90,7 +91,7 @@ async function manejarPost(req, res, sheets) {
   }
 
   const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
-  const fila = [marcaTemporal, cliente, fecha, modalidad, JSON.stringify(capacidades)];
+  const fila = [marcaTemporal, sanearFormula(cliente), sanearFormula(fecha), sanearFormula(modalidad), JSON.stringify(capacidades)];
 
   try {
     let filaExistente = null;
