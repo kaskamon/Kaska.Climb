@@ -1,15 +1,17 @@
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
-const { lunesDe } = require('../libs/planificacion-semanas.js');
+const { lunesDe, parseFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
 const { authSheets, SCOPE_SOLO_LECTURA } = require('../libs/sheets-auth.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Respuestas de formulario 1';
 const COL_CORREO = 34; // AI — mismo campo que escribe api/enviar-sesion.js
 
-function parseFechaDDMMYYYY(s) {
-  const [d, m, y] = (s || '').split('/').map(Number);
-  if (!d || !m || !y) return null;
-  return new Date(y, m - 1, d).getTime();
+// Milisegundos (o null) de la fecha de sesión (columna C, dd/mm/aaaa) — se
+// usa así, numérico, para comparar contra el rango de la semana y para
+// ordenar.
+function fechaMs(s) {
+  const fecha = parseFechaDDMMYYYY(s);
+  return fecha ? fecha.getTime() : null;
 }
 
 // La marcaTemporal (columna A) la escribe api/enviar-sesion.js con
@@ -52,8 +54,8 @@ async function manejarRecientes(req, res, sheets) {
   // "hace X" y para ordenar — nunca para filtrar.
   const sesiones = filas
     .map(f => {
-      const fechaMs = parseFechaDDMMYYYY(f[2]);
-      return { marcaTemporal: f[0], marcaTemporalMs: parseMarcaTemporal(f[0]), nombre: f[1], fecha: f[2], mesociclo: f[3], correo: f[COL_CORREO], _fechaMs: fechaMs };
+      const _fechaMs = fechaMs(f[2]);
+      return { marcaTemporal: f[0], marcaTemporalMs: parseMarcaTemporal(f[0]), nombre: f[1], fecha: f[2], mesociclo: f[3], correo: f[COL_CORREO], _fechaMs };
     })
     .filter(s => s._fechaMs !== null && s._fechaMs >= inicioSemana && s._fechaMs < finSemana)
     .sort((a, b) => (b.marcaTemporalMs ?? b._fechaMs) - (a.marcaTemporalMs ?? a._fechaMs))
@@ -86,7 +88,7 @@ async function manejarHistorialCliente(req, res, sheets) {
   // cronológico. Las filas sin fecha parseable se quedan al final.
   const historial = filas
     .filter(f => f[COL_CORREO] === cliente)
-    .map(f => ({ fecha: f[2], mesociclo: f[3], marcaTemporal: f[0], _t: parseFechaDDMMYYYY(f[2]) }))
+    .map(f => ({ fecha: f[2], mesociclo: f[3], marcaTemporal: f[0], _t: fechaMs(f[2]) }))
     .sort((a, b) => (b._t ?? -Infinity) - (a._t ?? -Infinity)) // más reciente primero
     .slice(0, max)
     .map(({ _t, ...resto }) => resto);

@@ -1,6 +1,7 @@
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 const { sanearFormula } = require('../libs/sheets-sanitize.js');
+const { parseFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
 
 // Perfil fisiológico (test de fuerza/resistencia) por cliente — lo consulta
 // el propio cliente en cliente/perfil-fisiologico.html (histórico, para las
@@ -22,12 +23,6 @@ const { sanearFormula } = require('../libs/sheets-sanitize.js');
 // eso es historial real para las comparativas de progreso.
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Perfiles_Fisiologicos';
-
-function parseFechaDDMMYYYY(s) {
-  const [d, m, y] = (s || '').split('/').map(Number);
-  if (!d || !m || !y) return null;
-  return new Date(y, m - 1, d).getTime();
-}
 
 function authSheets() {
   return authSheetsCacheado(SCOPE_LECTURA_ESCRITURA);
@@ -70,7 +65,7 @@ async function manejarGet(req, res, sheets) {
   });
 
   const perfiles = Array.from(porFecha.values())
-    .sort((a, b) => (parseFechaDDMMYYYY(a.fecha) || 0) - (parseFechaDDMMYYYY(b.fecha) || 0));
+    .sort((a, b) => (parseFechaDDMMYYYY(a.fecha)?.getTime() || 0) - (parseFechaDDMMYYYY(b.fecha)?.getTime() || 0));
 
   res.status(200).json({ success: true, perfiles });
 }

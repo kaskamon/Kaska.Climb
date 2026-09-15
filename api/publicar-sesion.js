@@ -2,6 +2,7 @@ const { COLUMNS, CATEGORIA_VISUAL } = require('../libs/mesociclos-config.js');
 const { verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 const { sanearFormula } = require('../libs/sheets-sanitize.js');
+const { parseFechaDDMMYYYY, lunesDe } = require('../libs/planificacion-semanas.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 // Misma pestaña que lee api/obtener-sesion.js. Columnas: A marcaTemporal,
@@ -13,20 +14,6 @@ const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 // real de la que viene esa descarga — FMAX/REOX/DESOX/AERO — para que
 // cliente/sesion.html use los umbrales de esa cualidad en vez de uno fijo).
 const SHEET_NAME = 'Sesiones_Programadas';
-
-function parseFechaDDMMYYYY(s) {
-  const [d, m, y] = (s || '').split('/').map(Number);
-  if (!d || !m || !y) return null;
-  return new Date(y, m - 1, d);
-}
-function lunesDe(date) {
-  const diaSemana = date.getDay(); // 0=domingo .. 6=sábado
-  const offsetALunes = diaSemana === 0 ? -6 : 1 - diaSemana;
-  const lunes = new Date(date);
-  lunes.setDate(lunes.getDate() + offsetALunes);
-  lunes.setHours(0, 0, 0, 0);
-  return lunes;
-}
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {

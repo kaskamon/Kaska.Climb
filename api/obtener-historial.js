@@ -1,6 +1,7 @@
 const { COLUMNS } = require('../libs/mesociclos-config.js');
 const { verificarAccesoCliente } = require('../libs/sesion-cliente.js');
 const { authSheets, SCOPE_SOLO_LECTURA } = require('../libs/sheets-auth.js');
+const { parseFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Respuestas de formulario 1';
@@ -20,12 +21,6 @@ const COL_DOMINADAS_CON_LASTRE = 4;
 // Clave especial en porMesociclo (no es un mesociclo real) para esta serie —
 // Seguimiento.html la ofrece como variable extra dentro de la pestaña FMAX.
 const CLAVE_DOMINADAS = 'DOMINADAS_LASTRE';
-
-function parseFechaDDMMYYYY(s) {
-  const [d, m, y] = (s || '').split('/').map(Number);
-  if (!d || !m || !y) return null;
-  return new Date(y, m - 1, d).getTime();
-}
 
 // Para el chequeo de recuperación de cliente/sesion.html: el PFinicial y el
 // Fmax reflejan el estado físico real del cliente en ese momento, no algo
@@ -50,7 +45,7 @@ function extraerHistorialCrossMesociclo(filas, cliente, max) {
       const entrenada = cfg.fmaxIzq !== undefined ? (fmaxIzq !== undefined && fmaxIzq !== '') : true;
       return {
         fecha: f[2],
-        _t: parseFechaDDMMYYYY(f[2]),
+        _t: parseFechaDDMMYYYY(f[2])?.getTime(),
         mesociclo: filaMesociclo,
         pfInicial: Number(f[cfg.pfInicial]),
         entrenada,

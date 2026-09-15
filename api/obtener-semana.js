@@ -1,34 +1,20 @@
 const { verificarAccesoCliente } = require('../libs/sesion-cliente.js');
 const { CATEGORIA_VISUAL } = require('../libs/mesociclos-config.js');
 const { authSheets, SCOPE_SOLO_LECTURA } = require('../libs/sheets-auth.js');
+const { parseFechaDDMMYYYY, formatFechaDDMMYYYY, lunesDe } = require('../libs/planificacion-semanas.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Sesiones_Programadas';
 
-function parseFechaDDMMYYYY(s) {
-  const [d, m, y] = (s || '').split('/').map(Number);
-  if (!d || !m || !y) return null;
-  return new Date(y, m - 1, d);
-}
-function formatFecha(date) {
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  return `${dd}/${mm}/${date.getFullYear()}`;
-}
-
 // Dado cualquier fecha de referencia, devuelve las 7 fechas (dd/mm/aaaa) de esa
 // semana, Lunes a Domingo.
 function diasDeLaSemana(ref) {
-  const diaSemana = ref.getDay(); // 0=domingo .. 6=sábado
-  const offsetALunes = diaSemana === 0 ? -6 : 1 - diaSemana;
-  const lunes = new Date(ref);
-  lunes.setDate(lunes.getDate() + offsetALunes);
-
+  const lunes = lunesDe(ref);
   const dias = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(lunes);
     d.setDate(d.getDate() + i);
-    dias.push(formatFecha(d));
+    dias.push(formatFechaDDMMYYYY(d));
   }
   return dias;
 }

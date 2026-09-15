@@ -2,6 +2,7 @@ const { driveComoEntrenador, clienteOAuth, SCOPES, GOOGLE_CLIENT_ID, obtenerAcce
 const { verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 const { sanearFormula } = require('../libs/sheets-sanitize.js');
+const { parseFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
 const {
   CORREO_ENTRENADOR,
   enviarCorreoComoEntrenador,
@@ -287,13 +288,6 @@ async function manejarEliminar(req, res, sheets) {
   }
 
   res.status(200).json({ success: true, message: 'Cliente eliminado correctamente.' });
-}
-
-// Igual que Clientes.html — dd/mm/aaaa es el único formato de fecha que se usa en este Sheet.
-function parseFechaDDMMYYYY(str) {
-  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec((str || '').trim());
-  if (!m) return null;
-  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
 }
 
 // GET ?accion=estado-sistema — última ejecución conocida de cada tarea
