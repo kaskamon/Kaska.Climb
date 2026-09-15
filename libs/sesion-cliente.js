@@ -70,23 +70,35 @@ function verificarToken(token, correoEsperado) {
 // cada fetch() del mismo origen). Vale cualquiera de las dos; sin ninguna,
 // se rechaza. token puede venir de query, body o cabecera Authorization
 // "Bearer <token>".
+//
+// El token manda siempre que exista: si el propio entrenador entra en su
+// área de cliente real desde el mismo dispositivo/navegador donde usa sus
+// herramientas, el navegador reenvía igualmente la Basic Auth cacheada junto
+// con el token — sin esto se colaría como "vista de entrenador" en su propia
+// sesión de cliente. Basic Auth solo decide cuando NO hay token, que es
+// justo el caso de "ver como cliente" desde Programación (manda el token
+// vacío a propósito).
 function verificarAccesoCliente(req, correoEsperado) {
+  let token = (req.query && req.query.token) || (req.body && req.body.token);
   const cabecera = req.headers && req.headers.authorization;
+  if (!token && cabecera && cabecera.startsWith('Bearer ')) token = cabecera.slice(7);
+
+  if (token) {
+    const resultado = verificarToken(token, correoEsperado);
+    if (!resultado.ok) return { ok: false, error: resultado.error };
+    return { ok: true, esEntrenador: false, correo: resultado.correo };
+  }
+
   if (cabecera && cabecera.startsWith('Basic ')) {
     try {
       const [usuario, clave] = Buffer.from(cabecera.slice(6), 'base64').toString('utf8').split(':');
       if (usuario === process.env.TRAINER_USER && clave === process.env.TRAINER_PASS) {
         return { ok: true, esEntrenador: true };
       }
-    } catch (e) { /* cae al intento por token */ }
+    } catch (e) { /* cae al error de abajo */ }
   }
 
-  let token = (req.query && req.query.token) || (req.body && req.body.token);
-  if (!token && cabecera && cabecera.startsWith('Bearer ')) token = cabecera.slice(7);
-
-  const resultado = verificarToken(token, correoEsperado);
-  if (!resultado.ok) return { ok: false, error: resultado.error };
-  return { ok: true, esEntrenador: false, correo: resultado.correo };
+  return { ok: false, error: 'Sesión no válida — vuelve a iniciar sesión.' };
 }
 
 // Para acciones que solo debe poder hacer el entrenador (p.ej. publicar un
