@@ -1,4 +1,4 @@
-const { driveComoEntrenador, clienteOAuth, SCOPES, GOOGLE_CLIENT_ID, obtenerAccessTokenEntrenador } = require('../libs/google-oauth-entrenador.js');
+const { driveComoEntrenador, clienteOAuth, SCOPES, GOOGLE_CLIENT_ID, obtenerAccessTokenEntrenador, explicarErrorOAuth } = require('../libs/google-oauth-entrenador.js');
 const { verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 const { sanearFormula } = require('../libs/sheets-sanitize.js');
@@ -466,13 +466,14 @@ async function manejarBackupDiario(req, res) {
     await registrarEstadoTarea(await authSheets(), SPREADSHEET_ID, 'Copia de seguridad diaria', true, '');
     res.status(200).json({ success: true, message: 'Copia de seguridad diaria completada.' });
   } catch (e) {
-    await avisarFalloTareaProgramada('Copia de seguridad diaria', e.message);
+    const mensaje = explicarErrorOAuth(e.message);
+    await avisarFalloTareaProgramada('Copia de seguridad diaria', mensaje);
     // registrarEstadoTarea solo usa la cuenta de servicio (siempre más fiable
     // que el OAuth del entrenador, que es justo lo que puede haber fallado
     // arriba) — así este aviso sigue quedando escrito aunque el correo, el
     // propio Drive, o el token OAuth estén rotos.
-    await registrarEstadoTarea(await authSheets(), SPREADSHEET_ID, 'Copia de seguridad diaria', false, e.message);
-    res.status(500).json({ success: false, error: e.message });
+    await registrarEstadoTarea(await authSheets(), SPREADSHEET_ID, 'Copia de seguridad diaria', false, mensaje);
+    res.status(500).json({ success: false, error: mensaje });
   }
 }
 

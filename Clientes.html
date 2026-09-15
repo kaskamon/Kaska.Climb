@@ -190,7 +190,9 @@
   </div>
 </div>
 
+<script src="libs/planificacion-semanas.js"></script>
 <script>
+const { parseFechaDDMMYYYY, formatFechaDDMMYYYY: formatearFecha } = window.PLANIFICACION_SEMANAS;
 let TODOS_LOS_CLIENTES = [];
 let filtroEstado = 'activo';
 let textoBusqueda = '';
@@ -200,17 +202,6 @@ function escapeHtml(str){
   return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// Fecha de inicio/fin son texto en formato dd/mm/aaaa, igual que el resto de
-// fechas de este Sheet (fecha de nacimiento, etc.) — mismo criterio en toda
-// la app, sin inputs type="date" que dependen del idioma del navegador.
-function parseFechaDDMMYYYY(str){
-  const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(str || '');
-  if(!m) return null;
-  return new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
-}
-function formatearFecha(d){
-  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-}
 function celdaVencimiento(c){
   const vence = parseFechaDDMMYYYY(c.fechaFin);
   if(!vence) return '—';

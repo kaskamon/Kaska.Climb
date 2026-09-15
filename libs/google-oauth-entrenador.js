@@ -71,4 +71,20 @@ async function obtenerAccessTokenEntrenador() {
   return token;
 }
 
-module.exports = { GOOGLE_CLIENT_ID, REDIRECT_URI, SCOPES, clienteOAuth, driveComoEntrenador, gmailComoEntrenador, obtenerAccessTokenEntrenador };
+// El mensaje que llega aquí cuando el refresh token EXISTE pero ya no es
+// válido (revocado a mano, 6 meses sin usarse, contraseña de Google
+// cambiada...) es el genérico de Google ("invalid_grant: Token has been
+// expired or revoked."), que no dice qué hacer — a diferencia del caso de
+// "todavía no está conectada" (más arriba), que sí da la instrucción
+// completa. Se usa donde se reporta un fallo al entrenador (p.ej. el aviso
+// de la copia de seguridad diaria), para que el mensaje diga qué hacer en
+// los dos casos, no solo en uno.
+function explicarErrorOAuth(mensaje) {
+  const texto = String(mensaje || '');
+  if (/invalid_grant/i.test(texto)) {
+    return `${texto} — la conexión con tu cuenta de Google ha caducado o ha sido revocada. Vuelve a conectarla en /api/listar-clientes?accion=drive-oauth-inicio (con tu contraseña de entrenador).`;
+  }
+  return texto;
+}
+
+module.exports = { GOOGLE_CLIENT_ID, REDIRECT_URI, SCOPES, clienteOAuth, driveComoEntrenador, gmailComoEntrenador, obtenerAccessTokenEntrenador, explicarErrorOAuth };
