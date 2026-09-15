@@ -63,6 +63,7 @@
   table.tabla-clientes tbody tr:hover{ background:rgba(124,144,112,0.06); }
   .nombre-cliente{ font-weight:700; color:var(--chalk); }
   .nombre-cliente .correo{ display:block; font-weight:400; font-size:11.5px; color:var(--chalk-faint); margin-top:2px; }
+  .tag-condiciones{ color:var(--moss-light); font-weight:700; letter-spacing:0.2px; }
 
   .pill{ display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:800; letter-spacing:0.5px; text-transform:uppercase; padding:5px 11px; border-radius:99px; }
   .pill::before{ content:""; width:6px; height:6px; border-radius:50%; }
@@ -113,7 +114,6 @@
 
   .btn-fila.tiene-lesion{ border-color:var(--danger); color:var(--danger); }
   .btn-fila.tiene-lesion:hover{ border-color:var(--danger); color:var(--chalk); background:rgba(201,112,91,0.14); }
-
 
   .overlay-lesion{
     display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:100;
@@ -367,7 +367,7 @@ function render(){
   lista.forEach(c => {
     const editando = c.email === correoEditando;
     html += `<tr class="${editando?'fila-editando':''}">
-      <td class="nombre-cliente">${escapeHtml(c.nombreCompleto) || '<em>(sin nombre)</em>'}<span class="correo">${escapeHtml(c.email)}</span></td>
+      <td class="nombre-cliente">${escapeHtml(c.nombreCompleto) || '<em>(sin nombre)</em>'}<span class="correo">${escapeHtml(c.email)}${c.condicionesAceptadas ? ' <span class="tag-condiciones" title="Aceptó la política de privacidad y el aviso de responsabilidad en el alta">✓ condiciones</span>' : ''}</span></td>
       <td><span class="pill ${c.estado.toLowerCase()==='activo'?'activo':'inactivo'}">${escapeHtml(c.estado || '—')}</span></td>
       <td>${escapeHtml(c.modalidad || '—')}</td>
       <td>${escapeHtml(c.disponibilidad || '—')}</td>

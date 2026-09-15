@@ -44,29 +44,53 @@ async function avisarFalloTareaProgramada(nombreTarea, mensajeError) {
 
 // Deja constancia del resultado de la última ejecución de una tarea
 // programada (backup diario, revisión de caducados) en la pestaña
-// "Estado_Sistema" del Sheet de Clientes (hay que crearla a mano, igual que
-// otras pestañas de la app — columnas: A tarea, B ok (Sí/No), C mensaje,
-// D fecha). A diferencia del aviso por correo, esto solo depende de la
-// cuenta de servicio (la misma que ya usa toda la app para leer/escribir
-// Sheets) — nunca del token OAuth del propio entrenador, que es justo lo que
-// puede romperse en silencio con el tiempo. Así, aunque el correo de aviso
-// falle porque el OAuth está roto, esto se sigue escribiendo, y Clientes.html
-// puede mostrarlo como un aviso visible la próxima vez que se abra la app.
-// Nunca lanza — si la pestaña ni siquiera existe todavía, no debe romper la
-// tarea programada en sí, que ya tiene su propio manejo de errores.
+// "Estado_Sistema" del Sheet de Clientes — columnas: A tarea, B ok (Sí/No),
+// C mensaje, D fecha. A diferencia del aviso por correo, esto solo depende
+// de la cuenta de servicio (la misma que ya usa toda la app para leer/
+// escribir Sheets) — nunca del token OAuth del propio entrenador, que es
+// justo lo que puede romperse en silencio con el tiempo. Así, aunque el
+// correo de aviso falle porque el OAuth está roto, esto se sigue
+// escribiendo, y Clientes.html puede mostrarlo como un aviso visible la
+// próxima vez que se abra la app.
+//
+// La pestaña se crea sola la primera vez que hace falta (con su cabecera) —
+// no hace falta crearla a mano en el Sheet, a diferencia de otras pestañas
+// de la app. Nunca lanza — un fallo aquí no debe romper la tarea programada
+// en sí, que ya tiene su propio manejo de errores.
 async function registrarEstadoTarea(sheets, spreadsheetId, tarea, ok, mensaje) {
   const SHEET_ESTADO = 'Estado_Sistema';
+  const fecha = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
+  const fila = [tarea, ok ? 'Sí' : 'No', sanearFormula((mensaje || '').toString().slice(0, 500)), fecha];
+
   try {
-    const resp = await sheets.spreadsheets.values.get({ spreadsheetId, range: `'${SHEET_ESTADO}'!A:A` });
-    const filas = resp.data.values || [];
+    let filas;
+    try {
+      const resp = await sheets.spreadsheets.values.get({ spreadsheetId, range: `'${SHEET_ESTADO}'!A:A` });
+      filas = resp.data.values || [];
+    } catch (e) {
+      // La pestaña no existe todavía (primera vez que se llama a esta
+      // función desde que se desplegó) — la creamos con su cabecera y
+      // seguimos como si acabara de leerse vacía.
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: { requests: [{ addSheet: { properties: { title: SHEET_ESTADO } } } ] },
+      });
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `'${SHEET_ESTADO}'!A1:D1`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [['Tarea', 'OK', 'Mensaje', 'Fecha']] },
+      });
+      filas = [['Tarea']]; // ya cuenta la cabecera como fila 1
+    }
+
     const idx = filas.findIndex(f => (f[0] || '').trim() === tarea);
     const filaDestino = idx !== -1 ? idx + 1 : filas.length + 1;
-    const fecha = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: `'${SHEET_ESTADO}'!A${filaDestino}:D${filaDestino}`,
       valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [[tarea, ok ? 'Sí' : 'No', sanearFormula((mensaje || '').toString().slice(0, 500)), fecha]] },
+      requestBody: { values: [fila] },
     });
   } catch (e) {
     console.error(`No se pudo registrar el estado de la tarea "${tarea}": ${e.message}`);

@@ -142,9 +142,9 @@ async function manejarPost(req, res, sheets) {
 }
 
 // Una única lectura (en paralelo) de clientes activos + todos los
-// macrociclos + todas las semanas ya publicadas — la usan tanto el aviso de
-// "semana siguiente sin publicar" como la rejilla de Programación, para no
-// repetir una llamada a Sheets por cliente.
+// macrociclos + todas las semanas ya publicadas — la usa la rejilla de
+// Programación (manejarGrid), para no repetir una llamada a Sheets por
+// cliente.
 async function datosBaseParaRevision(sheets) {
   const [respClientes, respMacros, respProgramadas] = await Promise.all([
     sheets.spreadsheets.values.get({ spreadsheetId: CLIENTES_SPREADSHEET_ID, range: `'${CLIENTES_SHEET_NAME}'!A:N` }),

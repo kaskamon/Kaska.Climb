@@ -57,6 +57,22 @@ const COL = {
   fechaInicio: 12, fechaFin: 13, condicionesAceptadas: 14,
 };
 
+// Defensa mínima contra una columna reordenada o insertada a mano en el
+// Sheet (el entrenador ya edita cosas ahí directamente, como fechaFin): si
+// la cabecera de la columna de correo (G, índice 6 — el identificador real
+// del cliente en toda la app) deja de contener "correo", es señal de que las
+// columnas ya no están donde el resto del código asume. Mejor fallar aquí
+// con un aviso claro que seguir leyendo/escribiendo silenciosamente datos de
+// un cliente en la fila de otro. Devuelve un mensaje de error, o null si la
+// cabecera está donde debería.
+function errorCabeceraClientes(filas) {
+  const cabecera = (filas[0] && filas[0][COL.correo]) || '';
+  if (!cabecera.toLowerCase().includes('correo')) {
+    return `La columna de correo del Sheet de clientes no tiene la cabecera esperada (dice "${cabecera}") — puede que se haya movido alguna columna. Revísalo en el Sheet antes de seguir.`;
+  }
+  return null;
+}
+
 // Campos que se pueden editar desde Clientes.html — Correo es el identificador
 // real en toda la app (se usa como clave en todos los demás Sheets), así que
 // deliberadamente no es editable aquí; Nombre/Apellidos tampoco, para no
@@ -104,6 +120,8 @@ async function manejarGet(req, res, sheets) {
       error: `No se pudo leer la base de datos de clientes (${e.message}).`,
     });
   }
+  const errorCab = errorCabeceraClientes(filas);
+  if (errorCab) return res.status(500).json({ success: false, error: errorCab });
 
   const esCompleto = req.query && (req.query.completo === '1' || req.query.completo === 'true');
 
@@ -180,6 +198,8 @@ async function manejarPost(req, res, sheets) {
   } catch (e) {
     return res.status(500).json({ success: false, error: `No se pudo leer la base de datos de clientes (${e.message}).` });
   }
+  const errorCabPost = errorCabeceraClientes(filas);
+  if (errorCabPost) return res.status(500).json({ success: false, error: errorCabPost });
 
   const correoBuscado = correo.trim().toLowerCase();
   const indiceFila = filas.findIndex(f => (f[COL.correo] || '').trim().toLowerCase() === correoBuscado);
@@ -239,6 +259,8 @@ async function manejarEliminar(req, res, sheets) {
 
   const correoBuscado = correo.trim().toLowerCase();
   const filas = resp.data.values || [];
+  const errorCabElim = errorCabeceraClientes(filas);
+  if (errorCabElim) return res.status(500).json({ success: false, error: errorCabElim });
   const indiceFila = filas.findIndex(f => (f[COL.correo] || '').trim().toLowerCase() === correoBuscado);
   if (indiceFila === -1) {
     return res.status(404).json({ success: false, error: `No se encontró ningún cliente con el correo "${correo}".` });
@@ -320,6 +342,12 @@ async function manejarRevisarCaducados(req, res, sheets) {
     await avisarFalloTareaProgramada('Revisión de caducados', e.message);
     await registrarEstadoTarea(sheets, SPREADSHEET_ID, 'Revisión de caducados', false, e.message);
     return res.status(500).json({ success: false, error: `No se pudo leer la base de datos de clientes (${e.message}).` });
+  }
+  const errorCabCad = errorCabeceraClientes(filas);
+  if (errorCabCad) {
+    await avisarFalloTareaProgramada('Revisión de caducados', errorCabCad);
+    await registrarEstadoTarea(sheets, SPREADSHEET_ID, 'Revisión de caducados', false, errorCabCad);
+    return res.status(500).json({ success: false, error: errorCabCad });
   }
 
   const hoy = new Date();
@@ -595,6 +623,8 @@ async function manejarAlta(req, res, sheets) {
   } catch (e) {
     return res.status(500).json({ success: false, error: `No se pudo leer la base de datos de clientes (${e.message}).` });
   }
+  const errorCabAlta = errorCabeceraClientes(filas);
+  if (errorCabAlta) return res.status(500).json({ success: false, error: errorCabAlta });
 
   const correoNuevo = correo.trim().toLowerCase();
   const yaExiste = filas.some(f => (f[COL.correo] || '').trim().toLowerCase() === correoNuevo);
