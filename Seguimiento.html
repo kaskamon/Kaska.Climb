@@ -1027,7 +1027,12 @@ document.getElementById('selectorVariable').addEventListener('change', (e) => {
 // segundo bloque pintaría encima del primero), así que en cuanto un bloque
 // termina de dibujarse le quitamos el id al suyo, dejando libre "chartPF"
 // para el siguiente.
-function agregarBloqueImpresion(contenedor, titulo, fn){
+// quitarTabla: el bloque "Fuerza" pinta su propia tabla de datos, pero esos
+// mismos datos ya están en el bloque "Resumen (todos los datos)" justo
+// encima — repetirlos era lo que forzaba el salto de página incómodo entre
+// gráfico y tabla. Con quitarTabla=true se descarta esa tabla duplicada
+// después de pintar, dejando solo casillas + gráfico.
+function agregarBloqueImpresion(contenedor, titulo, fn, quitarTabla){
   const bloque = document.createElement('div');
   bloque.className = 'bloque-impresion';
   bloque.innerHTML = `<h3>${escapeHtml(titulo)}</h3>`;
@@ -1037,6 +1042,10 @@ function agregarBloqueImpresion(contenedor, titulo, fn){
   fn(cuerpo);
   const svg = cuerpo.querySelector('#chartPF');
   if(svg) svg.removeAttribute('id');
+  if(quitarTabla){
+    const tabla = cuerpo.querySelector('.tabla-datos-wrap');
+    if(tabla) tabla.remove();
+  }
 }
 
 // Convierte el valor de un <input type="date"> ("aaaa-mm-dd") a Date en
@@ -1143,7 +1152,7 @@ async function exportarPDFCompleto(macrociclosElegidos){
     areaImpresion.appendChild(seccion);
 
     agregarBloqueImpresion(seccion, 'Resumen (todos los datos)', pintarPanelResumen);
-    agregarBloqueImpresion(seccion, 'Fuerza (PFinicial / Fmax)', (c) => pintarPanelFuerza(c, historialEntrenado));
+    agregarBloqueImpresion(seccion, 'Fuerza (PFinicial / Fmax)', (c) => pintarPanelFuerza(c, historialEntrenado), true);
   });
 
   if(!huboAlgo){
