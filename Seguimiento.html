@@ -212,7 +212,13 @@
        a saco de antes. */
     .chart-shell{ page-break-inside:avoid; page-break-after:avoid; }
     .stat-tiles{ page-break-inside:avoid; page-break-after:avoid; }
-    .bloque-impresion > h3{ page-break-after:avoid; }
+    /* padding-top (no margin-top): cuando un título cae justo al empezar
+       una página nueva (p.ej. "Fuerza" si no cupo detrás de "Resumen"), el
+       margen se pega al borde — los navegadores no repiten margin en el
+       punto de un salto de página, solo lo hacen con la propia @page. El
+       padding, en cambio, sí forma parte de la caja del propio título y se
+       ve tanto si cae a mitad de página como si abre una página nueva. */
+    .bloque-impresion > h3{ page-break-after:avoid; padding-top:10mm; }
     table.tabla-datos tr{ page-break-inside:avoid; }
     /* Orden en impresión = mismo orden que en pantalla (casillas, gráfico,
        tabla). No se reordena por columnas: solo se protege lo que no puede
