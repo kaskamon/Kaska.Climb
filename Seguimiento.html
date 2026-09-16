@@ -144,8 +144,7 @@
      @media print, reutilizando los mismos pintarPanelX() que la vista
      interactiva (misma factura visual, sin duplicar el dibujado). */
   #areaImpresion{ display:none; }
-  #areaImpresion h1{ font-size:26px; margin-bottom:4px; }
-  #areaImpresion .fecha-informe{ color:var(--chalk-faint); font-size:12.5px; margin-bottom:0; }
+  #areaImpresion h1{ font-size:26px; margin-bottom:16px; }
   #areaImpresion h2{ font-size:20px; color:var(--moss-light); margin:0 0 16px; padding-top:18px; border-top:1px solid var(--line-strong); }
   #areaImpresion .seccion-impresion:first-of-type h2{ border-top:none; padding-top:0; }
   #areaImpresion h3{ font-family:'Work Sans',sans-serif; font-weight:800; font-size:13px; letter-spacing:0.4px; text-transform:uppercase; color:var(--chalk-dim); margin:0 0 10px; }
@@ -153,15 +152,13 @@
 
   @media print {
     @page { size: landscape; margin: 12mm; }
-    :root{
-      --stone-900:#ffffff; --stone-800:#f5f3ef; --stone-700:#e9e6df;
-      --chalk:#1c211e; --chalk-dim:#3a3f3b; --chalk-faint:#6b706a;
-      --line:rgba(28,33,30,0.14); --line-strong:rgba(28,33,30,0.22);
-    }
+    /* Mismo fondo y colores oscuros que la app en pantalla — por defecto el
+       navegador imprime sin fondos/colores ("ahorro de tinta"), así que hay
+       que pedírselo explícitamente o el informe saldría en blanco. */
+    *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
     body > *:not(#areaImpresion){ display:none !important; }
-    body{ background:#fff; }
-    #areaImpresion{ display:block; }
-    .grafica .grid-linea{ stroke:rgba(28,33,30,0.18) !important; }
+    body{ background:var(--stone-900); }
+    #areaImpresion{ display:block; background:var(--stone-900); }
     .seccion-impresion{ page-break-before:always; }
     .seccion-impresion:first-of-type{ page-break-before:auto; }
     .bloque-impresion, .stat-tiles{ page-break-inside:avoid; }
@@ -278,7 +275,7 @@
 </div>
 
 <script>
-const { parseFechaDDMMYYYY, formatFechaDDMMYYYY } = window.PLANIFICACION_SEMANAS;
+const { parseFechaDDMMYYYY } = window.PLANIFICACION_SEMANAS;
 const MESO_COLORS = { REOX:'#7c9070', AERO:'#93859e', DESOX:'#70908c', FMAX:'#c17c74', TAPERING:'#c99a5b' };
 let PORMESOCICLO = null;
 let MESO_ACTIVO = 'REOX';
@@ -721,20 +718,23 @@ function pintarPanelResumen(panel){
 
   // PFinicial (%) — misma variación que pintarPanelPfPct, frente a la
   // sesión ENTRENADA anterior (los días no recuperados no cuentan como
-  // referencia ni tienen su propio %, igual que ahí).
+  // referencia ni tienen su propio %, igual que ahí). Positivo en verde,
+  // negativo en rojo — mismo criterio de color que ya usan pintarPanelPfPct
+  // y pintarPanelPfFinalPct.
+  const celdaPct = pct => ({ texto: `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`, color: pct >= 0 ? 'var(--moss-light)' : 'var(--danger)' });
   let anteriorPfInicial;
   const filas = todas.map(h => {
     const celdas = [h.fecha, String(h.pfInicial)];
     if(h.entrenada){
-      const pfInicialPct = (anteriorPfInicial !== undefined && anteriorPfInicial !== 0)
-        ? `${h.pfInicial >= anteriorPfInicial ? '+' : ''}${((h.pfInicial - anteriorPfInicial) / anteriorPfInicial * 100).toFixed(1)}%`
+      const pfInicialCelda = (anteriorPfInicial !== undefined && anteriorPfInicial !== 0)
+        ? celdaPct((h.pfInicial - anteriorPfInicial) / anteriorPfInicial * 100)
         : '—';
-      celdas.push(pfInicialPct, h.fmaxIzq ?? '—', h.fmaxDer ?? '—');
+      celdas.push(pfInicialCelda, h.fmaxIzq ?? '—', h.fmaxDer ?? '—');
       if(tienePfFinal){
-        const pfFinalPct = (h.pfFinal !== undefined && h.pfFinal !== null && h.pfInicial !== 0)
-          ? `${((h.pfInicial - h.pfFinal) / h.pfInicial * 100).toFixed(1)}%`
+        const pfFinalCelda = (h.pfFinal !== undefined && h.pfFinal !== null && h.pfInicial !== 0)
+          ? celdaPct((h.pfInicial - h.pfFinal) / h.pfInicial * 100)
           : '—';
-        celdas.push(h.pfFinal ?? '—', pfFinalPct);
+        celdas.push(h.pfFinal ?? '—', pfFinalCelda);
       }
       campos.forEach((c, i) => {
         const v = (h.campos || [])[i];
@@ -756,7 +756,13 @@ function pintarPanelResumen(panel){
       <table class="tabla-datos">
         <thead><tr>${cabeceras.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
         <tbody>${filas.map(f => {
-          const celdasHtml = f.celdas.map(v => `<td${f.entrenada ? '' : ' class="no-entrenada"'}>${escapeHtml(v)}</td>`).join('');
+          const celdasHtml = f.celdas.map(v => {
+            const claseBase = f.entrenada ? '' : ' class="no-entrenada"';
+            if(v && typeof v === 'object'){
+              return `<td${claseBase} style="color:${v.color};">${escapeHtml(v.texto)}</td>`;
+            }
+            return `<td${claseBase}>${escapeHtml(v)}</td>`;
+          }).join('');
           const notaHtml = f.notas
             ? `<td${f.entrenada ? '' : ' class="no-entrenada"'}><span class="nota-marcador" title="${escapeHtml(f.notas)}">Ver nota</span></td>`
             : `<td${f.entrenada ? '' : ' class="no-entrenada"'}>—</td>`;
@@ -1021,11 +1027,7 @@ async function exportarPDFCompleto(desdeStr, hastaStr){
   const pormesocicloOriginal = PORMESOCICLO;
   PORMESOCICLO = filtrarPorFechas(pormesocicloOriginal, desdeStr, hastaStr);
 
-  const fechaInforme = new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' });
-  const rangoTexto = (desdeStr || hastaStr)
-    ? ` — del ${desdeStr ? formatFechaDDMMYYYY(fechaInputALocal(desdeStr)) : 'inicio'} al ${hastaStr ? formatFechaDDMMYYYY(fechaInputALocal(hastaStr)) : 'hoy'}`
-    : '';
-  areaImpresion.innerHTML = `<h1>${escapeHtml(nombreCliente)}</h1><p class="fecha-informe">Informe de progresión — generado el ${fechaInforme}${escapeHtml(rangoTexto)}</p>`;
+  areaImpresion.innerHTML = `<h1>${escapeHtml(nombreCliente)}</h1>`;
 
   const MESOS_INFORME = ['FMAX', 'REOX', 'DESOX', 'AERO', 'TAPERING'];
   let huboAlgo = false;
