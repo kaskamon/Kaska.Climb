@@ -148,9 +148,11 @@
   /* Franja oscura como la del topbar de la propia app — se saca del padding
      de #areaImpresion con márgenes negativos para que llegue de borde a
      borde de la página, en vez de quedar como un bloque más flotando sobre
-     el fondo claro. */
+     el fondo claro. Márgenes negativos ajustados al padding actual de
+     #areaImpresion (14mm arriba, 10mm a los lados) para que siga llegando
+     justo al borde; padding reducido para que la franja sea más fina. */
   #areaImpresion .marca-informe{
-    background:rgba(28,33,30,0.92); margin:-6mm -4mm 20px; padding:10mm 4mm 8mm;
+    background:rgba(28,33,30,0.92); margin:-14mm -10mm 14px; padding:5mm 10mm 4mm;
   }
   #areaImpresion .marca-informe .eyebrow{ margin-bottom:6px; }
   #areaImpresion .marca-informe h4{ font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.4px; font-size:17px; color:var(--chalk-dim); margin:0; }
@@ -200,8 +202,17 @@
        altura (el propio gráfico y las 4 casillas de estadísticas) — la
        tabla, en cambio, puede fluir con normalidad entre páginas, con cada
        fila intacta. */
-    .chart-shell{ page-break-inside:avoid; }
-    .stat-tiles{ page-break-inside:avoid; }
+    /* page-break-after:avoid en las casillas y el gráfico: si al llegar a
+       ese punto no queda hueco para empezar también la tabla justo debajo,
+       el navegador mueve el grupo entero (casillas + gráfico + arranque de
+       tabla) a la página siguiente en vez de dejar el gráfico solo al
+       final de una página y la tabla arrancando sola en la siguiente. Es
+       un "evitar si se puede", no un salto forzado — por eso no reproduce
+       el problema de páginas casi en blanco que dio el page-break-before
+       a saco de antes. */
+    .chart-shell{ page-break-inside:avoid; page-break-after:avoid; }
+    .stat-tiles{ page-break-inside:avoid; page-break-after:avoid; }
+    .bloque-impresion > h3{ page-break-after:avoid; }
     table.tabla-datos tr{ page-break-inside:avoid; }
     /* Orden en impresión = mismo orden que en pantalla (casillas, gráfico,
        tabla). No se reordena por columnas: solo se protege lo que no puede
