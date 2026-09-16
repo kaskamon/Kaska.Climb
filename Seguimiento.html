@@ -166,9 +166,17 @@
        este padding es el que de verdad se nota en cada página, por si el
        navegador concreto no respeta bien el de @page. */
     #areaImpresion{ display:block; background:#494d4b; padding:6mm 4mm; }
-    .seccion-impresion{ page-break-before:always; }
-    .seccion-impresion:first-of-type{ page-break-before:auto; }
-    .bloque-impresion, .stat-tiles{ page-break-inside:avoid; }
+    /* Nada de "page-break-before:always" por sección ni "avoid" sobre todo
+       el bloque: con una tabla larga (muchas sesiones) dentro, forzar a que
+       ni la sección ni el bloque se corten empuja TODO a la página
+       siguiente en cuanto no cabe entero, dejando la anterior casi en
+       blanco. Solo se protege lo que de verdad no puede partirse a media
+       altura (el propio gráfico y las 4 casillas de estadísticas) — la
+       tabla, en cambio, puede fluir con normalidad entre páginas, con cada
+       fila intacta. */
+    .chart-shell{ page-break-inside:avoid; }
+    .stat-tiles{ page-break-inside:avoid; }
+    table.tabla-datos tr{ page-break-inside:avoid; }
     /* Tablas anchas: en pantalla se resuelven con scroll horizontal, pero
        imprimir no puede "hacer scroll" — lo que no cabe se cortaría en
        silencio. En vez de eso, se encoge la tipografía y se deja que el
@@ -1081,7 +1089,15 @@ async function exportarPDFCompleto(desdeStr, hastaStr){
   btn.disabled = false;
   btn.textContent = textoOriginalBtn;
 
-  window.print();
+  // #areaImpresion pasa de display:none a visible solo dentro de @media
+  // print, y se acaba de rellenar con muchos elementos (SVG incluidos) en
+  // el mismo tick — si se llama a print() inmediatamente, el navegador
+  // puede generar el PDF antes de haber pintado ese contenido nuevo de
+  // verdad, y las gráficas salen en blanco. requestAnimationFrame no vale
+  // aquí (se pausa en pestañas en segundo plano, y podría no disparar
+  // nunca); un setTimeout corto sí se ejecuta siempre, y de sobra para que
+  // el navegador haya terminado de pintar.
+  setTimeout(() => window.print(), 60);
 }
 
 document.getElementById('btnExportar').addEventListener('click', () => {
