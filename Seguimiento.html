@@ -138,6 +138,41 @@
     border-radius:20px; padding:3px 9px; cursor:help;
   }
   table.tabla-datos tbody tr:last-child td{ border-bottom:none; }
+
+  /* Informe imprimible (botón "Exportar") — oculto en pantalla, se rellena
+     justo antes de llamar a window.print() y solo se muestra dentro de
+     @media print, reutilizando los mismos pintarPanelX() que la vista
+     interactiva (misma factura visual, sin duplicar el dibujado). */
+  #areaImpresion{ display:none; }
+  #areaImpresion h1{ font-size:26px; margin-bottom:4px; }
+  #areaImpresion .fecha-informe{ color:var(--chalk-faint); font-size:12.5px; margin-bottom:0; }
+  #areaImpresion h2{ font-size:20px; color:var(--moss-light); margin:0 0 16px; padding-top:18px; border-top:1px solid var(--line-strong); }
+  #areaImpresion .seccion-impresion:first-of-type h2{ border-top:none; padding-top:0; }
+  #areaImpresion h3{ font-family:'Work Sans',sans-serif; font-weight:800; font-size:13px; letter-spacing:0.4px; text-transform:uppercase; color:var(--chalk-dim); margin:0 0 10px; }
+  #areaImpresion .bloque-impresion{ margin-bottom:24px; }
+
+  @media print {
+    @page { size: landscape; margin: 12mm; }
+    :root{
+      --stone-900:#ffffff; --stone-800:#f5f3ef; --stone-700:#e9e6df;
+      --chalk:#1c211e; --chalk-dim:#3a3f3b; --chalk-faint:#6b706a;
+      --line:rgba(28,33,30,0.14); --line-strong:rgba(28,33,30,0.22);
+    }
+    body > *:not(#areaImpresion){ display:none !important; }
+    body{ background:#fff; }
+    #areaImpresion{ display:block; }
+    .grafica .grid-linea{ stroke:rgba(28,33,30,0.18) !important; }
+    .seccion-impresion{ page-break-before:always; }
+    .seccion-impresion:first-of-type{ page-break-before:auto; }
+    .bloque-impresion, .stat-tiles{ page-break-inside:avoid; }
+    /* Tablas anchas: en pantalla se resuelven con scroll horizontal, pero
+       imprimir no puede "hacer scroll" — lo que no cabe se cortaría en
+       silencio. En vez de eso, se encoge la tipografía y se deja que el
+       texto de cada celda pueda partirse en dos líneas si hace falta. */
+    .tabla-datos-wrap{ overflow-x:visible; }
+    table.tabla-datos{ font-size:9.5px; }
+    table.tabla-datos th, table.tabla-datos td{ padding:5px 7px; white-space:normal; }
+  }
 </style>
 </head>
 <body>
@@ -189,12 +224,14 @@
         <label>Variable</label>
         <select id="selectorVariable"></select>
       </div>
-      <button class="icon-btn" id="btnExportar" type="button" disabled title="Exporta todos los mesociclos del cliente elegido, ordenados por fecha">Exportar</button>
+      <button class="icon-btn" id="btnExportar" type="button" disabled title="Genera un PDF con todos los mesociclos del cliente elegido: tabla y gráficas de cada variable">Exportar PDF</button>
     </div>
 
     <div id="panelDatos"><div class="estado-panel">Elige un cliente para ver su progresión.</div></div>
   </div>
 </div>
+
+<div id="areaImpresion"></div>
 
 <script>
 const { parseFechaDDMMYYYY } = window.PLANIFICACION_SEMANAS;
@@ -858,67 +895,106 @@ document.getElementById('selectorVariable').addEventListener('change', (e) => {
   pintarDatos();
 });
 
-// Exporta TODO lo que ya está cargado en memoria (PORMESOCICLO, la misma
-// fuente que pinta los paneles) como un CSV, sin volver a pedir nada al
-// servidor: una fila por sesión entrenada de cualquier mesociclo, ordenadas
-// cronológicamente, con los "campos" propios de cada mesociclo (nombres
-// reales via FIELD_MAP, no solo el índice) metidos en una sola columna de
-// texto para no tener una tabla con columnas distintas según el mesociclo.
-function exportarHistorialCompleto(){
-  if(!PORMESOCICLO) return;
-
-  const filas = [];
-  Object.keys(PORMESOCICLO).forEach(meso => {
-    if(meso === 'DOMINADAS_LASTRE'){
-      (PORMESOCICLO[meso] || []).forEach(e => {
-        filas.push({ fecha: e.fecha, mesociclo: 'GYM-FMAX', entrenada: 'Sí', pfInicial: '', fmaxIzq: '', fmaxDer: '', pfFinal: '', datos: `Dominadas con lastre: ${e.valor}` });
-      });
-      return;
-    }
-    const fieldMap = (window.MESOCICLOS_CONFIG && window.MESOCICLOS_CONFIG.FIELD_MAP[meso] && window.MESOCICLOS_CONFIG.FIELD_MAP[meso].campos) || [];
-    (PORMESOCICLO[meso] || []).filter(e => e.entrenada).forEach(e => {
-      const datos = Array.isArray(e.campos)
-        ? e.campos.map((v, i) => {
-            if(v === undefined) return null;
-            const campoCfg = fieldMap[i];
-            return `${campoCfg ? `${campoCfg.label} (${campoCfg.match})` : `Campo ${i + 1}`}: ${v}`;
-          }).filter(Boolean).join('; ')
-        : '';
-      filas.push({
-        fecha: e.fecha, mesociclo: meso, entrenada: 'Sí',
-        pfInicial: e.pfInicial ?? '', fmaxIzq: e.fmaxIzq ?? '', fmaxDer: e.fmaxDer ?? '', pfFinal: e.pfFinal ?? '',
-        datos, notas: e.notas || '',
-      });
-    });
-  });
-
-  filas.sort((a, b) => {
-    const fa = parseFechaDDMMYYYY(a.fecha), fb = parseFechaDDMMYYYY(b.fecha);
-    return (fa ? fa.getTime() : 0) - (fb ? fb.getTime() : 0);
-  });
-
-  const cabecera = ['Fecha', 'Mesociclo', 'Entrenada', 'PFinicial (N)', 'Fmax Izq (N)', 'Fmax Der (N)', 'PFfinal (N)', 'Datos adicionales', 'Notas'];
-  const csvEscape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  const lineas = [cabecera.map(csvEscape).join(',')];
-  filas.forEach(f => lineas.push([f.fecha, f.mesociclo, f.entrenada, f.pfInicial, f.fmaxIzq, f.fmaxDer, f.pfFinal, f.datos, f.notas].map(csvEscape).join(',')));
-  // BOM al principio para que Excel (el que probablemente use el entrenador
-  // para abrir esto) detecte UTF-8 solo y no rompa las tildes/eñes.
-  const csv = '﻿' + lineas.join('\r\n');
-
-  const opcionCliente = document.getElementById('selectorCliente').selectedOptions[0];
-  const nombreArchivo = (opcionCliente ? opcionCliente.textContent : 'cliente').trim().replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'cliente';
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${nombreArchivo}_historial.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+// Arma un bloque (título + lo que pinte fn) dentro del contenedor de
+// impresión, reutilizando directamente los mismos pintarPanelX() que la
+// vista interactiva — misma tabla, misma gráfica SVG, cero código
+// duplicado. El único ajuste hace falta porque esas funciones siempre
+// dibujan en un <svg id="chartPF"> fijo (buscado con getElementById): con
+// varios bloques a la vez en el documento eso chocaría (ids repetidos, el
+// segundo bloque pintaría encima del primero), así que en cuanto un bloque
+// termina de dibujarse le quitamos el id al suyo, dejando libre "chartPF"
+// para el siguiente.
+function agregarBloqueImpresion(contenedor, titulo, fn){
+  const bloque = document.createElement('div');
+  bloque.className = 'bloque-impresion';
+  bloque.innerHTML = `<h3>${escapeHtml(titulo)}</h3>`;
+  const cuerpo = document.createElement('div');
+  bloque.appendChild(cuerpo);
+  contenedor.appendChild(bloque);
+  fn(cuerpo);
+  const svg = cuerpo.querySelector('#chartPF');
+  if(svg) svg.removeAttribute('id');
 }
-document.getElementById('btnExportar').addEventListener('click', exportarHistorialCompleto);
+
+// Genera el informe completo (todos los mesociclos con datos, cada uno con
+// su tabla resumen y una gráfica por variable) dentro de #areaImpresion —
+// oculto en pantalla, visible solo dentro de @media print — y abre el
+// diálogo de impresión del navegador para guardarlo como PDF. Todo con los
+// datos que ya están en memoria (PORMESOCICLO), sin volver a pedir nada al
+// servidor.
+async function exportarPDFCompleto(){
+  if(!PORMESOCICLO) return;
+  const btn = document.getElementById('btnExportar');
+  const areaImpresion = document.getElementById('areaImpresion');
+  const nombreCliente = (document.getElementById('selectorCliente').selectedOptions[0]?.textContent || 'Cliente').trim();
+
+  btn.disabled = true;
+  const textoOriginalBtn = btn.textContent;
+  btn.textContent = 'Generando…';
+
+  // Guardamos el estado interactivo real para devolverlo tal cual estaba
+  // después de imprimir — el informe fuerza mostrar TODAS las líneas de la
+  // gráfica de fuerza, aunque el entrenador tuviera alguna desactivada.
+  const mesoOriginal = MESO_ACTIVO;
+  const activasOriginal = { ...VARIABLES_ACTIVAS };
+  Object.keys(VARIABLES_ACTIVAS).forEach(k => { VARIABLES_ACTIVAS[k] = true; });
+
+  const fechaInforme = new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' });
+  areaImpresion.innerHTML = `<h1>${escapeHtml(nombreCliente)}</h1><p class="fecha-informe">Informe de progresión — generado el ${fechaInforme}</p>`;
+
+  const MESOS_INFORME = ['FMAX', 'REOX', 'DESOX', 'AERO', 'TAPERING'];
+  let huboAlgo = false;
+
+  MESOS_INFORME.forEach(meso => {
+    const todas = PORMESOCICLO[meso] || [];
+    // FMAX es un caso especial: puede tener dominadas con lastre (días de
+    // gimnasio) aunque el cliente todavía no tenga ninguna sesión de FMAX
+    // roco entrenada — esa sección no debe desaparecer solo porque "todas"
+    // esté vacío.
+    const tieneDominadas = meso === 'FMAX' && (PORMESOCICLO['DOMINADAS_LASTRE'] || []).length > 0;
+    if(!todas.length && !tieneDominadas) return;
+    huboAlgo = true;
+    MESO_ACTIVO = meso;
+    const cfgMeso = window.MESOCICLOS_CONFIG && window.MESOCICLOS_CONFIG.FIELD_MAP[meso];
+    const historialEntrenado = todas.filter(h => h.entrenada);
+
+    const seccion = document.createElement('div');
+    seccion.className = 'seccion-impresion';
+    seccion.innerHTML = `<h2>${escapeHtml(meso)}</h2>`;
+    areaImpresion.appendChild(seccion);
+
+    if(todas.length) agregarBloqueImpresion(seccion, 'Resumen (todos los datos)', pintarPanelResumen);
+    if(historialEntrenado.length){
+      agregarBloqueImpresion(seccion, 'Fuerza (PFinicial / Fmax)', (c) => pintarPanelFuerza(c, historialEntrenado));
+      agregarBloqueImpresion(seccion, 'PFinicial en % (control de carga)', (c) => pintarPanelPfPct(c, historialEntrenado));
+      if(cfgMeso && cfgMeso.pfFinal){
+        agregarBloqueImpresion(seccion, 'PFfinal en % (fatiga de la sesión)', (c) => pintarPanelPfFinalPct(c, historialEntrenado));
+      }
+      camposDelMesoActivo().forEach((campo, i) => {
+        agregarBloqueImpresion(seccion, `${campo.label} (${campo.match})`, (c) => pintarPanelCampo(c, historialEntrenado, i));
+      });
+    }
+
+    if(tieneDominadas){
+      agregarBloqueImpresion(seccion, 'Dominadas con lastre (días de gimnasio)', pintarPanelDominadas);
+    }
+  });
+
+  if(!huboAlgo){
+    areaImpresion.innerHTML += '<p>Este cliente todavía no tiene ninguna sesión entrenada registrada.</p>';
+  }
+
+  // Restaura el estado interactivo antes de imprimir — si el entrenador
+  // vuelve de la vista previa de impresión, la pantalla de detrás debe
+  // seguir exactamente donde la dejó.
+  MESO_ACTIVO = mesoOriginal;
+  Object.assign(VARIABLES_ACTIVAS, activasOriginal);
+  btn.disabled = false;
+  btn.textContent = textoOriginalBtn;
+
+  window.print();
+}
+document.getElementById('btnExportar').addEventListener('click', exportarPDFCompleto);
 
 (async function init(){
   poblarSelectorVariable();
