@@ -174,17 +174,24 @@
   #areaImpresion .bloque-impresion{ margin-bottom:24px; }
 
   @media print {
-    @page { size: landscape; margin: 16mm; }
+    /* margin:0 — @page solo puede PEDIR más margen del mínimo que el
+       dispositivo/impresora ya reserva, nunca menos. En tablets (impresión
+       nativa de iOS/Android) ese mínimo no se puede quitar desde CSS por
+       mucho margen que se pida aquí; dejarlo en 0 evita sumar 16mm extra
+       de blanco encima del mínimo que el propio dispositivo ya fuerza. El
+       espacio visual real lo da el padding de #areaImpresion de abajo. */
+    @page { size: landscape; margin: 0; }
     /* Mismo fondo y colores oscuros que la app en pantalla — por defecto el
        navegador imprime sin fondos/colores ("ahorro de tinta"), así que hay
        que pedírselo explícitamente o el informe saldría en blanco. */
     *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
     body > *:not(#areaImpresion){ display:none !important; }
     body{ background:#494d4b; margin:0; }
-    /* El margen de @page solo garantiza hueco alrededor de TODA la tirada;
-       este padding es el que de verdad se nota en cada página, por si el
-       navegador concreto no respeta bien el de @page. */
-    #areaImpresion{ display:block; background:#494d4b; padding:6mm 4mm; }
+    /* Con @page en 0, este padding es ahora el único margen visual real
+       entre el fondo oscuro y el borde de la página (antes lo daba @page,
+       pero ese margen no se puede bajar del mínimo que ya reserva cada
+       dispositivo, así que sumaba blanco de más en vez de restarlo). */
+    #areaImpresion{ display:block; background:#494d4b; padding:14mm 10mm; }
     /* Nada de "page-break-before:always" por sección ni "avoid" sobre todo
        el bloque: con una tabla larga (muchas sesiones) dentro, forzar a que
        ni la sección ni el bloque se corten empuja TODO a la página
@@ -196,22 +203,10 @@
     .chart-shell{ page-break-inside:avoid; }
     .stat-tiles{ page-break-inside:avoid; }
     table.tabla-datos tr{ page-break-inside:avoid; }
-    /* El bloque "Fuerza" apilaba casillas + gráfico + tabla, uno debajo de
-       otro, a lo alto — entre las casillas y el gráfico (los dos con
-       "avoid") ya se comía buena parte de una página, dejando muy poco
-       sitio para que la tabla ni siquiera empezara bien. El gráfico se
-       queda arriba a todo lo ancho, pero las 4 casillas pasan a una columna
-       estrecha en vertical, pegadas a la tabla — así la tabla arranca antes
-       y las casillas quedan asociadas visualmente a sus propios datos, en
-       vez de a todo el bloque. Selector acotado a los bloques CON gráfico
-       (chart-shell) — el bloque "Resumen" no tiene y sigue igual. */
-    .bloque-impresion > div:has(.chart-shell){
-      display:grid; grid-template-columns:170px 1fr; grid-template-areas:"chart chart" "stats tabla";
-      column-gap:16px; align-items:start;
-    }
-    .bloque-impresion > div:has(.chart-shell) > .chart-shell{ grid-area:chart; margin-bottom:0; }
-    .bloque-impresion > div:has(.chart-shell) > .stat-tiles{ grid-area:stats; grid-template-columns:1fr; margin-bottom:0; align-content:start; gap:8px; }
-    .bloque-impresion > div:has(.chart-shell) > .tabla-datos-wrap{ grid-area:tabla; }
+    /* Orden en impresión = mismo orden que en pantalla (casillas, gráfico,
+       tabla). No se reordena por columnas: solo se protege lo que no puede
+       partirse a media altura (gráfico y casillas); la tabla fluye normal
+       entre páginas, con cada fila intacta. */
     /* Cuando una tabla larga sí se parte entre dos páginas, la cabecera
        (thead) no se repetía en la página nueva — la fila con "Fecha",
        "PFinicial (N)"... solo salía arriba del todo, así que las filas de
