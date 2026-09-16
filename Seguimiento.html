@@ -21,7 +21,7 @@
     --line:rgba(242,237,225,0.10); --line-strong:rgba(242,237,225,0.16);
   }
   *{box-sizing:border-box;}
-  body{ margin:0; min-height:100vh; background:var(--stone-900); color:var(--chalk); font-family:'Work Sans', sans-serif; }
+  body{ margin:0; min-height:100vh; background:#494d4b; color:var(--chalk); font-family:'Work Sans', sans-serif; }
   h1,h2,h3{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.4px; margin:0; }
 
   .topbar{ position:sticky; top:0; z-index:40; background:rgba(28,33,30,0.92); backdrop-filter:blur(10px); border-bottom:1px solid var(--line-strong); }
@@ -144,21 +144,28 @@
      @media print, reutilizando los mismos pintarPanelX() que la vista
      interactiva (misma factura visual, sin duplicar el dibujado). */
   #areaImpresion{ display:none; }
-  #areaImpresion h1{ font-size:26px; margin-bottom:16px; }
+  #areaImpresion .marca-informe{ margin-bottom:22px; }
+  #areaImpresion .marca-informe .eyebrow{ margin-bottom:6px; }
+  #areaImpresion .marca-informe h4{ font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.4px; font-size:17px; color:var(--chalk-dim); margin:0; }
+  #areaImpresion h1{ font-size:28px; margin-bottom:20px; }
+  #areaImpresion h1 span{ color:var(--moss); }
   #areaImpresion h2{ font-size:20px; color:var(--moss-light); margin:0 0 16px; padding-top:18px; border-top:1px solid var(--line-strong); }
   #areaImpresion .seccion-impresion:first-of-type h2{ border-top:none; padding-top:0; }
   #areaImpresion h3{ font-family:'Work Sans',sans-serif; font-weight:800; font-size:13px; letter-spacing:0.4px; text-transform:uppercase; color:var(--chalk-dim); margin:0 0 10px; }
   #areaImpresion .bloque-impresion{ margin-bottom:24px; }
 
   @media print {
-    @page { size: landscape; margin: 12mm; }
+    @page { size: landscape; margin: 16mm; }
     /* Mismo fondo y colores oscuros que la app en pantalla — por defecto el
        navegador imprime sin fondos/colores ("ahorro de tinta"), así que hay
        que pedírselo explícitamente o el informe saldría en blanco. */
     *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
     body > *:not(#areaImpresion){ display:none !important; }
-    body{ background:var(--stone-900); }
-    #areaImpresion{ display:block; background:var(--stone-900); }
+    body{ background:#494d4b; margin:0; }
+    /* El margen de @page solo garantiza hueco alrededor de TODA la tirada;
+       este padding es el que de verdad se nota en cada página, por si el
+       navegador concreto no respeta bien el de @page. */
+    #areaImpresion{ display:block; background:#494d4b; padding:6mm 4mm; }
     .seccion-impresion{ page-break-before:always; }
     .seccion-impresion:first-of-type{ page-break-before:auto; }
     .bloque-impresion, .stat-tiles{ page-break-inside:avoid; }
@@ -1027,7 +1034,18 @@ async function exportarPDFCompleto(desdeStr, hastaStr){
   const pormesocicloOriginal = PORMESOCICLO;
   PORMESOCICLO = filtrarPorFechas(pormesocicloOriginal, desdeStr, hastaStr);
 
-  areaImpresion.innerHTML = `<h1>${escapeHtml(nombreCliente)}</h1>`;
+  // Nombre y apellidos en dos tonos (blanco/verde) — mismo criterio que ya
+  // usa cliente/semana.html para el saludo del cliente.
+  const partesNombre = nombreCliente.split(' ');
+  const primerNombre = partesNombre[0] || nombreCliente;
+  const apellidos = partesNombre.slice(1).join(' ');
+
+  areaImpresion.innerHTML = `
+    <div class="marca-informe">
+      <div class="eyebrow">Kaska.Climb</div>
+      <h4>Seguimiento</h4>
+    </div>
+    <h1>${escapeHtml(primerNombre)}${apellidos ? ` <span>${escapeHtml(apellidos)}</span>` : ''}</h1>`;
 
   const MESOS_INFORME = ['FMAX', 'REOX', 'DESOX', 'AERO', 'TAPERING'];
   let huboAlgo = false;
