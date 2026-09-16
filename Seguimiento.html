@@ -145,13 +145,31 @@
      @media print, reutilizando los mismos pintarPanelX() que la vista
      interactiva (misma factura visual, sin duplicar el dibujado). */
   #areaImpresion{ display:none; }
-  #areaImpresion .marca-informe{ margin-bottom:22px; }
+  /* Franja oscura como la del topbar de la propia app — se saca del padding
+     de #areaImpresion con márgenes negativos para que llegue de borde a
+     borde de la página, en vez de quedar como un bloque más flotando sobre
+     el fondo claro. */
+  #areaImpresion .marca-informe{
+    background:rgba(28,33,30,0.92); margin:-6mm -4mm 20px; padding:10mm 4mm 8mm;
+  }
   #areaImpresion .marca-informe .eyebrow{ margin-bottom:6px; }
   #areaImpresion .marca-informe h4{ font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.4px; font-size:17px; color:var(--chalk-dim); margin:0; }
   #areaImpresion h1{ font-size:28px; margin-bottom:20px; }
   #areaImpresion h1 span{ color:var(--moss); }
-  #areaImpresion h2{ font-size:20px; color:var(--moss-light); margin:0 0 16px; padding-top:18px; border-top:1px solid var(--line-strong); }
-  #areaImpresion .seccion-impresion:first-of-type h2{ border-top:none; padding-top:0; }
+  /* El color real lo pone inline cada sección (uno por mesociclo, vía
+     MESO_COLORS) — aquí solo el tratamiento común: caja resaltada con
+     borde de color a la izquierda, en vez de un simple título con una
+     línea gris encima. */
+  #areaImpresion h2{
+    display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; font-size:19px;
+    margin:0 0 16px; padding:11px 16px; border-left:5px solid; border-radius:8px;
+    background:rgba(0,0,0,0.16);
+  }
+  #areaImpresion .seccion-impresion:not(:first-of-type){ margin-top:28px; }
+  #areaImpresion h2 .meso-rango{
+    font-family:'Work Sans',sans-serif; font-weight:600; font-size:12.5px;
+    text-transform:none; letter-spacing:0; color:var(--chalk-faint);
+  }
   #areaImpresion h3{ font-family:'Work Sans',sans-serif; font-weight:800; font-size:13px; letter-spacing:0.4px; text-transform:uppercase; color:var(--chalk-dim); margin:0 0 10px; }
   #areaImpresion .bloque-impresion{ margin-bottom:24px; }
 
@@ -178,6 +196,22 @@
     .chart-shell{ page-break-inside:avoid; }
     .stat-tiles{ page-break-inside:avoid; }
     table.tabla-datos tr{ page-break-inside:avoid; }
+    /* El bloque "Fuerza" apilaba casillas + gráfico + tabla, uno debajo de
+       otro, a lo alto — entre las casillas y el gráfico (los dos con
+       "avoid") ya se comía buena parte de una página, dejando muy poco
+       sitio para que la tabla ni siquiera empezara bien. El gráfico se
+       queda arriba a todo lo ancho, pero las 4 casillas pasan a una columna
+       estrecha en vertical, pegadas a la tabla — así la tabla arranca antes
+       y las casillas quedan asociadas visualmente a sus propios datos, en
+       vez de a todo el bloque. Selector acotado a los bloques CON gráfico
+       (chart-shell) — el bloque "Resumen" no tiene y sigue igual. */
+    .bloque-impresion > div:has(.chart-shell){
+      display:grid; grid-template-columns:170px 1fr; grid-template-areas:"chart chart" "stats tabla";
+      column-gap:16px; align-items:start;
+    }
+    .bloque-impresion > div:has(.chart-shell) > .chart-shell{ grid-area:chart; margin-bottom:0; }
+    .bloque-impresion > div:has(.chart-shell) > .stat-tiles{ grid-area:stats; grid-template-columns:1fr; margin-bottom:0; align-content:start; gap:8px; }
+    .bloque-impresion > div:has(.chart-shell) > .tabla-datos-wrap{ grid-area:tabla; }
     /* Cuando una tabla larga sí se parte entre dos páginas, la cabecera
        (thead) no se repetía en la página nueva — la fila con "Fecha",
        "PFinicial (N)"... solo salía arriba del todo, así que las filas de
@@ -595,7 +629,7 @@ function pintarPanelFuerza(panel, historial){
           return `<button type="button" class="item${off?' off':''}" data-campo="${campo}"><span class="sw" style="background:${color};"></span>${escapeHtml(v.label)}</button>`;
         }).join('')}
       </div>
-      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
+      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260" width="640" height="260"></svg></div>
     </div>
     <div class="tabla-datos-wrap">
       <table class="tabla-datos">
@@ -666,7 +700,7 @@ function pintarPanelCampo(panel, historial, indice){
       <div class="stat-tile"><div class="k">Sesiones con dato</div><div class="v">${conValor.length}<small>/${historial.length}</small></div></div>
     </div>
     <div class="chart-shell">
-      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
+      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260" width="640" height="260"></svg></div>
     </div>
     <div class="tabla-datos-wrap">
       <table class="tabla-datos">
@@ -721,7 +755,7 @@ function pintarPanelDominadas(panel){
       <div class="stat-tile"><div class="k">Sesiones con dato</div><div class="v">${datos.length}</div></div>
     </div>
     <div class="chart-shell">
-      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
+      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260" width="640" height="260"></svg></div>
     </div>
     <div class="tabla-datos-wrap">
       <table class="tabla-datos">
@@ -853,7 +887,7 @@ function pintarPanelPfPct(panel, historial){
     </div>
     ${omitidosPorCero ? `<div class="estado-panel" style="margin-bottom:10px;">${omitidosPorCero} sesión${omitidosPorCero===1?'':'es'} con PFinicial de 0 en la sesión anterior — no se puede calcular el % de variación para ${omitidosPorCero===1?'esa fecha':'esas fechas'}.</div>` : ''}
     <div class="chart-shell">
-      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
+      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260" width="640" height="260"></svg></div>
     </div>
     <div class="tabla-datos-wrap">
       <table class="tabla-datos">
@@ -913,7 +947,7 @@ function pintarPanelPfFinalPct(panel, historial){
     <div class="estado-panel" style="margin-bottom:10px;">No es un dato de progreso lineal entre sesiones — cada punto es la caída dentro de esa misma sesión, no una tendencia continua.</div>
     ${omitidosPorCero ? `<div class="estado-panel" style="margin-bottom:10px;">${omitidosPorCero} sesión${omitidosPorCero===1?'':'es'} con PFinicial de 0 — no se puede calcular la caída para ${omitidosPorCero===1?'esa fecha':'esas fechas'}.</div>` : ''}
     <div class="chart-shell">
-      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260"></svg></div>
+      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260" width="640" height="260"></svg></div>
     </div>
     <div class="tabla-datos-wrap">
       <table class="tabla-datos">
@@ -1087,9 +1121,19 @@ async function exportarPDFCompleto(macrociclosElegidos){
     huboAlgo = true;
     MESO_ACTIVO = meso;
 
+    // Rango real de fechas que cubre ESTE mesociclo dentro del informe (no
+    // necesariamente el historial.length entero: puede venir acotado por
+    // el/los macrociclo(s) elegidos) — se calcula ordenando de verdad, sin
+    // asumir que el array ya viene en orden cronológico.
+    const fechasOrdenadas = historialEntrenado.map(h => parseFechaDDMMYYYY(h.fecha)).filter(Boolean).sort((a, b) => a - b);
+    const rangoTexto = fechasOrdenadas.length
+      ? ` <span class="meso-rango">(${escapeHtml(formatFechaDDMMYYYY(fechasOrdenadas[0]))} – ${escapeHtml(formatFechaDDMMYYYY(fechasOrdenadas[fechasOrdenadas.length - 1]))})</span>`
+      : '';
+    const colorMeso = MESO_COLORS[meso] || 'var(--moss-light)';
+
     const seccion = document.createElement('div');
     seccion.className = 'seccion-impresion';
-    seccion.innerHTML = `<h2>${escapeHtml(meso)}</h2>`;
+    seccion.innerHTML = `<h2 style="border-left-color:${colorMeso}; color:${colorMeso};">MESOCICLO ${escapeHtml(meso)}${rangoTexto}</h2>`;
     areaImpresion.appendChild(seccion);
 
     agregarBloqueImpresion(seccion, 'Resumen (todos los datos)', pintarPanelResumen);
