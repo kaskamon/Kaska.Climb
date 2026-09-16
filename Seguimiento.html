@@ -173,6 +173,35 @@
     table.tabla-datos{ font-size:9.5px; }
     table.tabla-datos th, table.tabla-datos td{ padding:5px 7px; white-space:normal; }
   }
+
+  .overlay-exportar{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:100;
+    align-items:center; justify-content:center; padding:20px;
+  }
+  .overlay-exportar.abierto{ display:flex; }
+  .modal-exportar{
+    background:var(--stone-800); border:1px solid var(--line-strong); border-radius:16px;
+    max-width:420px; width:100%; padding:24px 26px; box-shadow:0 20px 50px rgba(0,0,0,0.4);
+  }
+  .modal-exportar h3{ font-size:16px; color:var(--chalk); margin-bottom:8px; }
+  .modal-exportar-desc{ font-size:12.5px; color:var(--chalk-faint); line-height:1.6; margin:0 0 18px; }
+  .campos-fecha{ display:flex; gap:14px; margin-bottom:22px; }
+  .campo-fecha{ flex:1; display:flex; flex-direction:column; gap:6px; }
+  .campo-fecha label{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--chalk-faint); }
+  .campo-fecha input[type=date]{
+    background:var(--stone-700); border:1px solid var(--line-strong); color:var(--chalk);
+    border-radius:9px; padding:9px 10px; font-size:13px; font-family:inherit; color-scheme:dark; width:100%;
+  }
+  .acciones-exportar{ display:flex; justify-content:flex-end; gap:10px; }
+  .btn-cancelar-exportar{
+    background:transparent; border:1px solid var(--line-strong); color:var(--chalk-dim); font-weight:700;
+    font-size:12px; letter-spacing:0.4px; text-transform:uppercase; padding:10px 18px; border-radius:9px; cursor:pointer; font-family:inherit;
+  }
+  .btn-generar-exportar{
+    background:var(--moss); color:var(--stone-900); border:none; font-weight:800; font-size:12px;
+    letter-spacing:0.4px; text-transform:uppercase; padding:10px 20px; border-radius:9px; cursor:pointer; font-family:inherit;
+  }
+  .btn-generar-exportar:hover{ background:var(--moss-light); }
 </style>
 </head>
 <body>
@@ -224,7 +253,7 @@
         <label>Variable</label>
         <select id="selectorVariable"></select>
       </div>
-      <button class="icon-btn" id="btnExportar" type="button" disabled title="Genera un PDF con todos los mesociclos del cliente elegido: tabla y gráficas de cada variable">Exportar PDF</button>
+      <button class="icon-btn" id="btnExportar" type="button" disabled title="Genera un PDF con el resumen y la gráfica de fuerza de cada mesociclo — puedes acotarlo por fechas">Exportar PDF</button>
     </div>
 
     <div id="panelDatos"><div class="estado-panel">Elige un cliente para ver su progresión.</div></div>
@@ -233,8 +262,23 @@
 
 <div id="areaImpresion"></div>
 
+<div class="overlay-exportar" id="overlayExportar">
+  <div class="modal-exportar">
+    <h3>Exportar PDF</h3>
+    <p class="modal-exportar-desc">Puedes acotar el informe a un rango de fechas — útil si este cliente ha entrenado contigo en distintas etapas y quieres separar un macrociclo del resto. Déjalo vacío para incluir todo el historial.</p>
+    <div class="campos-fecha">
+      <div class="campo-fecha"><label>Desde</label><input type="date" id="exportarDesde"></div>
+      <div class="campo-fecha"><label>Hasta</label><input type="date" id="exportarHasta"></div>
+    </div>
+    <div class="acciones-exportar">
+      <button type="button" class="btn-cancelar-exportar" id="btnCancelarExportar">Cancelar</button>
+      <button type="button" class="btn-generar-exportar" id="btnGenerarExportar">Generar PDF</button>
+    </div>
+  </div>
+</div>
+
 <script>
-const { parseFechaDDMMYYYY } = window.PLANIFICACION_SEMANAS;
+const { parseFechaDDMMYYYY, formatFechaDDMMYYYY } = window.PLANIFICACION_SEMANAS;
 const MESO_COLORS = { REOX:'#7c9070', AERO:'#93859e', DESOX:'#70908c', FMAX:'#c17c74', TAPERING:'#c99a5b' };
 let PORMESOCICLO = null;
 let MESO_ACTIVO = 'REOX';
@@ -916,13 +960,44 @@ function agregarBloqueImpresion(contenedor, titulo, fn){
   if(svg) svg.removeAttribute('id');
 }
 
-// Genera el informe completo (todos los mesociclos con datos, cada uno con
-// su tabla resumen y una gráfica por variable) dentro de #areaImpresion —
+// Convierte el valor de un <input type="date"> ("aaaa-mm-dd") a Date en
+// hora LOCAL — new Date("aaaa-mm-dd") lo interpretaría en UTC, lo que
+// podía desplazar un día respecto a las fechas que ya construye
+// parseFechaDDMMYYYY (siempre en local), y el filtro fallaría justo en el
+// primer/último día del rango elegido.
+function fechaInputALocal(valorInput){
+  if(!valorInput) return null;
+  const [y, m, d] = valorInput.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+// Copia PORMESOCICLO acotada a [desde, hasta] (ambos opcionales e
+// inclusivos) — para separar, en el informe, macrociclos distintos que un
+// mismo cliente haya entrenado en épocas distintas contigo.
+function filtrarPorFechas(datos, desdeStr, hastaStr){
+  if(!desdeStr && !hastaStr) return datos;
+  const desde = fechaInputALocal(desdeStr);
+  const hasta = fechaInputALocal(hastaStr);
+  const filtrado = {};
+  Object.keys(datos).forEach(meso => {
+    filtrado[meso] = (datos[meso] || []).filter(e => {
+      const f = parseFechaDDMMYYYY(e.fecha);
+      if(!f) return false;
+      if(desde && f < desde) return false;
+      if(hasta && f > hasta) return false;
+      return true;
+    });
+  });
+  return filtrado;
+}
+
+// Genera el informe (por cada mesociclo con sesiones entrenadas: su tabla
+// "Resumen" y la gráfica de Fuerza con su tabla) dentro de #areaImpresion —
 // oculto en pantalla, visible solo dentro de @media print — y abre el
 // diálogo de impresión del navegador para guardarlo como PDF. Todo con los
 // datos que ya están en memoria (PORMESOCICLO), sin volver a pedir nada al
-// servidor.
-async function exportarPDFCompleto(){
+// servidor. desdeStr/hastaStr ("aaaa-mm-dd", opcionales) acotan el rango.
+async function exportarPDFCompleto(desdeStr, hastaStr){
   if(!PORMESOCICLO) return;
   const btn = document.getElementById('btnExportar');
   const areaImpresion = document.getElementById('areaImpresion');
@@ -939,54 +1014,48 @@ async function exportarPDFCompleto(){
   const activasOriginal = { ...VARIABLES_ACTIVAS };
   Object.keys(VARIABLES_ACTIVAS).forEach(k => { VARIABLES_ACTIVAS[k] = true; });
 
+  // pintarPanelResumen/pintarPanelFuerza leen PORMESOCICLO como variable
+  // global (no reciben los datos por parámetro) — para acotar el informe a
+  // un rango de fechas sin tocar esas funciones, se sustituye temporalmente
+  // por una copia ya filtrada, y se devuelve la real al terminar.
+  const pormesocicloOriginal = PORMESOCICLO;
+  PORMESOCICLO = filtrarPorFechas(pormesocicloOriginal, desdeStr, hastaStr);
+
   const fechaInforme = new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' });
-  areaImpresion.innerHTML = `<h1>${escapeHtml(nombreCliente)}</h1><p class="fecha-informe">Informe de progresión — generado el ${fechaInforme}</p>`;
+  const rangoTexto = (desdeStr || hastaStr)
+    ? ` — del ${desdeStr ? formatFechaDDMMYYYY(fechaInputALocal(desdeStr)) : 'inicio'} al ${hastaStr ? formatFechaDDMMYYYY(fechaInputALocal(hastaStr)) : 'hoy'}`
+    : '';
+  areaImpresion.innerHTML = `<h1>${escapeHtml(nombreCliente)}</h1><p class="fecha-informe">Informe de progresión — generado el ${fechaInforme}${escapeHtml(rangoTexto)}</p>`;
 
   const MESOS_INFORME = ['FMAX', 'REOX', 'DESOX', 'AERO', 'TAPERING'];
   let huboAlgo = false;
 
   MESOS_INFORME.forEach(meso => {
     const todas = PORMESOCICLO[meso] || [];
-    // FMAX es un caso especial: puede tener dominadas con lastre (días de
-    // gimnasio) aunque el cliente todavía no tenga ninguna sesión de FMAX
-    // roco entrenada — esa sección no debe desaparecer solo porque "todas"
-    // esté vacío.
-    const tieneDominadas = meso === 'FMAX' && (PORMESOCICLO['DOMINADAS_LASTRE'] || []).length > 0;
-    if(!todas.length && !tieneDominadas) return;
+    const historialEntrenado = todas.filter(h => h.entrenada);
+    if(!historialEntrenado.length) return;
     huboAlgo = true;
     MESO_ACTIVO = meso;
-    const cfgMeso = window.MESOCICLOS_CONFIG && window.MESOCICLOS_CONFIG.FIELD_MAP[meso];
-    const historialEntrenado = todas.filter(h => h.entrenada);
 
     const seccion = document.createElement('div');
     seccion.className = 'seccion-impresion';
     seccion.innerHTML = `<h2>${escapeHtml(meso)}</h2>`;
     areaImpresion.appendChild(seccion);
 
-    if(todas.length) agregarBloqueImpresion(seccion, 'Resumen (todos los datos)', pintarPanelResumen);
-    if(historialEntrenado.length){
-      agregarBloqueImpresion(seccion, 'Fuerza (PFinicial / Fmax)', (c) => pintarPanelFuerza(c, historialEntrenado));
-      agregarBloqueImpresion(seccion, 'PFinicial en % (control de carga)', (c) => pintarPanelPfPct(c, historialEntrenado));
-      if(cfgMeso && cfgMeso.pfFinal){
-        agregarBloqueImpresion(seccion, 'PFfinal en % (fatiga de la sesión)', (c) => pintarPanelPfFinalPct(c, historialEntrenado));
-      }
-      camposDelMesoActivo().forEach((campo, i) => {
-        agregarBloqueImpresion(seccion, `${campo.label} (${campo.match})`, (c) => pintarPanelCampo(c, historialEntrenado, i));
-      });
-    }
-
-    if(tieneDominadas){
-      agregarBloqueImpresion(seccion, 'Dominadas con lastre (días de gimnasio)', pintarPanelDominadas);
-    }
+    agregarBloqueImpresion(seccion, 'Resumen (todos los datos)', pintarPanelResumen);
+    agregarBloqueImpresion(seccion, 'Fuerza (PFinicial / Fmax)', (c) => pintarPanelFuerza(c, historialEntrenado));
   });
 
   if(!huboAlgo){
-    areaImpresion.innerHTML += '<p>Este cliente todavía no tiene ninguna sesión entrenada registrada.</p>';
+    areaImpresion.innerHTML += desdeStr || hastaStr
+      ? '<p>Este cliente no tiene ninguna sesión entrenada en el rango de fechas elegido.</p>'
+      : '<p>Este cliente todavía no tiene ninguna sesión entrenada registrada.</p>';
   }
 
   // Restaura el estado interactivo antes de imprimir — si el entrenador
   // vuelve de la vista previa de impresión, la pantalla de detrás debe
   // seguir exactamente donde la dejó.
+  PORMESOCICLO = pormesocicloOriginal;
   MESO_ACTIVO = mesoOriginal;
   Object.assign(VARIABLES_ACTIVAS, activasOriginal);
   btn.disabled = false;
@@ -994,7 +1063,26 @@ async function exportarPDFCompleto(){
 
   window.print();
 }
-document.getElementById('btnExportar').addEventListener('click', exportarPDFCompleto);
+
+document.getElementById('btnExportar').addEventListener('click', () => {
+  document.getElementById('exportarDesde').value = '';
+  document.getElementById('exportarHasta').value = '';
+  document.getElementById('overlayExportar').classList.add('abierto');
+});
+function cerrarOverlayExportar(){ document.getElementById('overlayExportar').classList.remove('abierto'); }
+document.getElementById('btnCancelarExportar').addEventListener('click', cerrarOverlayExportar);
+document.getElementById('overlayExportar').addEventListener('click', (e) => {
+  if(e.target.id === 'overlayExportar') cerrarOverlayExportar();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && document.getElementById('overlayExportar').classList.contains('abierto')) cerrarOverlayExportar();
+});
+document.getElementById('btnGenerarExportar').addEventListener('click', () => {
+  const desde = document.getElementById('exportarDesde').value;
+  const hasta = document.getElementById('exportarHasta').value;
+  cerrarOverlayExportar();
+  exportarPDFCompleto(desde, hasta);
+});
 
 (async function init(){
   poblarSelectorVariable();
