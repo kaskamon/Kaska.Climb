@@ -86,6 +86,7 @@
 
   .selector-fila{ display:flex; align-items:flex-end; gap:22px; flex-wrap:wrap; margin-bottom:26px; }
   .selector-cliente{ display:flex; flex-direction:column; gap:6px; }
+  .grupo-variable-exportar{ display:flex; align-items:flex-end; gap:10px; }
   .selector-cliente label{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--chalk-faint); }
   .selector-cliente select{
     background:var(--stone-800); border:1px solid var(--line-strong); color:var(--chalk);
@@ -278,11 +279,13 @@
         <button class="tab-meso" data-meso="FMAX" style="--c:var(--meso-fmax);">FMAX</button>
         <button class="tab-meso" data-meso="TAPERING" style="--c:var(--meso-tapering);">TAP</button>
       </div>
-      <div class="selector-cliente">
-        <label>Variable</label>
-        <select id="selectorVariable"></select>
+      <div class="grupo-variable-exportar">
+        <div class="selector-cliente">
+          <label>Variable</label>
+          <select id="selectorVariable"></select>
+        </div>
+        <button class="icon-btn" id="btnExportar" type="button" disabled title="Genera un PDF con el resumen y la gráfica de fuerza de cada mesociclo">Exportar</button>
       </div>
-      <button class="icon-btn" id="btnExportar" type="button" disabled title="Genera un PDF con el resumen y la gráfica de fuerza de cada mesociclo">Exportar PDF</button>
     </div>
 
     <div id="panelDatos"><div class="estado-panel">Elige un cliente para ver su progresión.</div></div>
