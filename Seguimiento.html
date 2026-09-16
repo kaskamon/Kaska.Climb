@@ -145,14 +145,17 @@
      @media print, reutilizando los mismos pintarPanelX() que la vista
      interactiva (misma factura visual, sin duplicar el dibujado). */
   #areaImpresion{ display:none; }
-  /* Franja oscura como la del topbar de la propia app — se saca del padding
-     de #areaImpresion con márgenes negativos para que llegue de borde a
-     borde de la página, en vez de quedar como un bloque más flotando sobre
-     el fondo claro. Márgenes negativos ajustados al padding actual de
-     #areaImpresion (14mm arriba, 10mm a los lados) para que siga llegando
-     justo al borde; padding reducido para que la franja sea más fina. */
+  /* Franja oscura como la del topbar de la propia app. Ya no intenta
+     "sangrar" con márgenes negativos hasta el borde físico del papel — con
+     @page margin ya no en 0 (ver el porqué en el bloque @media print), un
+     margen negativo ahí se puede recortar según el motor de impresión, y
+     eso es justo el tipo de comportamiento inconsistente entre
+     dispositivos que ya dio problemas antes. Se queda como una caja normal
+     a todo lo ancho de #areaImpresion, dentro del margen de la página —
+     se sigue viendo como una franja completa, solo que no llega al borde
+     físico del papel. */
   #areaImpresion .marca-informe{
-    background:rgba(28,33,30,0.92); margin:-14mm -10mm 14px; padding:5mm 10mm 4mm;
+    background:rgba(28,33,30,0.92); margin:0 0 14px; padding:5mm 10mm 4mm; border-radius:8px;
   }
   #areaImpresion .marca-informe .eyebrow{ margin-bottom:6px; }
   #areaImpresion .marca-informe h4{ font-family:'Anton',sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.4px; font-size:17px; color:var(--chalk-dim); margin:0; }
@@ -176,24 +179,29 @@
   #areaImpresion .bloque-impresion{ margin-bottom:24px; }
 
   @media print {
-    /* margin:0 — @page solo puede PEDIR más margen del mínimo que el
-       dispositivo/impresora ya reserva, nunca menos. En tablets (impresión
-       nativa de iOS/Android) ese mínimo no se puede quitar desde CSS por
-       mucho margen que se pida aquí; dejarlo en 0 evita sumar 16mm extra
-       de blanco encima del mínimo que el propio dispositivo ya fuerza. El
-       espacio visual real lo da el padding de #areaImpresion de abajo. */
-    @page { size: landscape; margin: 0; }
+    /* El margen tiene que ir aquí, en @page, no como padding de
+       #areaImpresion: #areaImpresion es UN solo elemento que puede ocupar
+       varias páginas, y el padding de un elemento partido entre páginas
+       solo se pinta al principio y al final de TODO el elemento — no se
+       repite en cada página física. Por eso, al quitar este margen y
+       fiarlo todo al padding de #areaImpresion, la página 1 quedaba bien
+       pero la 2ª (y siguientes) salían con el título pegado al borde: no
+       hay padding de #areaImpresion "en medio" de un elemento partido.
+       @page sí se aplica a cada página, así que es el único sitio correcto
+       para un margen que se repita en todas. Un dispositivo (tablet) puede
+       forzar su propio mínimo por encima de esto, pero eso ya no depende
+       de lo que pidamos aquí. */
+    @page { size: landscape; margin: 12mm; }
     /* Mismo fondo y colores oscuros que la app en pantalla — por defecto el
        navegador imprime sin fondos/colores ("ahorro de tinta"), así que hay
        que pedírselo explícitamente o el informe saldría en blanco. */
     *{ -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
     body > *:not(#areaImpresion){ display:none !important; }
     body{ background:#494d4b; margin:0; }
-    /* Con @page en 0, este padding es ahora el único margen visual real
-       entre el fondo oscuro y el borde de la página (antes lo daba @page,
-       pero ese margen no se puede bajar del mínimo que ya reserva cada
-       dispositivo, así que sumaba blanco de más en vez de restarlo). */
-    #areaImpresion{ display:block; background:#494d4b; padding:14mm 10mm; }
+    /* Sin padding propio: el margen ya lo da @page, en cada página. Un
+       padding aquí solo se sumaría en la 1ª/última página del elemento
+       (ver comentario de @page arriba), así que ya no aporta nada. */
+    #areaImpresion{ display:block; background:#494d4b; }
     /* Nada de "page-break-before:always" por sección ni "avoid" sobre todo
        el bloque: con una tabla larga (muchas sesiones) dentro, forzar a que
        ni la sección ni el bloque se corten empuja TODO a la página
