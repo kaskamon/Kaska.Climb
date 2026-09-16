@@ -306,7 +306,13 @@ async function manejarEstadoSistema(req, res, sheets) {
       spreadsheetId: SPREADSHEET_ID,
       range: `'Estado_Sistema'!A:D`,
     });
-    const tareas = (resp.data.values || []).map(f => ({
+    // slice(1): la fila 1 es la cabecera ("Tarea", "OK", "Mensaje", "Fecha")
+    // que registrarEstadoTarea escribe al crear la pestaña — sin saltarla se
+    // colaba como si fuera una tarea real llamada "Tarea" con ok:false
+    // (porque "OK" no es "sí"), mostrando siempre el aviso "Tarea no se
+    // completó (Fecha): Mensaje." aunque todas las tareas reales hubiesen
+    // ido bien.
+    const tareas = (resp.data.values || []).slice(1).map(f => ({
       tarea: (f[0] || '').trim(),
       ok: ['sí', 'si'].includes((f[1] || '').trim().toLowerCase()),
       mensaje: (f[2] || '').trim(),
