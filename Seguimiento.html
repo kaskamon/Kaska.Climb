@@ -177,11 +177,27 @@
     .chart-shell{ page-break-inside:avoid; }
     .stat-tiles{ page-break-inside:avoid; }
     table.tabla-datos tr{ page-break-inside:avoid; }
+    /* Cuando una tabla larga sí se parte entre dos páginas, la cabecera
+       (thead) no se repetía en la página nueva — la fila con "Fecha",
+       "PFinicial (N)"... solo salía arriba del todo, así que las filas de
+       la página siguiente se veían sin saber qué columna es cuál.
+       table-header-group hace que el navegador la repita en cada página
+       nueva que reciba filas de esa misma tabla, como cualquier
+       "encabezado repetido" de un documento impreso normal. */
+    table.tabla-datos thead{ display:table-header-group; }
     /* Tablas anchas: en pantalla se resuelven con scroll horizontal, pero
        imprimir no puede "hacer scroll" — lo que no cabe se cortaría en
        silencio. En vez de eso, se encoge la tipografía y se deja que el
        texto de cada celda pueda partirse en dos líneas si hace falta. */
-    .tabla-datos-wrap{ overflow-x:visible; }
+    /* overflow-x:auto en pantalla, sin overflow-y explícito, hace que el
+       navegador calcule overflow-y como "auto" también (regla de CSS: si
+       uno de los dos ejes no es "visible", el otro deja de serlo) — un
+       contenedor con scroll implícito, que muchos motores de impresión
+       tratan como una región que no se puede partir entre páginas y
+       simplemente recortan lo que no cabe. Poniendo los dos ejes en
+       "visible" explícitamente, la tabla vuelve a ser contenido normal que
+       sí puede fluir entre páginas. */
+    .tabla-datos-wrap{ overflow-x:visible; overflow-y:visible; }
     table.tabla-datos{ font-size:9.5px; }
     table.tabla-datos th, table.tabla-datos td{ padding:5px 7px; white-space:normal; }
   }
@@ -197,13 +213,14 @@
   }
   .modal-exportar h3{ font-size:16px; color:var(--chalk); margin-bottom:8px; }
   .modal-exportar-desc{ font-size:12.5px; color:var(--chalk-faint); line-height:1.6; margin:0 0 18px; }
-  .campos-fecha{ display:flex; gap:14px; margin-bottom:22px; }
-  .campo-fecha{ flex:1; display:flex; flex-direction:column; gap:6px; }
-  .campo-fecha label{ font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--chalk-faint); }
-  .campo-fecha input[type=date]{
-    background:var(--stone-700); border:1px solid var(--line-strong); color:var(--chalk);
-    border-radius:9px; padding:9px 10px; font-size:13px; font-family:inherit; color-scheme:dark; width:100%;
+  .lista-macrociclos{ display:flex; flex-direction:column; gap:8px; margin-bottom:22px; max-height:260px; overflow-y:auto; }
+  .macrociclo-opt{
+    display:flex; align-items:center; gap:10px; background:var(--stone-700); border:1px solid var(--line-strong);
+    border-radius:9px; padding:11px 13px; cursor:pointer; font-size:13px; color:var(--chalk); transition:border-color .15s ease;
   }
+  .macrociclo-opt:has(input:checked){ border-color:var(--moss); }
+  .macrociclo-opt input{ accent-color:var(--moss); width:15px; height:15px; flex-shrink:0; }
+  .macrociclo-opt small{ color:var(--chalk-faint); font-weight:700; text-transform:uppercase; letter-spacing:0.3px; margin-left:4px; }
   .acciones-exportar{ display:flex; justify-content:flex-end; gap:10px; }
   .btn-cancelar-exportar{
     background:transparent; border:1px solid var(--line-strong); color:var(--chalk-dim); font-weight:700;
@@ -265,7 +282,7 @@
         <label>Variable</label>
         <select id="selectorVariable"></select>
       </div>
-      <button class="icon-btn" id="btnExportar" type="button" disabled title="Genera un PDF con el resumen y la gráfica de fuerza de cada mesociclo — puedes acotarlo por fechas">Exportar PDF</button>
+      <button class="icon-btn" id="btnExportar" type="button" disabled title="Genera un PDF con el resumen y la gráfica de fuerza de cada mesociclo">Exportar PDF</button>
     </div>
 
     <div id="panelDatos"><div class="estado-panel">Elige un cliente para ver su progresión.</div></div>
@@ -277,11 +294,8 @@
 <div class="overlay-exportar" id="overlayExportar">
   <div class="modal-exportar">
     <h3>Exportar PDF</h3>
-    <p class="modal-exportar-desc">Puedes acotar el informe a un rango de fechas — útil si este cliente ha entrenado contigo en distintas etapas y quieres separar un macrociclo del resto. Déjalo vacío para incluir todo el historial.</p>
-    <div class="campos-fecha">
-      <div class="campo-fecha"><label>Desde</label><input type="date" id="exportarDesde"></div>
-      <div class="campo-fecha"><label>Hasta</label><input type="date" id="exportarHasta"></div>
-    </div>
+    <p class="modal-exportar-desc">Este cliente ha tenido más de un macrociclo contigo — elige cuál o cuáles incluir en el informe.</p>
+    <div class="lista-macrociclos" id="listaMacrociclos"></div>
     <div class="acciones-exportar">
       <button type="button" class="btn-cancelar-exportar" id="btnCancelarExportar">Cancelar</button>
       <button type="button" class="btn-generar-exportar" id="btnGenerarExportar">Generar PDF</button>
@@ -290,7 +304,8 @@
 </div>
 
 <script>
-const { parseFechaDDMMYYYY } = window.PLANIFICACION_SEMANAS;
+const { parseFechaDDMMYYYY, formatFechaDDMMYYYY } = window.PLANIFICACION_SEMANAS;
+let MACROCICLOS_DISPONIBLES = []; // los del cliente elegido, cargados al abrir el selector de exportar
 const MESO_COLORS = { REOX:'#7c9070', AERO:'#93859e', DESOX:'#70908c', FMAX:'#c17c74', TAPERING:'#c99a5b' };
 let PORMESOCICLO = null;
 let MESO_ACTIVO = 'REOX';
@@ -992,21 +1007,24 @@ function fechaInputALocal(valorInput){
   return new Date(y, m - 1, d);
 }
 
-// Copia PORMESOCICLO acotada a [desde, hasta] (ambos opcionales e
-// inclusivos) — para separar, en el informe, macrociclos distintos que un
-// mismo cliente haya entrenado en épocas distintas contigo.
-function filtrarPorFechas(datos, desdeStr, hastaStr){
-  if(!desdeStr && !hastaStr) return datos;
-  const desde = fechaInputALocal(desdeStr);
-  const hasta = fechaInputALocal(hastaStr);
+// Copia PORMESOCICLO acotada a la UNIÓN de los rangos [inicio, fin] de los
+// macrociclos elegidos (fin puede venir vacío en el macrociclo en curso —
+// entonces no tiene tope superior) — para separar, en el informe,
+// macrociclos distintos que un mismo cliente haya entrenado contigo en
+// épocas distintas. `macrociclos` es null/[] cuando no hay que filtrar
+// nada (un solo macrociclo, o ninguno publicado).
+function filtrarPorMacrociclos(datos, macrociclos){
+  if(!macrociclos || !macrociclos.length) return datos;
+  const rangos = macrociclos.map(m => ({
+    inicio: fechaInputALocal(m.inicio),
+    fin: m.fin ? fechaInputALocal(m.fin) : null,
+  }));
   const filtrado = {};
   Object.keys(datos).forEach(meso => {
     filtrado[meso] = (datos[meso] || []).filter(e => {
       const f = parseFechaDDMMYYYY(e.fecha);
       if(!f) return false;
-      if(desde && f < desde) return false;
-      if(hasta && f > hasta) return false;
-      return true;
+      return rangos.some(r => f >= r.inicio && (!r.fin || f <= r.fin));
     });
   });
   return filtrado;
@@ -1017,8 +1035,9 @@ function filtrarPorFechas(datos, desdeStr, hastaStr){
 // oculto en pantalla, visible solo dentro de @media print — y abre el
 // diálogo de impresión del navegador para guardarlo como PDF. Todo con los
 // datos que ya están en memoria (PORMESOCICLO), sin volver a pedir nada al
-// servidor. desdeStr/hastaStr ("aaaa-mm-dd", opcionales) acotan el rango.
-async function exportarPDFCompleto(desdeStr, hastaStr){
+// servidor. macrociclosElegidos (opcional): array de {inicio,fin} — cuando
+// se pasa, acota el informe a la unión de esos rangos.
+async function exportarPDFCompleto(macrociclosElegidos){
   if(!PORMESOCICLO) return;
   const btn = document.getElementById('btnExportar');
   const areaImpresion = document.getElementById('areaImpresion');
@@ -1040,7 +1059,7 @@ async function exportarPDFCompleto(desdeStr, hastaStr){
   // un rango de fechas sin tocar esas funciones, se sustituye temporalmente
   // por una copia ya filtrada, y se devuelve la real al terminar.
   const pormesocicloOriginal = PORMESOCICLO;
-  PORMESOCICLO = filtrarPorFechas(pormesocicloOriginal, desdeStr, hastaStr);
+  PORMESOCICLO = filtrarPorMacrociclos(pormesocicloOriginal, macrociclosElegidos);
 
   // Nombre y apellidos en dos tonos (blanco/verde) — mismo criterio que ya
   // usa cliente/semana.html para el saludo del cliente.
@@ -1075,8 +1094,8 @@ async function exportarPDFCompleto(desdeStr, hastaStr){
   });
 
   if(!huboAlgo){
-    areaImpresion.innerHTML += desdeStr || hastaStr
-      ? '<p>Este cliente no tiene ninguna sesión entrenada en el rango de fechas elegido.</p>'
+    areaImpresion.innerHTML += macrociclosElegidos && macrociclosElegidos.length
+      ? '<p>Este cliente no tiene ninguna sesión entrenada en el/los macrociclo(s) elegido(s).</p>'
       : '<p>Este cliente todavía no tiene ninguna sesión entrenada registrada.</p>';
   }
 
@@ -1100,9 +1119,39 @@ async function exportarPDFCompleto(desdeStr, hastaStr){
   setTimeout(() => window.print(), 60);
 }
 
-document.getElementById('btnExportar').addEventListener('click', () => {
-  document.getElementById('exportarDesde').value = '';
-  document.getElementById('exportarHasta').value = '';
+// Etiqueta de un macrociclo para el selector: "01/01/2026 – 30/06/2026", o
+// sin tope si es el que está en curso (fin vacío).
+function etiquetaMacrociclo(m){
+  const inicioTxt = formatFechaDDMMYYYY(fechaInputALocal(m.inicio));
+  const finTxt = m.fin ? formatFechaDDMMYYYY(fechaInputALocal(m.fin)) : 'actualidad';
+  return `${inicioTxt} – ${finTxt}`;
+}
+
+document.getElementById('btnExportar').addEventListener('click', async () => {
+  const btn = document.getElementById('btnExportar');
+  const correo = document.getElementById('selectorCliente').value;
+
+  // Si el cliente ha tenido un único macrociclo (o ninguno publicado todavía,
+  // solo sesiones sueltas), no hay nada que elegir — se exporta todo
+  // directamente, sin mostrar el selector.
+  let macrociclos = [];
+  try {
+    const res = await fetch('/api/macrociclo?' + new URLSearchParams({ accion: 'historial', cliente: correo }).toString());
+    const data = await res.json();
+    if(data.success) macrociclos = data.macrociclos || [];
+  } catch(e) { /* si falla la consulta, seguimos como si no hubiera ninguno — exporta todo */ }
+
+  if(macrociclos.length <= 1){
+    exportarPDFCompleto(macrociclos.length ? macrociclos : null);
+    return;
+  }
+
+  MACROCICLOS_DISPONIBLES = macrociclos;
+  document.getElementById('listaMacrociclos').innerHTML = macrociclos.map((m, i) => `
+    <label class="macrociclo-opt">
+      <input type="checkbox" data-idx="${i}"${i === 0 ? ' checked' : ''}>
+      <span>${escapeHtml(etiquetaMacrociclo(m))}${i === 0 ? ' <small>Actual</small>' : ''}</span>
+    </label>`).join('');
   document.getElementById('overlayExportar').classList.add('abierto');
 });
 function cerrarOverlayExportar(){ document.getElementById('overlayExportar').classList.remove('abierto'); }
@@ -1114,10 +1163,10 @@ document.addEventListener('keydown', (e) => {
   if(e.key === 'Escape' && document.getElementById('overlayExportar').classList.contains('abierto')) cerrarOverlayExportar();
 });
 document.getElementById('btnGenerarExportar').addEventListener('click', () => {
-  const desde = document.getElementById('exportarDesde').value;
-  const hasta = document.getElementById('exportarHasta').value;
+  const elegidos = Array.from(document.querySelectorAll('#listaMacrociclos input:checked'))
+    .map(el => MACROCICLOS_DISPONIBLES[Number(el.dataset.idx)]);
   cerrarOverlayExportar();
-  exportarPDFCompleto(desde, hasta);
+  exportarPDFCompleto(elegidos.length ? elegidos : null);
 });
 
 (async function init(){

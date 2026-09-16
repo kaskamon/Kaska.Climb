@@ -228,6 +228,46 @@ async function manejarGrid(req, res, sheets) {
   }
 }
 
+// GET ?accion=historial&cliente=correo — TODOS los macrociclos publicados
+// para ese cliente (no solo el más reciente, que es lo que da manejarGet),
+// más recientes primero. Lo usa Seguimiento.html para dejar elegir qué
+// macrociclo(s) exportar en el PDF cuando el cliente ha entrenado contigo
+// en más de una etapa a lo largo del tiempo.
+async function manejarHistorialMacrociclos(req, res, sheets) {
+  const { cliente } = req.query || {};
+  if (!cliente) {
+    return res.status(400).json({ success: false, error: 'Falta el parámetro cliente.' });
+  }
+  const acceso = verificarAccesoCliente(req, cliente);
+  if (!acceso.ok) {
+    return res.status(401).json({ success: false, error: acceso.error });
+  }
+
+  let filas;
+  try {
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${SHEET_NAME}'!A:F`,
+    });
+    filas = resp.data.values || [];
+  } catch (e) {
+    return res.status(500).json({
+      success: false,
+      error: `No se pudo leer la pestaña "${SHEET_NAME}" (${e.message}).`,
+    });
+  }
+
+  const correoBuscado = cliente.trim().toLowerCase();
+  // inicio/fin son "aaaa-mm-dd" (de <input type="date">) — ese formato ya
+  // ordena bien como texto, sin necesidad de parsear a Date.
+  const macrociclos = filas
+    .filter(f => (f[1] || '').trim().toLowerCase() === correoBuscado && (f[3] || '').trim())
+    .map(f => ({ inicio: (f[3] || '').trim(), fin: (f[4] || '').trim() }))
+    .sort((a, b) => (a.inicio < b.inicio ? 1 : a.inicio > b.inicio ? -1 : 0));
+
+  res.status(200).json({ success: true, macrociclos });
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Método no permitido, usa GET o POST.' });
@@ -243,6 +283,7 @@ module.exports = async (req, res) => {
     const sheets = await authSheets();
     const accion = req.query && req.query.accion;
     if (req.method === 'GET' && accion === 'grid') return await manejarGrid(req, res, sheets);
+    if (req.method === 'GET' && accion === 'historial') return await manejarHistorialMacrociclos(req, res, sheets);
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     return await manejarPost(req, res, sheets);
   } catch (error) {
