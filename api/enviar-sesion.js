@@ -5,8 +5,9 @@ const { sanearFormula } = require('../libs/sheets-sanitize.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Respuestas de formulario 1';
-const TOTAL_COLUMNAS = 35; // A hasta AI (AI = correo, columna añadida al final para no mover nada de A-AH)
+const TOTAL_COLUMNAS = 36; // A hasta AJ (AI = correo, AJ = notas — ambas añadidas al final para no mover nada de A-AH)
 const COL_CORREO = 34; // AI — identificador real del cliente (el nombre en B es solo para leer a simple vista)
+const COL_NOTAS = 35; // AJ — nota libre opcional del cliente ("cómo me he sentido...")
 
 // El mapeo de columnas por mesociclo vive ahora en libs/mesociclos-config.js
 // (fuente única, la reutilizan también los endpoints de lectura de sesión).
@@ -35,7 +36,7 @@ module.exports = async (req, res) => {
     }
 
     const body = req.body || {};
-    const { nombre, correo, fecha, mesociclo, pfInicial, fmaxDer, fmaxIzq, campos, pfFinal, unico } = body;
+    const { nombre, correo, fecha, mesociclo, pfInicial, fmaxDer, fmaxIzq, campos, pfFinal, unico, notas } = body;
 
     if (!nombre || !fecha || !mesociclo || !correo) {
       return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (nombre, correo, fecha o mesociclo).' });
@@ -70,6 +71,7 @@ module.exports = async (req, res) => {
     fila[2] = sanearFormula(fecha);  // C
     fila[3] = sanearFormula(mesociclo); // D
     if (correo) fila[COL_CORREO] = sanearFormula(correo); // AI — identificador real, usado por obtener-historial.js
+    if (notas && String(notas).trim()) fila[COL_NOTAS] = sanearFormula(String(notas).trim().slice(0, 2000)); // AJ
 
     // Los valores de fuerza (N) viajan tal cual — es tu Sheet quien calcula el %
     // comparando con el historial real, no lo calculamos aquí.
@@ -104,7 +106,7 @@ module.exports = async (req, res) => {
       try {
         const existentes = await sheets.spreadsheets.values.get({
           spreadsheetId: SPREADSHEET_ID,
-          range: `'${SHEET_NAME}'!A:AI`,
+          range: `'${SHEET_NAME}'!A:AJ`,
         });
         const filas = existentes.data.values || [];
         const idx = filas.findIndex(f => f[COL_CORREO] === correo && f[2] === fecha && f[3] === mesociclo);
@@ -121,14 +123,14 @@ module.exports = async (req, res) => {
       if (filaExistente) {
         await sheets.spreadsheets.values.update({
           spreadsheetId: SPREADSHEET_ID,
-          range: `'${SHEET_NAME}'!A${filaExistente}:AI${filaExistente}`,
+          range: `'${SHEET_NAME}'!A${filaExistente}:AJ${filaExistente}`,
           valueInputOption: 'USER_ENTERED',
           requestBody: { values: [fila] },
         });
       } else {
         await sheets.spreadsheets.values.append({
           spreadsheetId: SPREADSHEET_ID,
-          range: `'${SHEET_NAME}'!A:AI`,
+          range: `'${SHEET_NAME}'!A:AJ`,
           valueInputOption: 'USER_ENTERED',
           insertDataOption: 'INSERT_ROWS',
           requestBody: { values: [fila] },

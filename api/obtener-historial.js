@@ -6,6 +6,7 @@ const { parseFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Respuestas de formulario 1';
 const COL_CORREO = 34; // AI — mismo campo que escribe api/enviar-sesion.js
+const COL_NOTAS = 35; // AJ — nota libre opcional que deja el cliente al enviar la sesión
 
 // Mesociclos con seguimiento numérico real (los únicos que miden PFinicial).
 // GYM-FMAX, GYM-ANTAGONISTAS, ROCA, DESCANSO y TAPERING no llevan estos datos
@@ -88,6 +89,7 @@ function extraerHistorialDeMesociclo(filas, cliente, mesociclo, max) {
         fmaxDer: fmaxDer !== undefined && fmaxDer !== '' ? Number(fmaxDer) : undefined,
         pfFinal: pfFinalRaw !== undefined && pfFinalRaw !== '' ? Number(pfFinalRaw) : undefined,
         campos,
+        notas: f[COL_NOTAS] || undefined,
       };
     })
     .slice(-max);
@@ -134,7 +136,7 @@ module.exports = async (req, res) => {
 
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `'${SHEET_NAME}'!A:AI`,
+      range: `'${SHEET_NAME}'!A:AJ`,
     });
     const filas = resp.data.values || [];
     const max = Number(limite) || 10;

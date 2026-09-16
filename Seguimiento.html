@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="libs/clientes-selector.js"></script>
 <script src="libs/mesociclos-config.js"></script>
+<script src="libs/planificacion-semanas.js"></script>
 <style>
   :root{
     --stone-900:#1c211e; --stone-800:#262d28; --stone-700:#333b34;
@@ -35,6 +36,7 @@
     text-decoration:none; transition:all .2s ease;
   }
   .icon-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+  .icon-btn:disabled{ opacity:0.4; cursor:default; pointer-events:none; }
 
   .wrap-campana{ position:relative; }
   /* Punto verde (no un número) en la esquina de la campana, a la altura donde
@@ -66,12 +68,13 @@
   .fila-notif .linea1{ font-weight:700; color:var(--chalk); }
   .fila-notif.no-leida .linea1{ color:var(--moss-light); font-weight:800; }
   .fila-notif .linea2{ color:var(--chalk-faint); font-size:11px; margin-top:2px; }
-  /* Notificación de "cliente pasó a Inactivo" — mismo patrón que las de
-     sesión, pero en ámbar en vez de verde: no es una actividad positiva,
-     es algo que igual conviene revisar (¿baja real, o hay que renovarle?). */
-  .fila-notif.tipo-inactivo.no-leida{ background:rgba(201,154,91,0.12); }
-  .fila-notif.tipo-inactivo.no-leida:hover{ background:rgba(201,154,91,0.18); }
-  .fila-notif.tipo-inactivo.no-leida .linea1{ color:var(--amber); }
+  /* Notificación de "cliente pasó a Inactivo" o "vence esta semana" — mismo
+     patrón que las de sesión, pero en ámbar en vez de verde: no son una
+     actividad positiva, son algo que igual conviene revisar (¿baja real, o
+     hay que renovarle?). */
+  .fila-notif.tipo-inactivo.no-leida, .fila-notif.tipo-vence.no-leida{ background:rgba(201,154,91,0.12); }
+  .fila-notif.tipo-inactivo.no-leida:hover, .fila-notif.tipo-vence.no-leida:hover{ background:rgba(201,154,91,0.18); }
+  .fila-notif.tipo-inactivo.no-leida .linea1, .fila-notif.tipo-vence.no-leida .linea1{ color:var(--amber); }
   .vacio-notif{ padding:24px 14px; text-align:center; color:var(--chalk-faint); font-size:12.5px; }
 
   .wrap{ max-width:1180px; margin:0 auto; padding:28px 24px 80px; }
@@ -129,6 +132,11 @@
   table.tabla-datos th{ text-align:left; font-size:10.5px; letter-spacing:0.8px; text-transform:uppercase; color:var(--chalk-faint); font-weight:700; padding:10px 14px; white-space:nowrap; border-bottom:1px solid var(--line-strong); }
   table.tabla-datos td{ padding:10px 14px; font-size:12.5px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; white-space:nowrap; }
   table.tabla-datos td.no-entrenada{ color:var(--chalk-faint); font-style:italic; }
+  .nota-marcador{
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:0.3px; text-transform:uppercase;
+    color:var(--moss-light); background:rgba(124,144,112,0.14); border:1px solid rgba(124,144,112,0.35);
+    border-radius:20px; padding:3px 9px; cursor:help;
+  }
   table.tabla-datos tbody tr:last-child td{ border-bottom:none; }
 </style>
 </head>
@@ -181,6 +189,7 @@
         <label>Variable</label>
         <select id="selectorVariable"></select>
       </div>
+      <button class="icon-btn" id="btnExportar" type="button" disabled title="Exporta todos los mesociclos del cliente elegido, ordenados por fecha">Exportar</button>
     </div>
 
     <div id="panelDatos"><div class="estado-panel">Elige un cliente para ver su progresión.</div></div>
@@ -188,6 +197,7 @@
 </div>
 
 <script>
+const { parseFechaDDMMYYYY } = window.PLANIFICACION_SEMANAS;
 const MESO_COLORS = { REOX:'#7c9070', AERO:'#93859e', DESOX:'#70908c', FMAX:'#c17c74', TAPERING:'#c99a5b' };
 let PORMESOCICLO = null;
 let MESO_ACTIVO = 'REOX';
@@ -392,8 +402,10 @@ pintarTabs();
 
 async function cargarCliente(email){
   const panel = document.getElementById('panelDatos');
-  if(!email){ panel.innerHTML = '<div class="estado-panel">Elige un cliente para ver su progresión.</div>'; return; }
+  const btnExportar = document.getElementById('btnExportar');
+  if(!email){ panel.innerHTML = '<div class="estado-panel">Elige un cliente para ver su progresión.</div>'; btnExportar.disabled = true; return; }
   panel.innerHTML = '<div class="estado-panel">Cargando historial…</div>';
+  btnExportar.disabled = true;
   try{
     const res = await fetch('/api/obtener-historial?' + new URLSearchParams({ cliente: email }).toString());
     const data = await res.json();
@@ -402,6 +414,7 @@ async function cargarCliente(email){
       return;
     }
     PORMESOCICLO = data.porMesociclo;
+    btnExportar.disabled = false;
     pintarDatos();
   }catch(e){
     panel.innerHTML = `<div class="estado-panel">Error de red: ${escapeHtml(e.message)}</div>`;
@@ -623,7 +636,7 @@ function pintarPanelResumen(panel){
   const cabeceras = ['Fecha', 'PFinicial (N)', 'PFinicial (%)', 'Fmax izq. (N)', 'Fmax der. (N)'];
   if(tienePfFinal) cabeceras.push('PFfinal (N)', 'PFfinal (%)');
   campos.forEach(c => cabeceras.push(`${c.label} (${c.match})`));
-  cabeceras.push('Sesión');
+  cabeceras.push('Sesión', 'Notas');
 
   // PFinicial (%) — misma variación que pintarPanelPfPct, frente a la
   // sesión ENTRENADA anterior (los días no recuperados no cuentan como
@@ -654,14 +667,20 @@ function pintarPanelResumen(panel){
       campos.forEach(() => celdas.push('—'));
       celdas.push('No recuperado');
     }
-    return { celdas, entrenada: h.entrenada };
+    return { celdas, entrenada: h.entrenada, notas: h.notas };
   });
 
   panel.innerHTML = `
     <div class="tabla-datos-wrap">
       <table class="tabla-datos">
         <thead><tr>${cabeceras.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
-        <tbody>${filas.map(f => `<tr>${f.celdas.map(v => `<td${f.entrenada ? '' : ' class="no-entrenada"'}>${escapeHtml(v)}</td>`).join('')}</tr>`).join('')}</tbody>
+        <tbody>${filas.map(f => {
+          const celdasHtml = f.celdas.map(v => `<td${f.entrenada ? '' : ' class="no-entrenada"'}>${escapeHtml(v)}</td>`).join('');
+          const notaHtml = f.notas
+            ? `<td${f.entrenada ? '' : ' class="no-entrenada"'}><span class="nota-marcador" title="${escapeHtml(f.notas)}">Ver nota</span></td>`
+            : `<td${f.entrenada ? '' : ' class="no-entrenada"'}>—</td>`;
+          return `<tr>${celdasHtml}${notaHtml}</tr>`;
+        }).join('')}</tbody>
       </table>
     </div>`;
 }
@@ -839,6 +858,68 @@ document.getElementById('selectorVariable').addEventListener('change', (e) => {
   pintarDatos();
 });
 
+// Exporta TODO lo que ya está cargado en memoria (PORMESOCICLO, la misma
+// fuente que pinta los paneles) como un CSV, sin volver a pedir nada al
+// servidor: una fila por sesión entrenada de cualquier mesociclo, ordenadas
+// cronológicamente, con los "campos" propios de cada mesociclo (nombres
+// reales via FIELD_MAP, no solo el índice) metidos en una sola columna de
+// texto para no tener una tabla con columnas distintas según el mesociclo.
+function exportarHistorialCompleto(){
+  if(!PORMESOCICLO) return;
+
+  const filas = [];
+  Object.keys(PORMESOCICLO).forEach(meso => {
+    if(meso === 'DOMINADAS_LASTRE'){
+      (PORMESOCICLO[meso] || []).forEach(e => {
+        filas.push({ fecha: e.fecha, mesociclo: 'GYM-FMAX', entrenada: 'Sí', pfInicial: '', fmaxIzq: '', fmaxDer: '', pfFinal: '', datos: `Dominadas con lastre: ${e.valor}` });
+      });
+      return;
+    }
+    const fieldMap = (window.MESOCICLOS_CONFIG && window.MESOCICLOS_CONFIG.FIELD_MAP[meso] && window.MESOCICLOS_CONFIG.FIELD_MAP[meso].campos) || [];
+    (PORMESOCICLO[meso] || []).filter(e => e.entrenada).forEach(e => {
+      const datos = Array.isArray(e.campos)
+        ? e.campos.map((v, i) => {
+            if(v === undefined) return null;
+            const campoCfg = fieldMap[i];
+            return `${campoCfg ? `${campoCfg.label} (${campoCfg.match})` : `Campo ${i + 1}`}: ${v}`;
+          }).filter(Boolean).join('; ')
+        : '';
+      filas.push({
+        fecha: e.fecha, mesociclo: meso, entrenada: 'Sí',
+        pfInicial: e.pfInicial ?? '', fmaxIzq: e.fmaxIzq ?? '', fmaxDer: e.fmaxDer ?? '', pfFinal: e.pfFinal ?? '',
+        datos, notas: e.notas || '',
+      });
+    });
+  });
+
+  filas.sort((a, b) => {
+    const fa = parseFechaDDMMYYYY(a.fecha), fb = parseFechaDDMMYYYY(b.fecha);
+    return (fa ? fa.getTime() : 0) - (fb ? fb.getTime() : 0);
+  });
+
+  const cabecera = ['Fecha', 'Mesociclo', 'Entrenada', 'PFinicial (N)', 'Fmax Izq (N)', 'Fmax Der (N)', 'PFfinal (N)', 'Datos adicionales', 'Notas'];
+  const csvEscape = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const lineas = [cabecera.map(csvEscape).join(',')];
+  filas.forEach(f => lineas.push([f.fecha, f.mesociclo, f.entrenada, f.pfInicial, f.fmaxIzq, f.fmaxDer, f.pfFinal, f.datos, f.notas].map(csvEscape).join(',')));
+  // BOM al principio para que Excel (el que probablemente use el entrenador
+  // para abrir esto) detecte UTF-8 solo y no rompa las tildes/eñes.
+  const csv = '﻿' + lineas.join('\r\n');
+
+  const opcionCliente = document.getElementById('selectorCliente').selectedOptions[0];
+  const nombreArchivo = (opcionCliente ? opcionCliente.textContent : 'cliente').trim().replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '') || 'cliente';
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${nombreArchivo}_historial.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+document.getElementById('btnExportar').addEventListener('click', exportarHistorialCompleto);
+
 (async function init(){
   poblarSelectorVariable();
   const sel = document.getElementById('selectorCliente');
@@ -885,11 +966,15 @@ const MESOS_CON_TAB = ['FMAX', 'REOX', 'DESOX', 'AERO', 'TAPERING'];
 
 function filaNotifHtml(n, leidas){
   const leida = leidas.has(n.clave);
-  const claseTipo = n.tipo === 'inactivo' ? ' tipo-inactivo' : '';
+  const claseTipo = n.tipo === 'inactivo' ? ' tipo-inactivo' : n.tipo === 'vence' ? ' tipo-vence' : '';
   const linea1 = n.tipo === 'inactivo'
     ? `${escapeHtml(n.nombre || n.correo)} — pasó a Inactivo`
+    : n.tipo === 'vence'
+    ? `${escapeHtml(n.nombre || n.correo)} — vence en ${n.diasRestantes === 0 ? 'hoy' : n.diasRestantes === 1 ? '1 día' : n.diasRestantes + ' días'}`
     : `${escapeHtml(n.nombre || n.correo)} — ${escapeHtml(n.mesociclo || '—')}`;
-  const linea2 = n.tipo === 'inactivo' ? escapeHtml(n.correo) : `Sesión del ${escapeHtml(n.fecha || '—')}`;
+  const linea2 = n.tipo === 'inactivo' ? escapeHtml(n.correo)
+    : n.tipo === 'vence' ? `Fin de contrato: ${escapeHtml(n.fechaFin || '—')}`
+    : `Sesión del ${escapeHtml(n.fecha || '—')}`;
   return `
     <button type="button" class="fila-notif${claseTipo}${leida ? ' leida' : ' no-leida'}" data-clave="${escapeHtml(n.clave)}">
       <div class="linea1">${linea1}</div>
@@ -913,12 +998,17 @@ function renderNotificaciones(){
   }
 
   const inactivos = notificacionesCache.filter(n => n.tipo === 'inactivo');
+  const vencen = notificacionesCache.filter(n => n.tipo === 'vence');
   const sesiones = notificacionesCache.filter(n => n.tipo === 'sesion');
 
   let html = '';
   if (inactivos.length) {
     html += `<div class="cab-notif">Clientes pasados a Inactivo</div>`;
     html += inactivos.map(n => filaNotifHtml(n, leidas)).join('');
+  }
+  if (vencen.length) {
+    html += `<div class="cab-notif">Vencen esta semana</div>`;
+    html += vencen.map(n => filaNotifHtml(n, leidas)).join('');
   }
   html += `<div class="cab-notif">Sesiones registradas esta semana</div>`;
   html += sesiones.length
@@ -954,7 +1044,24 @@ async function cargarNotificaciones(){
       .map(c => ({ tipo: 'inactivo', clave: `inactivo|${c.email}`, nombre: c.nombreCompleto, correo: c.email }))
       : [];
 
-    notificacionesCache = [...inactivos, ...sesiones];
+    // Aviso de "vence esta semana" — clientes activos cuya fecha de fin cae
+    // dentro de los próximos 7 días (0 = hoy). No usa clave con fecha para
+    // que, una vez leída, no vuelva a aparecer cada día por el mismo motivo
+    // mientras siga sin renovarse — si se renueva, sale del rango de 7 días
+    // y desaparece sola de la lista.
+    const vencen = dataClientes.success ? dataClientes.clientes
+      .filter(c => (c.estado || '').trim().toLowerCase() === 'activo' && c.fechaFin)
+      .map(c => {
+        const fin = parseFechaDDMMYYYY(c.fechaFin);
+        if (!fin) return null;
+        const diasRestantes = Math.ceil((fin - new Date()) / 86400000);
+        return { ...c, diasRestantes };
+      })
+      .filter(c => c && c.diasRestantes >= 0 && c.diasRestantes <= 7)
+      .map(c => ({ tipo: 'vence', clave: `vence|${c.email}`, nombre: c.nombreCompleto, correo: c.email, fechaFin: c.fechaFin, diasRestantes: c.diasRestantes }))
+      : [];
+
+    notificacionesCache = [...inactivos, ...vencen, ...sesiones];
     renderNotificaciones();
   } catch (e) {
     cont.innerHTML = `<div class="vacio-notif">Error de red: ${escapeHtml(e.message)}</div>`;
@@ -977,12 +1084,14 @@ function asegurarOpcionCliente(correo, nombre){
 // Pinchar una notificación: la marca leída y selecciona a ese cliente — las
 // de sesión, además, saltan directamente a su meso (o, si era un día de
 // gimnasio con dominadas, a FMAX con "Dominadas con lastre" ya elegido); las
-// de cliente pasado a inactivo llevan a Clientes, filtrado a ese cliente.
+// de cliente pasado a inactivo o próximo a vencer llevan a Clientes,
+// filtrado a ese cliente (para renovarlo con "+1 mes"/"+3 meses" o editar
+// su fecha de fin directamente).
 async function irANotificacion(n){
   marcarNotificacionLeida(n);
   renderNotificaciones();
 
-  if (n.tipo === 'inactivo') {
+  if (n.tipo === 'inactivo' || n.tipo === 'vence') {
     location.href = 'Clientes.html?correo=' + encodeURIComponent(n.correo);
     return;
   }

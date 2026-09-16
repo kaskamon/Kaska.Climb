@@ -142,6 +142,14 @@
   }
   input[type=number]::placeholder{ color:var(--chalk-faint); font-weight:400; }
   input[type=number]:focus{ outline:2px solid var(--moss); outline-offset:1px; border-color:var(--moss); }
+  .field textarea{
+    background:var(--stone-700); border:1px solid rgba(242,237,225,0.18);
+    color:var(--chalk); border-radius:10px; padding:12px 14px; font-size:14px;
+    font-family:'Work Sans',sans-serif; width:100%; resize:vertical; min-height:64px; line-height:1.5;
+  }
+  .field textarea::placeholder{ color:var(--chalk-faint); }
+  .field textarea:focus{ outline:2px solid var(--moss); outline-offset:1px; border-color:var(--moss); }
+  .notas-sesion{ margin-top:22px; }
   input[type=number].field-error{ border-color:var(--danger); background:rgba(201,112,91,0.12); }
   .field-error-msg{ font-size:12px; color:var(--danger); font-weight:600; display:none; margin-top:-2px; }
   .field.has-error .field-error-msg{ display:block; }
@@ -241,6 +249,11 @@
   </div>
 
   <div id="contenedorBloques"></div>
+
+  <div class="field notas-sesion">
+    <label>Notas <span class="unit">(opcional)</span></label>
+    <textarea id="sesion-notas" placeholder="¿Cómo te has sentido? ¿Alguna molestia o algo que deba saber tu entrenador?"></textarea>
+  </div>
 
   <div class="send-bar">
     <button class="send-btn" id="btnSend">Enviar sesión</button>
@@ -423,6 +436,8 @@ function guardarBorrador(){
     const datos = { __sesion: SESION_JSON_ACTUAL };
     document.querySelectorAll('#contenedorBloques input[type=number]').forEach(el => { datos[el.id] = el.value; });
     document.querySelectorAll('#contenedorBloques .ex-check').forEach(el => { datos[el.id] = el.checked; });
+    const notasEl = document.getElementById('sesion-notas');
+    if(notasEl) datos[notasEl.id] = notasEl.value;
     localStorage.setItem(STORAGE_KEY_BORRADOR, JSON.stringify(datos));
   }catch(e){ /* localStorage lleno o inaccesible (navegación privada) — no es crítico */ }
 }
@@ -433,7 +448,8 @@ function borrarBorrador(){
 
 function hayDatosSinEnviar(){
   return Array.from(document.querySelectorAll('#contenedorBloques input[type=number]')).some(el => el.value.trim() !== '')
-    || Array.from(document.querySelectorAll('#contenedorBloques .ex-check')).some(el => el.checked);
+    || Array.from(document.querySelectorAll('#contenedorBloques .ex-check')).some(el => el.checked)
+    || Boolean(document.getElementById('sesion-notas')?.value.trim());
 }
 
 function restaurarBorrador(){
@@ -872,6 +888,8 @@ function wireInteractividad(ultimaValida){
     const fechaReal = fechaRealDeHoy();
 
     const payload = { nombre: NOMBRE_DISPLAY, correo: CLIENTE, fecha: fechaReal, mesociclo: MESOCICLO };
+    const notasEl = document.getElementById('sesion-notas');
+    if(notasEl && notasEl.value.trim()) payload.notas = notasEl.value.trim();
     const cfgUnico = campoUnicoActivo();
     if(cfgUnico) payload.unico = val(cfgUnico.id);
 
@@ -903,28 +921,31 @@ function wireInteractividad(ultimaValida){
   function construirFilasModal(payload){
     const cfgUnico = campoUnicoActivo();
     const filasUnico = cfgUnico ? [[cfgUnico.label, payload.unico ?? '—']] : [];
+    let filas;
 
     if(!CFG.pfInicial){
-      return filasUnico.length ? filasUnico : [['Sesión', 'Completada']];
-    }
-    if(sesionBloqueada){
-      return [
+      filas = filasUnico.length ? filasUnico : [['Sesión', 'Completada']];
+    } else if(sesionBloqueada){
+      filas = [
         ...filasUnico,
         ['Test PFinicial (N)', payload.pfInicial ?? '—'],
         ['Sesión', 'No entrenada — no recuperado'],
       ];
+    } else {
+      filas = [...filasUnico, ['Test PFinicial (N)', payload.pfInicial ?? '—']];
+      if(CFG.fmaxTest){
+        filas.push(['Fmax 5" mano izq. (N)', payload.fmaxIzq ?? '—']);
+        filas.push(['Fmax 5" mano der. (N)', payload.fmaxDer ?? '—']);
+      }
+      (CFG.campos || []).forEach((c, i) => {
+        const v = payload.campos ? payload.campos[i] : undefined;
+        if(v === undefined) return; // alternativa no presente esta semana
+        filas.push([c.label + (c.tipo === 'tiempo' ? '' : ''), v]);
+      });
+      if(CFG.pfFinal) filas.push(['Test PFfinal (N)', payload.pfFinal ?? '—']);
     }
-    const filas = [...filasUnico, ['Test PFinicial (N)', payload.pfInicial ?? '—']];
-    if(CFG.fmaxTest){
-      filas.push(['Fmax 5" mano izq. (N)', payload.fmaxIzq ?? '—']);
-      filas.push(['Fmax 5" mano der. (N)', payload.fmaxDer ?? '—']);
-    }
-    (CFG.campos || []).forEach((c, i) => {
-      const v = payload.campos ? payload.campos[i] : undefined;
-      if(v === undefined) return; // alternativa no presente esta semana
-      filas.push([c.label + (c.tipo === 'tiempo' ? '' : ''), v]);
-    });
-    if(CFG.pfFinal) filas.push(['Test PFfinal (N)', payload.pfFinal ?? '—']);
+
+    if(payload.notas) filas.push(['Notas', payload.notas]);
     return filas;
   }
 
@@ -995,6 +1016,7 @@ function wireInteractividad(ultimaValida){
   const contenedor = document.getElementById('contenedorBloques');
   contenedor.addEventListener('input', e => { if(e.target.matches('input[type=number]')) guardarBorrador(); });
   contenedor.addEventListener('change', e => { if(e.target.matches('.ex-check')) guardarBorrador(); });
+  document.getElementById('sesion-notas').addEventListener('input', guardarBorrador);
 }
 
 /* ---------- Carga de datos y arranque ---------- */
