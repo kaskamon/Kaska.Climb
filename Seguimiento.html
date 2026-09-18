@@ -1335,6 +1335,7 @@ document.addEventListener('keydown', (e) => {
 // ese cliente (y a su meso, si es de tipo sesión).
 let notificacionesCache = []; // [{tipo:'sesion'|'inactivo', clave, nombre, correo, fecha?, mesociclo?}]
 let notifLeidasCache = new Set(); // claves ya leídas, cargadas del servidor al abrir la página
+let notifCargaCompleta = false;
 
 async function cargarLeidas(){
   try {
@@ -1356,7 +1357,7 @@ function marcarNotificacionLeida(n){
   fetch('/api/listar-clientes', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ accion: 'marcar-notif-leida', clave: n.clave, vigentes: notificacionesCache.map(x => x.clave) }),
+    body: JSON.stringify({ accion: 'marcar-notif-leida', clave: n.clave, vigentes: notifCargaCompleta ? notificacionesCache.map(x => x.clave) : null }),
   }).catch(() => {}); // best-effort — si falla, se reintenta solo la próxima vez que se pinche algo
 }
 
@@ -1463,6 +1464,9 @@ async function cargarNotificaciones(){
       : [];
 
     notificacionesCache = [...inactivos, ...vencen, ...sesiones];
+    // Solo si las dos fuentes cargaron bien la lista es completa — si no, el
+    // servidor no debe podar leídas en base a ella (ver marcarNotificacionLeida).
+    notifCargaCompleta = dataSesiones.success && dataClientes.success;
     renderNotificaciones();
   } catch (e) {
     cont.innerHTML = `<div class="vacio-notif">Error de red: ${escapeHtml(e.message)}</div>`;

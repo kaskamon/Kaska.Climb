@@ -143,13 +143,18 @@ module.exports = async (req, res) => {
 
     // 2) Copia de seguridad en crudo (independiente de si lo anterior ha fallado)
     let backupOk = true;
+    // El token de sesión del cliente viaja en el body (verificarAccesoCliente
+    // lo lee de ahí) — no debe acabar guardado en claro en el Sheet: sería
+    // una credencial válida 30 días para cualquiera que vea esa pestaña o
+    // una de las copias diarias de Drive.
+    const { token: _tokenNoGuardar, ...bodySinToken } = body;
     try {
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
         range: `'${BACKUP_SHEET_NAME}'!A:C`,
         valueInputOption: 'USER_ENTERED',
         insertDataOption: 'INSERT_ROWS',
-        requestBody: { values: [[marcaTemporal, sanearFormula(`${nombre} — ${mesociclo}`), JSON.stringify(body)]] },
+        requestBody: { values: [[marcaTemporal, sanearFormula(`${nombre} — ${mesociclo}`), JSON.stringify(bodySinToken)]] },
       });
     } catch (e) {
       backupOk = false;

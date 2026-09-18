@@ -10,3 +10,7 @@ node_modules/
 # explícito además de *.key/*.pem, por si algún día se guarda como .json suelto.
 json importante acceso sheet/
 *service-account*.json
+
+# Notas locales con claves y config del asistente (nunca al repo)
+contraseñas.txt
+.claude/

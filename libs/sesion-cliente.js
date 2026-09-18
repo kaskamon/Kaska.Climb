@@ -64,6 +64,28 @@ function verificarToken(token, correoEsperado) {
   return { ok: true, correo };
 }
 
+// Cabecera "Authorization: Basic ..." con el usuario/contraseña de entrenador
+// (TRAINER_USER / TRAINER_PASS). Solo el primer ":" separa usuario de clave —
+// con split(':') una clave con ":" dentro nunca coincidía, y
+// "usuario:clave:cualquiercosa" sí colaba. Comparación en tiempo constante.
+function iguales(a, b) {
+  const bufA = Buffer.from(String(a)), bufB = Buffer.from(String(b));
+  return bufA.length === bufB.length && crypto.timingSafeEqual(bufA, bufB);
+}
+function esBasicAuthEntrenador(cabecera) {
+  if (!process.env.TRAINER_USER || !process.env.TRAINER_PASS) return false;
+  if (!cabecera || !cabecera.startsWith('Basic ')) return false;
+  try {
+    const credenciales = Buffer.from(cabecera.slice(6), 'base64').toString('utf8');
+    const i = credenciales.indexOf(':');
+    if (i === -1) return false;
+    return iguales(credenciales.slice(0, i), process.env.TRAINER_USER)
+      && iguales(credenciales.slice(i + 1), process.env.TRAINER_PASS);
+  } catch (e) {
+    return false;
+  }
+}
+
 // Varios endpoints los usa tanto el cliente (con su token) como el propio
 // entrenador desde sus herramientas (protegidas con la contraseña de
 // middleware.js — Basic Auth, que el navegador reenvía solo con pedirlo en
@@ -89,14 +111,7 @@ function verificarAccesoCliente(req, correoEsperado) {
     return { ok: true, esEntrenador: false, correo: resultado.correo };
   }
 
-  if (cabecera && cabecera.startsWith('Basic ')) {
-    try {
-      const [usuario, clave] = Buffer.from(cabecera.slice(6), 'base64').toString('utf8').split(':');
-      if (usuario === process.env.TRAINER_USER && clave === process.env.TRAINER_PASS) {
-        return { ok: true, esEntrenador: true };
-      }
-    } catch (e) { /* cae al error de abajo */ }
-  }
+  if (esBasicAuthEntrenador(cabecera)) return { ok: true, esEntrenador: true };
 
   return { ok: false, error: 'Sesión no válida — vuelve a iniciar sesión.' };
 }
@@ -106,14 +121,7 @@ function verificarAccesoCliente(req, correoEsperado) {
 // nunca vale aquí.
 function verificarEntrenador(req) {
   const cabecera = req.headers && req.headers.authorization;
-  if (cabecera && cabecera.startsWith('Basic ')) {
-    try {
-      const [usuario, clave] = Buffer.from(cabecera.slice(6), 'base64').toString('utf8').split(':');
-      if (usuario === process.env.TRAINER_USER && clave === process.env.TRAINER_PASS) {
-        return { ok: true };
-      }
-    } catch (e) { /* cae al error de abajo */ }
-  }
+  if (esBasicAuthEntrenador(cabecera)) return { ok: true };
   return { ok: false, error: 'Esta acción es solo para el entrenador.' };
 }
 

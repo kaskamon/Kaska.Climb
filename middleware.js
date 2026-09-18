@@ -39,8 +39,14 @@ export default function middleware(request) {
 
   const cabecera = request.headers.get('authorization');
   if (cabecera && cabecera.startsWith('Basic ')) {
-    const [usuario, clave] = atob(cabecera.slice(6)).split(':');
-    if (usuario === process.env.TRAINER_USER && clave === process.env.TRAINER_PASS) {
+    // Solo el primer ":" separa usuario de clave — con split(':') una
+    // clave con ":" dentro nunca coincidía, y "usuario:clave:cualquiercosa"
+    // sí colaba (se quedaba con el segundo trozo y tiraba el resto).
+    const credenciales = atob(cabecera.slice(6));
+    const i = credenciales.indexOf(':');
+    const usuario = credenciales.slice(0, i);
+    const clave = credenciales.slice(i + 1);
+    if (i !== -1 && usuario === process.env.TRAINER_USER && clave === process.env.TRAINER_PASS) {
       return;
     }
   }

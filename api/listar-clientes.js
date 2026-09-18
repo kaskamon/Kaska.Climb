@@ -361,8 +361,10 @@ async function manejarMarcarNotifLeida(req, res, sheets) {
   if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
   const clave = ((req.body && req.body.clave) || '').toString().trim();
   if (!clave) return res.status(400).json({ success: false, error: 'Falta el parámetro clave.' });
-  const vigentes = new Set(Array.isArray(req.body.vigentes) ? req.body.vigentes.map(String) : []);
-  vigentes.add(clave); // por si no viniera incluida en la lista de vigentes
+  // Sin lista de vigentes (el panel no pudo cargar todas las fuentes de
+  // notificaciones) no se poda nada: una lista parcial haría "olvidar" como
+  // no leídas notificaciones que sí siguen vigentes.
+  const vigentes = Array.isArray(req.body.vigentes) ? new Set(req.body.vigentes.map(String)) : null;
 
   try {
     let filas;
@@ -378,17 +380,24 @@ async function manejarMarcarNotifLeida(req, res, sheets) {
     }
 
     const existentes = filas.map(f => (f[0] || '').trim()).filter(Boolean);
-    const podadas = existentes.filter(c => vigentes.has(c));
+    const podadas = vigentes ? existentes.filter(c => vigentes.has(c)) : existentes.slice();
     if (!podadas.includes(clave)) podadas.push(clave);
 
+    // Primero se escribe la lista nueva y después se limpian las filas que
+    // sobran por debajo — al revés (clear + update) un fallo entre las dos
+    // llamadas dejaba la pestaña vacía, y TODAS las notificaciones volvían a
+    // salir como no leídas.
     const fecha = new Date().toISOString();
-    await sheets.spreadsheets.values.clear({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NOTIF_LEIDAS}'!A:B` });
-    if (podadas.length) {
-      await sheets.spreadsheets.values.update({
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${SHEET_NOTIF_LEIDAS}'!A1:B${podadas.length}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: podadas.map(c => [sanearFormula(c), fecha]) },
+    });
+    if (filas.length > podadas.length) {
+      await sheets.spreadsheets.values.clear({
         spreadsheetId: SPREADSHEET_ID,
-        range: `'${SHEET_NOTIF_LEIDAS}'!A1:B${podadas.length}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: podadas.map(c => [sanearFormula(c), fecha]) },
+        range: `'${SHEET_NOTIF_LEIDAS}'!A${podadas.length + 1}:B${filas.length}`,
       });
     }
     res.status(200).json({ success: true });
