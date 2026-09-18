@@ -324,6 +324,79 @@ async function manejarEstadoSistema(req, res, sheets) {
   }
 }
 
+const SHEET_NOTIF_LEIDAS = 'Notificaciones_Leidas';
+
+// GET ?accion=notif-leidas — claves de notificaciones ya marcadas como
+// leídas por el entrenador. Antes este estado vivía solo en localStorage
+// (Seguimiento.html), así que un aviso marcado leído en el PC seguía
+// saliendo como nuevo en el móvil o la tablet — con esto queda
+// sincronizado entre dispositivos, en su propia pestaña porque no tiene
+// relación con los datos de clientes.
+async function manejarNotifLeidasGet(req, res, sheets) {
+  const acceso = verificarEntrenador(req);
+  if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
+  try {
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${SHEET_NOTIF_LEIDAS}'!A:A`,
+    });
+    const claves = (resp.data.values || []).map(f => (f[0] || '').trim()).filter(Boolean);
+    res.status(200).json({ success: true, claves });
+  } catch (e) {
+    res.status(200).json({ success: true, claves: [] });
+  }
+}
+
+// POST ?accion=marcar-notif-leida {clave, vigentes:[...]} — añade `clave` a
+// las leídas y, de paso, descarta cualquier clave guardada que ya no esté
+// en `vigentes` (las notificaciones que el entrenador tiene delante ahora
+// mismo). Mismo criterio de poda que antes hacía guardarLeidas() en
+// localStorage: sin esto, la pestaña solo crecería, y un cliente que
+// vuelve a caducar más adelante (misma clave "inactivo|correo" de antes)
+// se quedaría marcado leído para siempre por error. Reescribe la pestaña
+// entera de golpe en vez de buscar/actualizar una fila — la lista es
+// siempre pequeña (unas pocas decenas de claves como mucho).
+async function manejarMarcarNotifLeida(req, res, sheets) {
+  const acceso = verificarEntrenador(req);
+  if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
+  const clave = ((req.body && req.body.clave) || '').toString().trim();
+  if (!clave) return res.status(400).json({ success: false, error: 'Falta el parámetro clave.' });
+  const vigentes = new Set(Array.isArray(req.body.vigentes) ? req.body.vigentes.map(String) : []);
+  vigentes.add(clave); // por si no viniera incluida en la lista de vigentes
+
+  try {
+    let filas;
+    try {
+      const resp = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NOTIF_LEIDAS}'!A:A` });
+      filas = resp.data.values || [];
+    } catch (e) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: { requests: [{ addSheet: { properties: { title: SHEET_NOTIF_LEIDAS } } }] },
+      });
+      filas = [];
+    }
+
+    const existentes = filas.map(f => (f[0] || '').trim()).filter(Boolean);
+    const podadas = existentes.filter(c => vigentes.has(c));
+    if (!podadas.includes(clave)) podadas.push(clave);
+
+    const fecha = new Date().toISOString();
+    await sheets.spreadsheets.values.clear({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NOTIF_LEIDAS}'!A:B` });
+    if (podadas.length) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `'${SHEET_NOTIF_LEIDAS}'!A1:B${podadas.length}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: podadas.map(c => [sanearFormula(c), fecha]) },
+      });
+    }
+    res.status(200).json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
 // GET ?accion=revisar-caducados — pasa a Inactivo a los clientes Activos cuya
 // fecha de fin ya venció, y avisa por correo si ha marcado alguno. La
 // dispara sola vercel.json cada día, con el CRON_SECRET que manda Vercel
@@ -832,9 +905,11 @@ module.exports = async (req, res) => {
     const sheets = await authSheets();
     if (req.method === 'GET' && req.query && req.query.accion === 'revisar-caducados') return await manejarRevisarCaducados(req, res, sheets);
     if (req.method === 'GET' && req.query && req.query.accion === 'estado-sistema') return await manejarEstadoSistema(req, res, sheets);
+    if (req.method === 'GET' && req.query && req.query.accion === 'notif-leidas') return await manejarNotifLeidasGet(req, res, sheets);
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     if (req.body && req.body.accion === 'alta') return await manejarAlta(req, res, sheets);
     if (req.body && req.body.accion === 'eliminar') return await manejarEliminar(req, res, sheets);
+    if (req.body && req.body.accion === 'marcar-notif-leida') return await manejarMarcarNotifLeida(req, res, sheets);
     return await manejarPost(req, res, sheets);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

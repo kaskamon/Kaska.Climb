@@ -136,7 +136,7 @@
   .nota-marcador{
     display:inline-block; font-size:11px; font-weight:700; letter-spacing:0.3px; text-transform:uppercase;
     color:var(--moss-light); background:rgba(124,144,112,0.14); border:1px solid rgba(124,144,112,0.35);
-    border-radius:20px; padding:3px 9px; cursor:help;
+    border-radius:20px; padding:3px 9px; cursor:pointer;
   }
   table.tabla-datos tbody tr:last-child td{ border-bottom:none; }
 
@@ -278,6 +278,7 @@
     letter-spacing:0.4px; text-transform:uppercase; padding:10px 20px; border-radius:9px; cursor:pointer; font-family:inherit;
   }
   .btn-generar-exportar:hover{ background:var(--moss-light); }
+  .modal-nota-texto{ font-size:13.5px; color:var(--chalk); line-height:1.6; white-space:pre-wrap; margin:0 0 20px; }
 </style>
 </head>
 <body>
@@ -348,6 +349,16 @@
     <div class="acciones-exportar">
       <button type="button" class="btn-cancelar-exportar" id="btnCancelarExportar">Cancelar</button>
       <button type="button" class="btn-generar-exportar" id="btnGenerarExportar">Generar PDF</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay-exportar" id="overlayNota">
+  <div class="modal-exportar">
+    <h3>Nota</h3>
+    <p class="modal-nota-texto" id="notaTexto"></p>
+    <div class="acciones-exportar">
+      <button type="button" class="btn-cancelar-exportar" id="btnCerrarNota">Cerrar</button>
     </div>
   </div>
 </div>
@@ -798,9 +809,16 @@ function pintarPanelResumen(panel){
   // PFinicial (%) — misma variación que pintarPanelPfPct, frente a la
   // sesión ENTRENADA anterior (los días no recuperados no cuentan como
   // referencia ni tienen su propio %, igual que ahí). Positivo en verde,
-  // negativo en rojo — mismo criterio de color que ya usan pintarPanelPfPct
-  // y pintarPanelPfFinalPct.
+  // negativo en rojo — mismo criterio de color que ya usa pintarPanelPfPct.
   const celdaPct = pct => ({ texto: `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`, color: pct >= 0 ? 'var(--moss-light)' : 'var(--danger)' });
+  // PFfinal (%) — a diferencia de PFinicial (%), esto no es una variación
+  // que pueda ir bien o mal: es la caída DENTRO de la misma sesión
+  // (PFinicial vs. PFfinal de ese día, mismo cálculo que pintarPanelPfFinalPct),
+  // normalmente positiva porque PFfinal sale más bajo. Nunca en verde ni con
+  // "+" — siempre en rojo, sin signo forzado (si alguna vez sale negativo,
+  // porque el PFfinal salió más alto que el inicial, ya lo dice el propio
+  // "-" del número).
+  const celdaPctCaida = pct => ({ texto: `${pct.toFixed(1)}%`, color: 'var(--danger)' });
   let anteriorPfInicial;
   const filas = todas.map(h => {
     const celdas = [h.fecha, String(h.pfInicial)];
@@ -811,7 +829,7 @@ function pintarPanelResumen(panel){
       celdas.push(pfInicialCelda, h.fmaxIzq ?? '—', h.fmaxDer ?? '—');
       if(tienePfFinal){
         const pfFinalCelda = (h.pfFinal !== undefined && h.pfFinal !== null && h.pfInicial !== 0)
-          ? celdaPct((h.pfInicial - h.pfFinal) / h.pfInicial * 100)
+          ? celdaPctCaida((h.pfInicial - h.pfFinal) / h.pfInicial * 100)
           : '—';
         celdas.push(h.pfFinal ?? '—', pfFinalCelda);
       }
@@ -843,7 +861,7 @@ function pintarPanelResumen(panel){
             return `<td${claseBase}>${escapeHtml(v)}</td>`;
           }).join('');
           const notaHtml = f.notas
-            ? `<td${f.entrenada ? '' : ' class="no-entrenada"'}><span class="nota-marcador" title="${escapeHtml(f.notas)}">Ver nota</span></td>`
+            ? `<td${f.entrenada ? '' : ' class="no-entrenada"'}><span class="nota-marcador" role="button" tabindex="0" data-nota="${escapeHtml(f.notas)}" title="${escapeHtml(f.notas)}">Ver nota</span></td>`
             : `<td${f.entrenada ? '' : ' class="no-entrenada"'}>—</td>`;
           return `<tr>${celdasHtml}${notaHtml}</tr>`;
         }).join('')}</tbody>
@@ -1237,6 +1255,36 @@ document.getElementById('btnGenerarExportar').addEventListener('click', () => {
   exportarPDFCompleto(elegidos.length ? elegidos : null);
 });
 
+// El "Ver nota" de la tabla de Resumen (pintarPanelResumen) solo llevaba un
+// atributo title — un tooltip que aparece al pasar el ratón por encima,
+// pero que no reacciona a un click/tap (y en tablet/móvil no hay "pasar el
+// ratón por encima", así que ahí no hacía nada). Delegado en document
+// porque esa tabla se regenera constantemente (cada vez que se pinta el
+// panel) — un listener puesto directamente en los <span> se perdería en
+// cuanto se repintara.
+function abrirNota(texto){
+  document.getElementById('notaTexto').textContent = texto || '';
+  document.getElementById('overlayNota').classList.add('abierto');
+}
+function cerrarNota(){ document.getElementById('overlayNota').classList.remove('abierto'); }
+document.addEventListener('click', (e) => {
+  const marcador = e.target.closest('.nota-marcador');
+  if(marcador) abrirNota(marcador.dataset.nota);
+});
+document.addEventListener('keydown', (e) => {
+  if((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('nota-marcador')){
+    e.preventDefault();
+    abrirNota(e.target.dataset.nota);
+  }
+});
+document.getElementById('btnCerrarNota').addEventListener('click', cerrarNota);
+document.getElementById('overlayNota').addEventListener('click', (e) => {
+  if(e.target.id === 'overlayNota') cerrarNota();
+});
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'Escape' && document.getElementById('overlayNota').classList.contains('abierto')) cerrarNota();
+});
+
 (async function init(){
   poblarSelectorVariable();
   const sel = document.getElementById('selectorCliente');
@@ -1248,33 +1296,36 @@ document.getElementById('btnGenerarExportar').addEventListener('click', () => {
 // Panel de notificaciones — dos tipos: sesiones registradas esta semana, y
 // clientes que han pasado a Inactivo (a mano o por el aviso automático de
 // caducados). Cada notificación lleva su propio estado de leída/no leída,
-// guardado en este navegador (localStorage, no en el Sheet — nunca hace
-// falta ninguna columna ni escritura extra). Se marca leída solo al
-// pincharla, que además te lleva directo a ese cliente (y a su meso, si es
-// de tipo sesión).
-const CLAVE_NOTIF_LEIDAS = 'kc_notif_leidas';
+// guardado en el Sheet (?accion=notif-leidas / marcar-notif-leida en
+// api/listar-clientes.js) — antes vivía solo en localStorage, así que un
+// aviso marcado leído en el PC seguía saliendo como nuevo en el móvil o la
+// tablet. Se marca leída solo al pincharla, que además te lleva directo a
+// ese cliente (y a su meso, si es de tipo sesión).
 let notificacionesCache = []; // [{tipo:'sesion'|'inactivo', clave, nombre, correo, fecha?, mesociclo?}]
+let notifLeidasCache = new Set(); // claves ya leídas, cargadas del servidor al abrir la página
 
-function cargarLeidas(){
-  try { return new Set(JSON.parse(localStorage.getItem(CLAVE_NOTIF_LEIDAS) || '[]')); }
-  catch (e) { return new Set(); }
+async function cargarLeidas(){
+  try {
+    const res = await fetch('/api/listar-clientes?accion=notif-leidas');
+    const data = await res.json();
+    if (data.success) notifLeidasCache = new Set(data.claves);
+  } catch (e) { /* si falla, nos quedamos con lo que ya hubiera en caché */ }
+  return notifLeidasCache;
 }
 
-// Guarda, y de paso descarta cualquier clave que ya no corresponda a
-// ninguna notificación vigente — si no, esta lista solo crecería para
-// siempre sin ningún propósito (una sesión de la semana pasada, o un
-// cliente que se reactivó, ya no vuelven a aparecer de todos modos).
-function guardarLeidas(set){
-  const vigentes = new Set(notificacionesCache.map(n => n.clave));
-  const podadas = new Set(Array.from(set).filter(k => vigentes.has(k)));
-  try { localStorage.setItem(CLAVE_NOTIF_LEIDAS, JSON.stringify(Array.from(podadas))); } catch (e) {}
-  return podadas;
-}
-
+// Optimista: se ve al instante en este dispositivo sin esperar la
+// respuesta del servidor. El POST manda también `vigentes` (las
+// notificaciones que hay ahora mismo) para que el servidor pode del mismo
+// modo que antes hacía guardarLeidas() en localStorage — si no, un cliente
+// que vuelve a caducar más adelante (misma clave "inactivo|correo") se
+// quedaría marcado leído para siempre por error.
 function marcarNotificacionLeida(n){
-  const leidas = cargarLeidas();
-  leidas.add(n.clave);
-  guardarLeidas(leidas);
+  notifLeidasCache.add(n.clave);
+  fetch('/api/listar-clientes', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ accion: 'marcar-notif-leida', clave: n.clave, vigentes: notificacionesCache.map(x => x.clave) }),
+  }).catch(() => {}); // best-effort — si falla, se reintenta solo la próxima vez que se pinche algo
 }
 
 // Solo estos mesociclos tienen su propia pestaña en esta página — el resto
@@ -1303,7 +1354,7 @@ function renderNotificaciones(){
   const cont = document.getElementById('contenidoNotificaciones');
   const badge = document.getElementById('badgeNotificaciones');
   const btn = document.getElementById('btnNotificaciones');
-  const leidas = cargarLeidas();
+  const leidas = notifLeidasCache;
 
   const hayNoLeidas = notificacionesCache.some(n => !leidas.has(n.clave));
   badge.hidden = !hayNoLeidas;
@@ -1340,6 +1391,7 @@ async function cargarNotificaciones(){
     const [resSesiones, resClientes] = await Promise.all([
       fetch('/api/obtener-historial-sesiones?accion=recientes'),
       fetch('/api/listar-clientes?completo=1'),
+      cargarLeidas(),
     ]);
     const dataSesiones = await resSesiones.json();
     const dataClientes = await resClientes.json();
