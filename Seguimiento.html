@@ -840,7 +840,7 @@ function pintarPanelResumen(panel){
       if(tienePfFinal) celdasGym.push('—', '—');
       campos.forEach(() => celdasGym.push('—'));
       if(conDominadas) celdasGym.push(g.dominadas !== undefined ? String(g.dominadas) : '—');
-      celdasGym.push(g.tipo === 'GYM-FMAX' ? 'Gimnasio (Fmax)' : 'Gimnasio (Antagonistas)');
+      celdasGym.push('GYM');
       return { celdas: celdasGym, entrenada: true, gym: true };
     }
     const celdas = [h.fecha, String(h.pfInicial)];
@@ -1371,7 +1371,7 @@ function filaNotifHtml(n, leidas){
     ? `${escapeHtml(n.nombre || n.correo)} — pasó a Inactivo`
     : n.tipo === 'vence'
     ? `${escapeHtml(n.nombre || n.correo)} — vence en ${n.diasRestantes === 0 ? 'hoy' : n.diasRestantes === 1 ? '1 día' : n.diasRestantes + ' días'}`
-    : `${escapeHtml(n.nombre || n.correo)} — ${escapeHtml(n.mesociclo || '—')}`;
+    : `${escapeHtml(n.nombre || n.correo)} — ${escapeHtml(/^GYM-/.test(n.mesociclo || '') ? 'GYM' : (n.mesociclo || '—'))}`;
   const linea2 = n.tipo === 'inactivo' ? escapeHtml(n.correo)
     : n.tipo === 'vence' ? `Fin de contrato: ${escapeHtml(n.fechaFin || '—')}`
     : `Sesión del ${escapeHtml(n.fecha || '—')}`;
