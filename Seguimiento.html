@@ -659,7 +659,7 @@ function pintarPanelFuerza(panel, historial){
       <table class="tabla-datos">
         <thead><tr><th>Fecha</th><th>PFinicial (N)</th><th>Fmax izq. (N)</th><th>Fmax der. (N)</th><th>Sesión</th></tr></thead>
         <tbody>${(PORMESOCICLO[MESO_ACTIVO] || []).map(h => h.entrenada
-          ? `<tr><td>${escapeHtml(h.fecha)}</td><td>${h.pfInicial}</td><td>${h.fmaxIzq ?? '—'}</td><td>${h.fmaxDer ?? '—'}</td><td>Entrenada</td></tr>`
+          ? `<tr><td>${escapeHtml(h.fecha)}</td><td>${h.pfInicial}</td><td>${h.fmaxIzq ?? '—'}</td><td>${h.fmaxDer ?? '—'}</td><td>ROCO</td></tr>`
           : `<tr><td>${escapeHtml(h.fecha)}</td><td>${h.pfInicial}</td><td class="no-entrenada">—</td><td class="no-entrenada">—</td><td class="no-entrenada">No recuperado</td></tr>`
         ).join('')}</tbody>
       </table>
@@ -732,7 +732,7 @@ function pintarPanelCampo(panel, historial, indice){
         <tbody>${historial.map(h => {
           const v = (h.campos || [])[indice];
           return v !== undefined && v !== null
-            ? `<tr><td>${escapeHtml(h.fecha)}</td><td>${escapeHtml(formatCampoValor(v, tipo))}</td><td>Entrenada</td></tr>`
+            ? `<tr><td>${escapeHtml(h.fecha)}</td><td>${escapeHtml(formatCampoValor(v, tipo))}</td><td>ROCO</td></tr>`
             : `<tr><td>${escapeHtml(h.fecha)}</td><td class="no-entrenada">—</td><td class="no-entrenada">Sin dato</td></tr>`;
         }).join('')}</tbody>
       </table>
@@ -860,7 +860,7 @@ function pintarPanelResumen(panel){
         celdas.push(v !== undefined && v !== null ? formatCampoValor(v, c.tipo) : '—');
       });
       if(conDominadas) celdas.push('—');
-      celdas.push('Entrenada');
+      celdas.push('ROCO');
       anteriorPfInicial = h.pfInicial;
     } else {
       celdas.push('—', '—', '—');
