@@ -813,11 +813,11 @@ function pintarPanelResumen(panel){
   const celdaPct = pct => ({ texto: `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`, color: pct >= 0 ? 'var(--moss-light)' : 'var(--danger)' });
   // PFfinal (%) — a diferencia de PFinicial (%), esto no es una variación
   // que pueda ir bien o mal: es la caída DENTRO de la misma sesión
-  // (PFinicial vs. PFfinal de ese día, mismo cálculo que pintarPanelPfFinalPct),
-  // normalmente positiva porque PFfinal sale más bajo. Nunca en verde ni con
-  // "+" — siempre en rojo, sin signo forzado (si alguna vez sale negativo,
-  // porque el PFfinal salió más alto que el inicial, ya lo dice el propio
-  // "-" del número).
+  // (PFinicial vs. PFfinal de ese día). Se calcula como (PFfinal-PFinicial)/
+  // PFinicial, al revés que pintarPanelPfFinalPct, para que el caso normal
+  // (PFfinal más bajo) salga en negativo — nunca en verde ni con "+", y si
+  // alguna vez PFfinal sale más alto que el inicial (raro, pero real), ese
+  // caso fuera de lo normal se distingue precisamente por no llevar "-".
   const celdaPctCaida = pct => ({ texto: `${pct.toFixed(1)}%`, color: 'var(--danger)' });
   let anteriorPfInicial;
   const filas = todas.map(h => {
@@ -829,7 +829,7 @@ function pintarPanelResumen(panel){
       celdas.push(pfInicialCelda, h.fmaxIzq ?? '—', h.fmaxDer ?? '—');
       if(tienePfFinal){
         const pfFinalCelda = (h.pfFinal !== undefined && h.pfFinal !== null && h.pfInicial !== 0)
-          ? celdaPctCaida((h.pfInicial - h.pfFinal) / h.pfInicial * 100)
+          ? celdaPctCaida((h.pfFinal - h.pfInicial) / h.pfInicial * 100)
           : '—';
         celdas.push(h.pfFinal ?? '—', pfFinalCelda);
       }
