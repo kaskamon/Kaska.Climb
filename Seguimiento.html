@@ -962,13 +962,20 @@ function pintarPanelPfFinalPct(panel, historial){
   const media = puntos.reduce((s,p) => s + p.valor, 0) / puntos.length;
   const ultimo = puntos[puntos.length - 1].valor;
   const sobreUmbral = umbralIntegrado !== undefined ? puntos.filter(p => p.valor > umbralIntegrado).length : null;
+  // "valor" se queda en positivo internamente — así el umbral (pensado en
+  // positivo, p.ej. "20") y la línea de la gráfica no cambian de criterio.
+  // Solo el TEXTO que lee el entrenador se niega, para que la caída salga
+  // con "-" (mismo criterio que ya usa la tabla "Resumen"): negarlo aquí en
+  // vez de en el cálculo evita tener que invertir también el umbral y la
+  // gráfica.
+  const comoCaida = v => (-v).toFixed(1);
 
   panel.innerHTML = `
     <div class="stat-tiles">
-      <div class="stat-tile"><div class="k">Caída media</div><div class="v">${media.toFixed(1)}<small>%</small></div></div>
+      <div class="stat-tile"><div class="k">Caída media</div><div class="v">${comoCaida(media)}<small>%</small></div></div>
       <div class="stat-tile">
         <div class="k">Última caída</div>
-        <div class="v"${umbralIntegrado !== undefined && ultimo > umbralIntegrado ? ' style="color:var(--danger);"' : ''}>${ultimo.toFixed(1)}<small>%</small></div>
+        <div class="v"${umbralIntegrado !== undefined && ultimo > umbralIntegrado ? ' style="color:var(--danger);"' : ''}>${comoCaida(ultimo)}<small>%</small></div>
         <div class="delta">vs. su propio PFinicial de ese día</div>
       </div>
       <div class="stat-tile"><div class="k">Sesiones &gt; umbral</div><div class="v"${sobreUmbral ? ' style="color:var(--danger);"' : ''}>${sobreUmbral ?? '—'}<small>/${puntos.length}</small></div></div>
@@ -982,7 +989,7 @@ function pintarPanelPfFinalPct(panel, historial){
     <div class="tabla-datos-wrap">
       <table class="tabla-datos">
         <thead><tr><th>Fecha</th><th>Caída PFfinal</th></tr></thead>
-        <tbody>${puntos.map(p => `<tr><td>${escapeHtml(p.fecha)}</td><td${umbralIntegrado !== undefined && p.valor > umbralIntegrado ? ' style="color:var(--danger);"' : ''}>${p.valor.toFixed(1)}%</td></tr>`).join('')}</tbody>
+        <tbody>${puntos.map(p => `<tr><td>${escapeHtml(p.fecha)}</td><td${umbralIntegrado !== undefined && p.valor > umbralIntegrado ? ' style="color:var(--danger);"' : ''}>${comoCaida(p.valor)}%</td></tr>`).join('')}</tbody>
       </table>
     </div>`;
 
