@@ -102,6 +102,53 @@ function extraerHistorialDominadas(filas, cliente, max) {
     .slice(-max);
 }
 
+// Días de gimnasio (GYM-FMAX / GYM-ANTAGONISTAS) para verlos en Seguimiento,
+// solo como registro de "ese día se hizo gimnasio" — no entran en ningún
+// cálculo (PFinicial, gráficas...). Una fila de gimnasio no dice a qué
+// mesociclo pertenece, así que se asigna al de la sesión con datos más
+// cercana en el tiempo (a igualdad, la anterior): aguanta que un mismo
+// mesociclo se repita en macrociclos distintos, cosa que un simple rango
+// de fechas por mesociclo no distinguiría.
+const MESOCICLOS_GYM = ['GYM-FMAX', 'GYM-ANTAGONISTAS'];
+// Claves especiales en porMesociclo (no son mesociclos reales): GYM_EN_FMAX,
+// GYM_EN_REOX... — con "fecha" en cada entrada, así Seguimiento.html las
+// filtra por macrociclo igual que el resto sin tratarlas aparte.
+const PREFIJO_GYM = 'GYM_EN_';
+
+function extraerGymPorMesociclo(filas, cliente, max) {
+  const delCliente = filas
+    .filter(f => f[COL_CORREO] === cliente)
+    .map(f => ({ f, t: parseFechaDDMMYYYY(f[2])?.getTime() }))
+    .filter(x => x.t !== undefined && !Number.isNaN(x.t));
+
+  const referencias = delCliente
+    .filter(x => MESOCICLOS_CON_DATOS.includes(x.f[3]))
+    .map(x => ({ t: x.t, meso: x.f[3] }));
+
+  const resultado = {};
+  MESOCICLOS_CON_DATOS.forEach(m => { resultado[m] = []; });
+  if (!referencias.length) return resultado;
+
+  delCliente
+    .filter(x => MESOCICLOS_GYM.includes(x.f[3]))
+    .forEach(x => {
+      let mejor = referencias[0];
+      referencias.forEach(r => {
+        const d = Math.abs(r.t - x.t), dMejor = Math.abs(mejor.t - x.t);
+        if (d < dMejor || (d === dMejor && r.t < mejor.t)) mejor = r;
+      });
+      const dominadas = x.f[COL_DOMINADAS_CON_LASTRE];
+      resultado[mejor.meso].push({
+        fecha: x.f[2],
+        tipo: x.f[3],
+        dominadas: dominadas !== undefined && dominadas !== '' ? Number(dominadas) : undefined,
+      });
+    });
+
+  Object.keys(resultado).forEach(m => { resultado[m] = resultado[m].slice(-max); });
+  return resultado;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'GET') {
     return res.status(405).json({ success: false, error: 'Método no permitido, usa GET.' });
@@ -158,6 +205,8 @@ module.exports = async (req, res) => {
       porMesociclo[m] = extraerHistorialDeMesociclo(filas, cliente, m, Number(limite) || 60);
     });
     porMesociclo[CLAVE_DOMINADAS] = extraerHistorialDominadas(filas, cliente, Number(limite) || 60);
+    const gym = extraerGymPorMesociclo(filas, cliente, Number(limite) || 60);
+    Object.keys(gym).forEach(m => { porMesociclo[`${PREFIJO_GYM}${m}`] = gym[m]; });
     res.status(200).json({ success: true, porMesociclo });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

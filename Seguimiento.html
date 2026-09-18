@@ -133,6 +133,7 @@
   table.tabla-datos th{ text-align:left; font-size:10.5px; letter-spacing:0.8px; text-transform:uppercase; color:var(--chalk-faint); font-weight:700; padding:10px 14px; white-space:nowrap; border-bottom:1px solid var(--line-strong); }
   table.tabla-datos td{ padding:10px 14px; font-size:12.5px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; white-space:nowrap; }
   table.tabla-datos td.no-entrenada{ color:var(--chalk-faint); font-style:italic; }
+  table.tabla-datos td.gym-fila{ color:var(--chalk-dim); }
   .nota-marcador{
     display:inline-block; font-size:11px; font-weight:700; letter-spacing:0.3px; text-transform:uppercase;
     color:var(--moss-light); background:rgba(124,144,112,0.14); border:1px solid rgba(124,144,112,0.35);
@@ -797,6 +798,18 @@ function pintarPanelDominadas(panel){
 // contaría nada útil.
 function pintarPanelResumen(panel){
   const todas = PORMESOCICLO[MESO_ACTIVO] || [];
+  // Días de gimnasio de este mesociclo (GYM_EN_<meso>, ver
+  // api/obtener-historial.js): solo se muestran como filas de registro,
+  // mezcladas por fecha — no entran en ningún cálculo (el % de PFinicial
+  // sigue comparando solo sesiones entrenadas de verdad). Solo FMAX enseña
+  // además el nº de dominadas con lastre de ese día.
+  const gym = PORMESOCICLO['GYM_EN_' + MESO_ACTIVO] || [];
+  const conDominadas = MESO_ACTIVO === 'FMAX' && gym.length > 0;
+  const tiempo = x => { const d = parseFechaDDMMYYYY(x.fecha); return d ? d.getTime() : 0; };
+  const items = [
+    ...todas.map(h => ({ h })),
+    ...gym.map(g => ({ g })),
+  ].sort((a, b) => tiempo(a.h || a.g) - tiempo(b.h || b.g));
   const cfgMeso = window.MESOCICLOS_CONFIG && window.MESOCICLOS_CONFIG.FIELD_MAP[MESO_ACTIVO];
   const tienePfFinal = !!(cfgMeso && cfgMeso.pfFinal);
   const campos = camposDelMesoActivo();
@@ -804,6 +817,7 @@ function pintarPanelResumen(panel){
   const cabeceras = ['Fecha', 'PFinicial (N)', 'PFinicial (%)', 'Fmax izq. (N)', 'Fmax der. (N)'];
   if(tienePfFinal) cabeceras.push('PFfinal (N)', 'PFfinal (%)');
   campos.forEach(c => cabeceras.push(`${c.label} (${c.match})`));
+  if(conDominadas) cabeceras.push('Dominadas (lastre)');
   cabeceras.push('Sesión', 'Notas');
 
   // PFinicial (%) — misma variación que pintarPanelPfPct, frente a la
@@ -820,7 +834,15 @@ function pintarPanelResumen(panel){
   // caso fuera de lo normal se distingue precisamente por no llevar "-".
   const celdaPctCaida = pct => ({ texto: `${pct.toFixed(1)}%`, color: 'var(--danger)' });
   let anteriorPfInicial;
-  const filas = todas.map(h => {
+  const filas = items.map(({ h, g }) => {
+    if(g){
+      const celdasGym = [g.fecha, '—', '—', '—', '—'];
+      if(tienePfFinal) celdasGym.push('—', '—');
+      campos.forEach(() => celdasGym.push('—'));
+      if(conDominadas) celdasGym.push(g.dominadas !== undefined ? String(g.dominadas) : '—');
+      celdasGym.push(g.tipo === 'GYM-FMAX' ? 'Gimnasio (Fmax)' : 'Gimnasio (Antagonistas)');
+      return { celdas: celdasGym, entrenada: true, gym: true };
+    }
     const celdas = [h.fecha, String(h.pfInicial)];
     if(h.entrenada){
       const pfInicialCelda = (anteriorPfInicial !== undefined && anteriorPfInicial !== 0)
@@ -837,12 +859,14 @@ function pintarPanelResumen(panel){
         const v = (h.campos || [])[i];
         celdas.push(v !== undefined && v !== null ? formatCampoValor(v, c.tipo) : '—');
       });
+      if(conDominadas) celdas.push('—');
       celdas.push('Entrenada');
       anteriorPfInicial = h.pfInicial;
     } else {
       celdas.push('—', '—', '—');
       if(tienePfFinal) celdas.push('—', '—');
       campos.forEach(() => celdas.push('—'));
+      if(conDominadas) celdas.push('—');
       celdas.push('No recuperado');
     }
     return { celdas, entrenada: h.entrenada, notas: h.notas };
@@ -854,15 +878,16 @@ function pintarPanelResumen(panel){
         <thead><tr>${cabeceras.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
         <tbody>${filas.map(f => {
           const celdasHtml = f.celdas.map(v => {
-            const claseBase = f.entrenada ? '' : ' class="no-entrenada"';
+            const claseBase = f.gym ? ' class="gym-fila"' : f.entrenada ? '' : ' class="no-entrenada"';
             if(v && typeof v === 'object'){
               return `<td${claseBase} style="color:${v.color};">${escapeHtml(v.texto)}</td>`;
             }
             return `<td${claseBase}>${escapeHtml(v)}</td>`;
           }).join('');
+          const claseNota = f.gym ? ' class="gym-fila"' : f.entrenada ? '' : ' class="no-entrenada"';
           const notaHtml = f.notas
-            ? `<td${f.entrenada ? '' : ' class="no-entrenada"'}><span class="nota-marcador" role="button" tabindex="0" data-nota="${escapeHtml(f.notas)}" title="${escapeHtml(f.notas)}">Ver nota</span></td>`
-            : `<td${f.entrenada ? '' : ' class="no-entrenada"'}>—</td>`;
+            ? `<td${claseNota}><span class="nota-marcador" role="button" tabindex="0" data-nota="${escapeHtml(f.notas)}" title="${escapeHtml(f.notas)}">Ver nota</span></td>`
+            : `<td${claseNota}>—</td>`;
           return `<tr>${celdasHtml}${notaHtml}</tr>`;
         }).join('')}</tbody>
       </table>
