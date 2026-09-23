@@ -420,8 +420,14 @@ async function manejarMarcarNotifLeida(req, res, sheets) {
 // contraseña de entrenador, y no pasa nada si se repite (es idempotente: si
 // ya coincide, no se reescribe).
 async function manejarSincronizarFechaInicio(req, res, sheets) {
-  const acceso = verificarEntrenador(req);
-  if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
+  // exigirEntrenador (no verificarEntrenador): esta acción se visita
+  // directamente pegando la URL, sin pasar antes por ninguna página ya
+  // autenticada — hace falta el popup nativo (cabecera WWW-Authenticate)
+  // para que el navegador pida la contraseña. verificarEntrenador (lo que
+  // había aquí) solo devuelve un 401 en JSON sin pedir nada, así que sin
+  // credenciales de Basic Auth ya cacheadas de antes en ese navegador, la
+  // migración siempre fallaba en silencio con "solo para el entrenador".
+  if (!exigirEntrenador(req, res)) return;
 
   let filasBateria;
   try {
