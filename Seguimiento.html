@@ -1429,19 +1429,22 @@ function renderNotificaciones(){
 async function cargarNotificaciones(){
   const cont = document.getElementById('contenidoNotificaciones');
   try {
-    // El aviso de "semana que viene sin programar" solo se consulta los
-    // domingos — un día para reaccionar antes de que empiece esa semana el
-    // lunes, sin tener el aviso rondando el resto de la semana.
-    const esDomingo = new Date().getDay() === 0;
+    // El aviso de "semana que viene sin programar" se consulta cualquier
+    // día — la clave incluye el lunes siguiente (lunesDe(hoy)+7), que es EL
+    // MISMO durante toda la semana en curso (de lunes a domingo), así que
+    // el aviso persiste hasta que se marca leída (o hasta que se publica
+    // esa semana y deja de detectarse como pendiente), igual que ya hacen
+    // "inactivo" y "vence" — no solo el día en que se detecta por primera
+    // vez.
     const [resSesiones, resClientes, resSemana] = await Promise.all([
       fetch('/api/obtener-historial-sesiones?accion=recientes'),
       fetch('/api/listar-clientes?completo=1'),
-      esDomingo ? fetch('/api/macrociclo?accion=semana-siguiente-pendientes') : Promise.resolve(null),
+      fetch('/api/macrociclo?accion=semana-siguiente-pendientes'),
       cargarLeidas(),
     ]);
     const dataSesiones = await resSesiones.json();
     const dataClientes = await resClientes.json();
-    const dataSemana = resSemana ? await resSemana.json() : { success: true, pendientes: [] };
+    const dataSemana = await resSemana.json();
 
     if (!dataSesiones.success && !dataClientes.success) {
       cont.innerHTML = `<div class="vacio-notif">${escapeHtml(dataSesiones.error || dataClientes.error || 'No se pudo cargar.')}</div>`;
@@ -1483,10 +1486,8 @@ async function cargarNotificaciones(){
     })) : [];
 
     notificacionesCache = [...inactivos, ...vencen, ...semanas, ...sesiones];
-    // Solo si TODAS las fuentes que tocaba consultar hoy cargaron bien la
-    // lista es completa — si no, el servidor no debe podar leídas en base a
-    // ella (ver marcarNotificacionLeida). Entre semana no se pide dataSemana,
-    // así que su success:true por defecto no cuenta como "incompleta".
+    // Solo si TODAS las fuentes cargaron bien la lista es completa — si no,
+    // el servidor no debe podar leídas en base a ella (ver marcarNotificacionLeida).
     notifCargaCompleta = dataSesiones.success && dataClientes.success && dataSemana.success;
     renderNotificaciones();
   } catch (e) {

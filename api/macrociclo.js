@@ -230,8 +230,10 @@ async function manejarGrid(req, res, sheets) {
 
 // GET ?accion=semana-siguiente-pendientes — clientes activos con macrociclo
 // a los que les falta programar la semana que empieza el LUNES QUE VIENE.
-// La consulta Seguimiento.html los domingos, para avisar en el panel de
-// notificaciones con tiempo de reaccionar antes de que empiece esa semana.
+// La consulta Seguimiento.html cualquier día (lunesSiguiente es el mismo
+// lunes durante toda la semana en curso), para avisar en el panel de
+// notificaciones y que el aviso persista hasta que se marque leída, igual
+// que "inactivo"/"vence" — no solo el día en que se detecta.
 // Llamada AJAX desde una página ya protegida por middleware.js, igual que
 // manejarGrid — basta con el 401 JSON de verificarEntrenador.
 async function manejarSemanaSiguientePendientes(req, res, sheets) {
