@@ -409,16 +409,16 @@ async function manejarMarcarNotifLeida(req, res, sheets) {
 // GET ?accion=sincronizar-fecha-inicio — migración de UNA SOLA VEZ: ahora
 // que la fecha de inicio del contrato se fija automáticamente al publicar
 // la Batería de test (ver api/bateria-test.js) en vez de al publicar la
-// primera sesión real, esta acción recalcula la fecha de inicio de los
-// clientes que YA tenían una fecha puesta con el criterio antiguo, usando
-// la fecha real (más antigua, si hay varias) de su Batería de test.
-// Sobrescribe fechaInicio para cualquier cliente con batería registrada —
-// también si ya tenía una puesta con el criterio viejo, no solo si estaba
-// vacía. NUNCA toca fechaFin (un contrato renovado a mano no debe volver a
-// "trimestre inicial" solo por pasar por aquí). No hay botón para esto en
-// ninguna página — se visita esta URL una vez, a mano, con la contraseña de
-// entrenador, y no pasa nada si se repite (es idempotente: si ya coincide,
-// no se reescribe).
+// primera sesión real, esta acción recalcula fechaInicio Y fechaFin (=
+// fechaInicio+3 meses) de los clientes que YA tenían esas fechas puestas
+// con el criterio antiguo, usando la fecha real (más antigua, si hay
+// varias) de su Batería de test. Sobrescribe ambas para cualquier cliente
+// con batería registrada, aunque ya tuvieran una renovación puesta a mano
+// (decisión explícita: el botón "+1 mes"/"+3 meses" de Clientes.html sigue
+// ahí tal cual para volver a prorrogar después de esto). No hay botón para
+// esto en ninguna página — se visita esta URL una vez, a mano, con la
+// contraseña de entrenador, y no pasa nada si se repite (es idempotente: si
+// ya coincide, no se reescribe).
 async function manejarSincronizarFechaInicio(req, res, sheets) {
   const acceso = verificarEntrenador(req);
   if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
@@ -459,10 +459,11 @@ async function manejarSincronizarFechaInicio(req, res, sheets) {
   const errorCab = errorCabeceraClientes(filasClientes);
   if (errorCab) return res.status(500).json({ success: false, error: errorCab });
 
-  const aISOaDDMMYYYY = iso => {
-    const [y, m, d] = iso.split('-');
-    return `${d}/${m}/${y}`;
+  const aFecha = iso => {
+    const [y, m, d] = iso.split('-').map(Number);
+    return new Date(y, m - 1, d);
   };
+  const formatear = d => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 
   const cambios = [];
   const data = [];
@@ -473,12 +474,24 @@ async function manejarSincronizarFechaInicio(req, res, sheets) {
     const fechaBateriaISO = primeraFechaPorCorreo.get(correo);
     if (!fechaBateriaISO) return; // sin batería registrada, no se toca
 
-    const nuevaFecha = aISOaDDMMYYYY(fechaBateriaISO);
-    const actual = (f[COL.fechaInicio] || '').trim();
-    if (actual === nuevaFecha) return; // ya coincide, nada que hacer
+    const inicio = aFecha(fechaBateriaISO);
+    const fin = new Date(inicio);
+    fin.setMonth(fin.getMonth() + 3);
+    const nuevoInicio = formatear(inicio);
+    const nuevoFin = formatear(fin);
+    const actualInicio = (f[COL.fechaInicio] || '').trim();
+    const actualFin = (f[COL.fechaFin] || '').trim();
+    if (actualInicio === nuevoInicio && actualFin === nuevoFin) return; // ya coincide, nada que hacer
 
-    cambios.push({ correo, antes: actual || '(vacío)', despues: nuevaFecha });
-    data.push({ range: `'${SHEET_NAME}'!M${i + 1}`, values: [[sanearFormula(nuevaFecha)]] });
+    cambios.push({
+      correo,
+      inicio: { antes: actualInicio || '(vacío)', despues: nuevoInicio },
+      fin: { antes: actualFin || '(vacío)', despues: nuevoFin },
+    });
+    data.push(
+      { range: `'${SHEET_NAME}'!M${i + 1}`, values: [[sanearFormula(nuevoInicio)]] },
+      { range: `'${SHEET_NAME}'!N${i + 1}`, values: [[sanearFormula(nuevoFin)]] },
+    );
   });
 
   if (data.length) {
