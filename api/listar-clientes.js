@@ -406,6 +406,95 @@ async function manejarMarcarNotifLeida(req, res, sheets) {
   }
 }
 
+// GET ?accion=sincronizar-fecha-inicio — migración de UNA SOLA VEZ: ahora
+// que la fecha de inicio del contrato se fija automáticamente al publicar
+// la Batería de test (ver api/bateria-test.js) en vez de al publicar la
+// primera sesión real, esta acción recalcula la fecha de inicio de los
+// clientes que YA tenían una fecha puesta con el criterio antiguo, usando
+// la fecha real (más antigua, si hay varias) de su Batería de test.
+// Sobrescribe fechaInicio para cualquier cliente con batería registrada —
+// también si ya tenía una puesta con el criterio viejo, no solo si estaba
+// vacía. NUNCA toca fechaFin (un contrato renovado a mano no debe volver a
+// "trimestre inicial" solo por pasar por aquí). No hay botón para esto en
+// ninguna página — se visita esta URL una vez, a mano, con la contraseña de
+// entrenador, y no pasa nada si se repite (es idempotente: si ya coincide,
+// no se reescribe).
+async function manejarSincronizarFechaInicio(req, res, sheets) {
+  const acceso = verificarEntrenador(req);
+  if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
+
+  let filasBateria;
+  try {
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID_SESIONES,
+      range: `'Bateria_Test'!A:D`,
+    });
+    filasBateria = resp.data.values || [];
+  } catch (e) {
+    return res.status(500).json({ success: false, error: `No se pudo leer "Bateria_Test" (${e.message}).` });
+  }
+
+  // Fecha más antigua (g-fecha, "aaaa-mm-dd" — ordena bien como texto) por
+  // correo — varias baterías del mismo cliente cuentan como su fecha real
+  // de inicio la de la PRIMERA que se le hizo.
+  const primeraFechaPorCorreo = new Map();
+  filasBateria.forEach(f => {
+    const correo = (f[1] || '').trim().toLowerCase();
+    const fecha = (f[3] || '').trim();
+    if (!correo || !fecha) return;
+    const actual = primeraFechaPorCorreo.get(correo);
+    if (!actual || fecha < actual) primeraFechaPorCorreo.set(correo, fecha);
+  });
+
+  let filasClientes;
+  try {
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${SHEET_NAME}'!A:N`,
+    });
+    filasClientes = resp.data.values || [];
+  } catch (e) {
+    return res.status(500).json({ success: false, error: `No se pudo leer la base de datos de clientes (${e.message}).` });
+  }
+  const errorCab = errorCabeceraClientes(filasClientes);
+  if (errorCab) return res.status(500).json({ success: false, error: errorCab });
+
+  const aISOaDDMMYYYY = iso => {
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  };
+
+  const cambios = [];
+  const data = [];
+  filasClientes.forEach((f, i) => {
+    if (i === 0) return; // cabecera
+    const correo = (f[COL.correo] || '').trim().toLowerCase();
+    if (!correo) return;
+    const fechaBateriaISO = primeraFechaPorCorreo.get(correo);
+    if (!fechaBateriaISO) return; // sin batería registrada, no se toca
+
+    const nuevaFecha = aISOaDDMMYYYY(fechaBateriaISO);
+    const actual = (f[COL.fechaInicio] || '').trim();
+    if (actual === nuevaFecha) return; // ya coincide, nada que hacer
+
+    cambios.push({ correo, antes: actual || '(vacío)', despues: nuevaFecha });
+    data.push({ range: `'${SHEET_NAME}'!M${i + 1}`, values: [[sanearFormula(nuevaFecha)]] });
+  });
+
+  if (data.length) {
+    try {
+      await sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: { valueInputOption: 'USER_ENTERED', data },
+      });
+    } catch (e) {
+      return res.status(500).json({ success: false, error: `No se pudo escribir la actualización (${e.message}).`, cambiosPrevistos: cambios });
+    }
+  }
+
+  res.status(200).json({ success: true, actualizados: cambios.length, cambios });
+}
+
 // GET ?accion=revisar-caducados — pasa a Inactivo a los clientes Activos cuya
 // fecha de fin ya venció, y avisa por correo si ha marcado alguno. La
 // dispara sola vercel.json cada día, con el CRON_SECRET que manda Vercel
@@ -915,6 +1004,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET' && req.query && req.query.accion === 'revisar-caducados') return await manejarRevisarCaducados(req, res, sheets);
     if (req.method === 'GET' && req.query && req.query.accion === 'estado-sistema') return await manejarEstadoSistema(req, res, sheets);
     if (req.method === 'GET' && req.query && req.query.accion === 'notif-leidas') return await manejarNotifLeidasGet(req, res, sheets);
+    if (req.method === 'GET' && req.query && req.query.accion === 'sincronizar-fecha-inicio') return await manejarSincronizarFechaInicio(req, res, sheets);
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     if (req.body && req.body.accion === 'alta') return await manejarAlta(req, res, sheets);
     if (req.body && req.body.accion === 'eliminar') return await manejarEliminar(req, res, sheets);

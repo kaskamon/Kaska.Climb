@@ -221,16 +221,24 @@ async function cargarGrid(){
             let clase = 'semana-celda';
             let estilo = '';
             const colorMeso = (CATEGORIA_VISUAL && CATEGORIA_VISUAL[s.mesociclo] && CATEGORIA_VISUAL[s.mesociclo].color) || '#888';
-            if (s.historica) {
+            if (s.publicada) {
+              // Publicada manda siempre sobre "histórica": esta última solo
+              // marca que, si NO estuviera publicada, tampoco se podría
+              // distinguir de un hueco borrado por la poda de Sesiones_
+              // Programadas (api/publicar-sesion.js) — pero si la fila
+              // todavía está ahí (publicada:true), es un dato real, por
+              // vieja que sea la semana. Antes "histórica" se comprobaba
+              // primero y tapaba esto, mostrando como "sin datos fiables"
+              // semanas que sí tenían datos.
+              estilo = `background:${colorMeso}`;
+            } else if (s.historica) {
               clase += ' historica';
-            } else if (!s.publicada) {
+            } else {
               // Sin publicar: hueco, pero con el contorno del color de la
               // fase que le toca según el macrociclo — así se ve de un
               // vistazo QUÉ falta publicar, no solo que falta algo.
               clase += ' pendiente';
               estilo = `border-color:${colorMeso}; color:${colorMeso};`;
-            } else {
-              estilo = `background:${colorMeso}`;
             }
             if (esHoy) clase += ' hoy';
             const titulo = `Semana ${s.semanaGlobal} · ${s.mesociclo || '—'} · ${s.fechaLunes}${s.publicada ? ' · publicada' : (s.historica ? ' · sin datos' : ' · sin publicar')}`;

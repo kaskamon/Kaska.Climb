@@ -15,6 +15,12 @@ const { sanearFormula } = require('../libs/sheets-sanitize.js');
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Bateria_Test';
 
+// Sheet de clientes (distinto del de sesiones/batería) — mismo que usa
+// api/listar-clientes.js, solo para el arranque automático del contrato.
+const CLIENTES_SPREADSHEET_ID = '10RasiExEFgUtGuFOeSCvnJWdMhtJZA3i0TSdChmkFv8';
+const CLIENTES_SHEET_NAME = 'Respuestas de formulario 1';
+const COL_CLIENTES_CORREO = 6, COL_CLIENTES_FECHA_INICIO = 12;
+
 function authSheets() {
   return authSheetsCacheado(SCOPE_LECTURA_ESCRITURA);
 }
@@ -117,6 +123,46 @@ async function manejarPost(req, res, sheets) {
       success: false,
       error: `No se pudo publicar el perfil (${e.message}). ¿Existe la pestaña "${SHEET_NAME}" en el Sheet?`,
     });
+  }
+
+  // Arranque automático del contrato: la Batería de test es la prueba
+  // inicial, previa a empezar a entrenar de verdad — si el cliente todavía
+  // no tiene fecha de inicio en su ficha, se fija a la fecha REAL del test
+  // (no "hoy", la que ha puesto el entrenador en "Datos del cliente") y
+  // fin = inicio+3 meses (trimestre inicial). Nunca pisa una fecha ya
+  // puesta. Si esto falla, no debe tumbar la publicación de la batería (ya
+  // guardada).
+  try {
+    const [y, m, d] = fecha.split('-').map(Number);
+    const fechaTest = y && m && d ? new Date(y, m - 1, d) : null;
+    if (fechaTest) {
+      const respClientes = await sheets.spreadsheets.values.get({
+        spreadsheetId: CLIENTES_SPREADSHEET_ID,
+        range: `'${CLIENTES_SHEET_NAME}'!A:N`,
+      });
+      const filasClientes = respClientes.data.values || [];
+      const indiceCliente = filasClientes.findIndex(f => (f[COL_CLIENTES_CORREO] || '').trim().toLowerCase() === correoNorm);
+
+      if (indiceCliente !== -1 && !(filasClientes[indiceCliente][COL_CLIENTES_FECHA_INICIO] || '').trim()) {
+        const formatear = dt => `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}/${dt.getFullYear()}`;
+        const fin = new Date(fechaTest);
+        fin.setMonth(fin.getMonth() + 3);
+        const filaSheetClientes = indiceCliente + 1;
+
+        await sheets.spreadsheets.values.batchUpdate({
+          spreadsheetId: CLIENTES_SPREADSHEET_ID,
+          requestBody: {
+            valueInputOption: 'USER_ENTERED',
+            data: [
+              { range: `'${CLIENTES_SHEET_NAME}'!M${filaSheetClientes}`, values: [[formatear(fechaTest)]] },
+              { range: `'${CLIENTES_SHEET_NAME}'!N${filaSheetClientes}`, values: [[formatear(fin)]] },
+            ],
+          },
+        });
+      }
+    }
+  } catch (e) {
+    // Se ignora a propósito: la publicación de la batería ya se completó.
   }
 
   res.status(200).json({ success: true, message: 'Perfil de batería publicado correctamente.' });

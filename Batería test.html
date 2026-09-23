@@ -2087,6 +2087,14 @@ $('btnPublicarBateria').addEventListener('click', publicarBateria);
   if(!sel) return;
   await cargarSelectorClientes(sel);
   sel.addEventListener('change', ()=>{ if(sel.value) cargarBateriaCliente(); });
+  // cargarSelectorClientes preselecciona el último cliente recordado
+  // (localStorage) marcando la opción como "selected" al construir el HTML,
+  // lo que nunca dispara "change" — CLIENTE_BATERIA_ACTUAL se quedaba vacío
+  // aunque el desplegable mostrase un cliente elegido, y "Publicar" daba
+  // "Elige primero un cliente" aunque sí había uno. Si ya hay un valor tras
+  // cargar el selector, se carga directamente, igual que hacen las demás
+  // páginas (Seguimiento.html, etc.) con su propio selector de cliente.
+  if(sel.value) cargarBateriaCliente();
 })();
 
 $('btnReset').addEventListener('click', ()=>{
