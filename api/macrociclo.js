@@ -1,6 +1,6 @@
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
-const { semanasDelMacrociclo, lunesDe, parseFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
+const { semanasDelMacrociclo, calcularFaseYSemana, lunesDe, formatFechaDDMMYYYY, parseFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
 const { sanearFormula } = require('../libs/sheets-sanitize.js');
 
 // Planificación de macrociclo por cliente (Macrociclos.html) — hoja principal,
@@ -228,6 +228,42 @@ async function manejarGrid(req, res, sheets) {
   }
 }
 
+// GET ?accion=semana-siguiente-pendientes — clientes activos con macrociclo
+// a los que les falta programar la semana que empieza el LUNES QUE VIENE.
+// La consulta Seguimiento.html los domingos, para avisar en el panel de
+// notificaciones con tiempo de reaccionar antes de que empiece esa semana.
+// Llamada AJAX desde una página ya protegida por middleware.js, igual que
+// manejarGrid — basta con el 401 JSON de verificarEntrenador.
+async function manejarSemanaSiguientePendientes(req, res, sheets) {
+  const acceso = verificarEntrenador(req);
+  if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
+
+  try {
+    const { clientesActivos, macrociclosPorCorreo, semanasPublicadas } = await datosBaseParaRevision(sheets);
+
+    const lunesSiguiente = lunesDe(new Date());
+    lunesSiguiente.setDate(lunesSiguiente.getDate() + 7);
+    const fechaLunesSiguiente = formatFechaDDMMYYYY(lunesSiguiente);
+
+    const pendientes = clientesActivos
+      .map(c => {
+        const plan = macrociclosPorCorreo.get(c.correo.toLowerCase());
+        if (!plan || !plan.inicio) return null;
+        const calc = calcularFaseYSemana(plan.inicio, plan.bloques, fechaLunesSiguiente);
+        if (calc.fueraDeRango) return null; // ese cliente no tiene macrociclo esa semana — nada que avisar
+        const key = c.correo.toLowerCase() + '|' + lunesSiguiente.getTime();
+        if (semanasPublicadas.has(key)) return null; // ya está publicada
+
+        return { correo: c.correo, nombre: c.nombre || plan.nombre, mesociclo: calc.mesociclo, fechaLunesSiguiente };
+      })
+      .filter(Boolean);
+
+    res.status(200).json({ success: true, pendientes });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
 // GET ?accion=historial&cliente=correo — TODOS los macrociclos publicados
 // para ese cliente (no solo el más reciente, que es lo que da manejarGet),
 // más recientes primero. Lo usa Seguimiento.html para dejar elegir qué
@@ -283,6 +319,7 @@ module.exports = async (req, res) => {
     const sheets = await authSheets();
     const accion = req.query && req.query.accion;
     if (req.method === 'GET' && accion === 'grid') return await manejarGrid(req, res, sheets);
+    if (req.method === 'GET' && accion === 'semana-siguiente-pendientes') return await manejarSemanaSiguientePendientes(req, res, sheets);
     if (req.method === 'GET' && accion === 'historial') return await manejarHistorialMacrociclos(req, res, sheets);
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     return await manejarPost(req, res, sheets);

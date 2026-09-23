@@ -58,6 +58,8 @@
 
   .fila-cliente{ display:flex; border-bottom:1px solid var(--line); width:max-content; min-width:100%; }
   .fila-cliente:last-child{ border-bottom:none; }
+  .fila-cliente.resaltada{ background:rgba(124,144,112,0.14); }
+  .fila-cliente.resaltada .nombre-cliente-grid{ box-shadow:inset 3px 0 0 var(--moss-light); }
   .nombre-cliente-grid{
     position:sticky; left:0; z-index:1; background:var(--stone-800); flex:0 0 190px;
     padding:14px 16px; display:flex; flex-direction:column; justify-content:center; gap:2px;
@@ -210,7 +212,7 @@ async function cargarGrid(){
     }
     const hoyStr = lunesDeHoy();
     cont.innerHTML = data.clientes.map(c => `
-      <div class="fila-cliente">
+      <div class="fila-cliente" data-correo="${escapeHtml(c.correo)}">
         <a class="nombre-cliente-grid" href="cliente/semana.html?${new URLSearchParams({ cliente: c.correo, nombre: c.nombre || c.correo }).toString()}" target="_blank" rel="noopener" title="Abrir su página tal como la ve">
           <span class="nombre">${escapeHtml(c.nombre || c.correo)}</span>
           <span class="correo">${escapeHtml(c.correo)}</span>
@@ -249,12 +251,25 @@ async function cargarGrid(){
         </div>
       </div>`).join('');
 
+    // ?correo=... (llega desde el aviso de "semana sin programar" de
+    // Seguimiento.html): resalta la fila de ese cliente y centra en SU
+    // celda de "hoy" — con muchos clientes, la fila puede estar fuera de
+    // vista y "hoy" a secas no dice a cuál mirar.
+    const correoDestacado = new URLSearchParams(location.search).get('correo');
+    let filaDestacada = null;
+    if (correoDestacado) {
+      filaDestacada = cont.querySelector(`.fila-cliente[data-correo="${CSS.escape(correoDestacado)}"]`);
+      if (filaDestacada) filaDestacada.classList.add('resaltada');
+    }
+
     // Centra la vista en la semana de "hoy" al cargar, para no tener que
     // buscarla a mano en macrociclos largos. El scroll ahora es uno solo para
     // toda la rejilla, así que basta con centrar en la primera que encontremos
-    // (normalmente coincide entre clientes con macrociclos parecidos).
-    const primeraCeldaHoy = cont.querySelector('[data-hoy="1"]');
+    // (normalmente coincide entre clientes con macrociclos parecidos) — salvo
+    // que venga un cliente destacado, que manda sobre esa primera coincidencia.
+    const primeraCeldaHoy = (filaDestacada && filaDestacada.querySelector('[data-hoy="1"]')) || cont.querySelector('[data-hoy="1"]');
     if (primeraCeldaHoy) primeraCeldaHoy.scrollIntoView({ inline: 'center', block: 'nearest' });
+    if (filaDestacada) filaDestacada.scrollIntoView({ block: 'center' });
   } catch (e) {
     cont.innerHTML = `<div class="vacio">Error de red: ${escapeHtml(e.message)}</div>`;
   }
