@@ -75,6 +75,12 @@
     color:var(--moss-light); margin-top:10px;
   }
   .cabecera .rango-fila{ display:flex; align-items:center; gap:14px; margin-top:6px; flex-wrap:wrap; }
+  .aviso-vence{
+    display:flex; align-items:center; gap:10px; background:rgba(201,154,91,0.14);
+    border:1px solid rgba(201,154,91,0.4); border-radius:12px; padding:12px 16px;
+    font-size:13px; color:var(--amber); margin-top:14px; line-height:1.5;
+  }
+  .aviso-vence b{ color:var(--chalk); }
   .cabecera .rango, .cabecera .semana-meso{ font-size:13px; color:var(--chalk-faint); }
   .cabecera .rango b, .cabecera .semana-meso b{ color:var(--chalk-dim); font-weight:700; }
   .btn-cambiar-semana{
@@ -154,6 +160,7 @@
       <a class="btn-cambiar-semana" id="btnAtras" href="../Programacion.html" hidden>← Atrás</a>
       <button type="button" class="btn-cambiar-semana" id="btnCambiarSemana" hidden></button>
     </div>
+    <div class="aviso-vence" id="avisoVence" hidden></div>
   </div>
 
   <div class="accesos" id="accesosRapidos"></div>
@@ -169,6 +176,7 @@
 </div>
 
 <script src="../libs/mesociclos-config.js"></script>
+<script src="../libs/planificacion-semanas.js"></script>
 <script src="../libs/sesion-cliente-front.js"></script>
 <script>
 const params = new URLSearchParams(window.location.search);
@@ -230,6 +238,22 @@ function tituloMesociclo(mesociclo){
   return (TITULOS && TITULOS[mesociclo]) || mesociclo;
 }
 
+// Aviso de contrato próximo a vencer — al entrar a la app (esta es la
+// página a la que login.html redirige tras iniciar sesión), no por correo.
+// Mismo criterio de "próximos 7 días" que ya usa el aviso del entrenador en
+// Seguimiento.html, para que ambos avisen en la misma ventana.
+function mostrarAvisoVence(fechaFin){
+  const el = document.getElementById('avisoVence');
+  const { parseFechaDDMMYYYY, formatFechaDDMMYYYY } = window.PLANIFICACION_SEMANAS;
+  const fin = fechaFin ? parseFechaDDMMYYYY(fechaFin) : null;
+  if(!fin){ el.hidden = true; return; }
+  const diasRestantes = Math.ceil((fin - new Date()) / 86400000);
+  if(diasRestantes < 0 || diasRestantes > 7){ el.hidden = true; return; }
+  const cuando = diasRestantes === 0 ? 'hoy' : diasRestantes === 1 ? 'mañana' : `en ${diasRestantes} días`;
+  el.innerHTML = `Tu contrato termina <b>${cuando}</b> (${escapeHtml(formatFechaDDMMYYYY(fin))}) — contacta con tu entrenador si quieres renovarlo.`;
+  el.hidden = false;
+}
+
 function renderAccesosRapidos(driveUrl){
   const qs = new URLSearchParams();
   qs.set('cliente', CLIENTE);
@@ -275,8 +299,11 @@ async function cargar(){
     let driveUrl = null;
     try{
       const dataCliente = await resCliente.json();
-      if(dataCliente.success) driveUrl = dataCliente.cliente.drive || null;
-    }catch(e){ /* si falla, simplemente no mostramos el acceso a documentos */ }
+      if(dataCliente.success){
+        driveUrl = dataCliente.cliente.drive || null;
+        mostrarAvisoVence(dataCliente.cliente.fechaFin);
+      }
+    }catch(e){ /* si falla, simplemente no mostramos el acceso a documentos ni el aviso de vencimiento */ }
     renderAccesosRapidos(driveUrl);
 
     const nombrePartes = NOMBRE_DISPLAY.split(' ');

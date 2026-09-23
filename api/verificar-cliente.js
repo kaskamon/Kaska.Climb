@@ -30,7 +30,8 @@ async function correoVerificadoDesdeIdToken(idToken) {
 
 // Columnas reales (A=0, B=1, ...): Marca temporal, Estado, Duración, Nombre,
 // Apellidos, Teléfono, Correo Electrónico, Fecha de nacimiento, ¿Lesión?,
-// Modalidad, Disponibilidad para entrenar, Enlace carpeta Drive.
+// Modalidad, Disponibilidad para entrenar, Enlace carpeta Drive, Fecha de
+// inicio, Fecha de fin.
 const COL = {
   estado: 1,
   nombre: 3,
@@ -39,6 +40,7 @@ const COL = {
   modalidad: 9,
   disponibilidad: 10,
   drive: 11,
+  fechaFin: 13,
 };
 
 async function buscarFilaCliente(sheets, emailBuscado) {
@@ -61,6 +63,7 @@ function clienteDesdeFila(fila) {
     modalidad: (fila[COL.modalidad] || '').trim(),
     disponibilidad: (fila[COL.disponibilidad] || '').trim(),
     drive: (fila[COL.drive] || '').trim(),
+    fechaFin: (fila[COL.fechaFin] || '').trim(),
   };
 }
 
