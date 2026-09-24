@@ -214,22 +214,31 @@ function celdaVencimiento(c){
 
 // Botón rápido "+1 mes" / "+3 meses" de la fila: parte de la fecha de fin
 // actual (o de hoy si el cliente todavía no tiene ninguna) y suma meses,
-// sin necesidad de abrir el panel de edición completo.
+// sin necesidad de abrir el panel de edición completo. También reactiva al
+// cliente si estaba Inactivo — renovarle la fecha es precisamente decir
+// "sigue entrenando", y nada más lo hace solo: revisar-caducados únicamente
+// pasa de Activo a Inactivo, nunca al revés, así que sin esto un cliente
+// renovado se quedaba en Inactivo para siempre pese a tener ya fecha de fin
+// futura.
 async function sumarMeses(correo, meses){
   const cliente = TODOS_LOS_CLIENTES.find(c => c.email === correo);
   if(!cliente) return;
   const base = parseFechaDDMMYYYY(cliente.fechaFin) || new Date();
   base.setMonth(base.getMonth() + meses);
   const nuevaFechaFin = formatearFecha(base);
+  const campos = { fechaFin: nuevaFechaFin };
+  const reactivaba = cliente.estado.trim().toLowerCase() !== 'activo';
+  if(reactivaba) campos.estado = 'Activo';
   try{
     const res = await fetch('/api/listar-clientes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ correo, campos: { fechaFin: nuevaFechaFin } }),
+      body: JSON.stringify({ correo, campos }),
     });
     const data = await res.json();
     if(data.success){
       cliente.fechaFin = nuevaFechaFin;
+      if(reactivaba) cliente.estado = 'Activo';
       render();
     }else{
       alert('No se pudo actualizar la fecha de fin: ' + (data.error || 'error desconocido.'));
