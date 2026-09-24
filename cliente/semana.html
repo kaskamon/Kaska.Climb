@@ -75,7 +75,11 @@
     color:var(--moss-light); margin-top:10px;
   }
   .cabecera .rango-fila{ display:flex; align-items:center; gap:14px; margin-top:6px; flex-wrap:wrap; }
-  .aviso-vence{
+  /* :not([hidden]) — fijar "display" aquí sin esto anula la regla nativa
+     del navegador [hidden]{display:none} (misma especificidad, gana la del
+     <style> de la página): con el atributo "hidden" puesto por JS cuando no
+     hay nada que avisar, el aviso igualmente se veía como una caja vacía. */
+  .aviso-vence:not([hidden]){
     display:flex; align-items:center; gap:10px; background:rgba(201,154,91,0.14);
     border:1px solid rgba(201,154,91,0.4); border-radius:12px; padding:12px 16px;
     font-size:13px; color:var(--amber); margin-top:14px; line-height:1.5;
