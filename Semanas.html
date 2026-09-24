@@ -627,6 +627,7 @@ select.head-select option {
 
   <div class="panel-publicar-semana no-print">
     <select id="publicarClienteSemana"><option value="">Cargando clientes...</option></select>
+    <button class="btn-action" id="btnCopiarSemanaAnterior" type="button">Copiar semana anterior</button>
     <button class="btn-action" id="btnDisenarSesion" type="button" disabled>Diseñar sesión de este mesociclo</button>
     <div id="wrapCalidadTapering" class="no-print" hidden style="font-size:0.85em; margin-top:4px;">
       Tapering de:
@@ -782,7 +783,7 @@ document.addEventListener('click', e => {
 // viene de libs/planificacion-semanas.js (cargada arriba), fuente única
 // compartida con api/macrociclo.js y api/obtener-historial-sesiones.js, para
 // que nunca puedan divergir entre sí.
-const { calcularFaseYSemana, lunesDe } = window.PLANIFICACION_SEMANAS || {};
+const { calcularFaseYSemana, lunesDe, parseFechaDDMMYYYY, formatFechaDDMMYYYY } = window.PLANIFICACION_SEMANAS || {};
 
 let MESOCICLO_ACTUAL = null; // se rellena solo desde el macrociclo real del cliente
 let MESOCICLO_ORIGEN_TAPERING = null; // cualidad del bloque anterior, solo si esta semana es TAPERING
@@ -1074,6 +1075,42 @@ document.getElementById('btnDisenarSesion').addEventListener('click', () => {
   abrirModalSesion(cliente, mesocicloParaSesion());
 });
 
+// Nunca hay 2 mesociclos reales en la misma semana de un cliente — con que
+// aparezca uno de los 4/5 en cualquier sesión de la lista, ya sabemos el de
+// toda la semana. Usado tanto al cargar una semana ya publicada como al
+// comprobar si la anterior es del mismo mesociclo antes de copiarla.
+function mesocicloRealDeSesiones(sesiones) {
+  let encontrado = null;
+  sesiones.forEach(s => { if (MESOCICLOS_SEMANA.includes(s.mesociclo)) encontrado = s.mesociclo; });
+  return encontrado;
+}
+
+// Rellena las columnas de día (d1..d7) con la caja que corresponda a cada
+// sesión de `sesiones`, emparejadas con `dias` por fecha exacta y por orden
+// (Lun..Dom) — el índice de `dias` es el que decide en qué columna (d1..d7)
+// cae cada caja, así que copiar la semana anterior sobre la actual no
+// depende de que las fechas coincidan literalmente, solo el día de la
+// semana. Usado tanto al cargar una semana ya publicada como al copiar la
+// anterior.
+function pintarCajasEnDias(dias, sesiones) {
+  dias.forEach((fechaDia, i) => {
+    const columna = document.getElementById('d' + (i + 1)).querySelector('.dia-sesiones');
+    sesiones.filter(s => s.fecha === fechaDia).forEach(s => {
+      let tipo = null;
+      if (MESOCICLOS_SEMANA.includes(s.mesociclo)) tipo = 'sesion';
+      // GYM-FMAX se conserva solo para poder seguir mostrando semanas ya
+      // publicadas de antes de fusionar los 2 tipos de gym en uno — ya no
+      // se puede volver a elegir al diseñar una sesión nueva.
+      else if (s.mesociclo === 'GYM-FMAX' || s.mesociclo === 'GYM-ANTAGONISTAS') tipo = 'gym';
+      else if (s.mesociclo === 'ROCA') tipo = 'roca';
+      else if (s.mesociclo === 'DESCANSO') tipo = 'descanso';
+      if (!tipo) return;
+      const plantilla = document.querySelector(`#banco .sesion[data-tipo="${tipo}"]`);
+      if (plantilla) columna.appendChild(plantilla.cloneNode(true));
+    });
+  });
+}
+
 // Antes vivía en el listener de clic del botón "Cargar semana" (ya
 // eliminado — ahora se accede a una semana concreta desde Programación, que
 // enlaza aquí con ?cliente=&fecha=, ver iniciarDesdeEnlaceDirecto más
@@ -1124,27 +1161,8 @@ async function cargarSemanaPublicada() {
 
     limpiarTabla();
 
-    // Nunca hay 2 mesociclos en la misma semana — con que aparezca uno de
-    // los 4 en cualquier sesión encontrada, ya sabemos el de toda la semana.
-    let mesocicloSemana = null;
-    data.sesiones.forEach(s => { if (MESOCICLOS_SEMANA.includes(s.mesociclo)) mesocicloSemana = s.mesociclo; });
-
-    data.dias.forEach((fechaDia, i) => {
-      const columna = document.getElementById('d' + (i + 1)).querySelector('.dia-sesiones');
-      data.sesiones.filter(s => s.fecha === fechaDia).forEach(s => {
-        let tipo = null;
-        if (MESOCICLOS_SEMANA.includes(s.mesociclo)) tipo = 'sesion';
-        // GYM-FMAX se conserva solo para poder seguir mostrando semanas ya
-        // publicadas de antes de fusionar los 2 tipos de gym en uno — ya no
-        // se puede volver a elegir al diseñar una sesión nueva.
-        else if (s.mesociclo === 'GYM-FMAX' || s.mesociclo === 'GYM-ANTAGONISTAS') tipo = 'gym';
-        else if (s.mesociclo === 'ROCA') tipo = 'roca';
-        else if (s.mesociclo === 'DESCANSO') tipo = 'descanso';
-        if (!tipo) return;
-        const plantilla = document.querySelector(`#banco .sesion[data-tipo="${tipo}"]`);
-        if (plantilla) columna.appendChild(plantilla.cloneNode(true));
-      });
-    });
+    const mesocicloSemana = mesocicloRealDeSesiones(data.sesiones);
+    pintarCajasEnDias(data.dias, data.sesiones);
 
     // "Semana" / "Mesociclo" / "Sem. Meso." de la cabecera ya se han
     // recalculado solos (arriba) a partir del macrociclo real — si lo que
@@ -1170,6 +1188,69 @@ async function cargarSemanaPublicada() {
     estadoDiv.innerHTML = `<div class="error">Error de red: ${e.message}</div>`;
   }
 }
+
+// "Copiar semana anterior": para semanas repetitivas (mismo mesociclo, sin
+// cambios) trae las cajas de la semana justo anterior a la que se está
+// diseñando, en vez de rehacerlas a mano. No toca la fecha de la cabecera
+// (a diferencia de cargarSemanaPublicada) — la semana que se está viendo
+// sigue siendo la actual, solo se copian las cajas dentro de ella.
+// Si el mesociclo real de esa semana anterior no coincide con el de esta
+// semana (MESOCICLO_ACTUAL, calculado del macrociclo real del cliente), no
+// copia nada y avisa del cambio en vez de mezclar sesiones de mesociclos
+// distintos.
+async function copiarSemanaAnterior() {
+  const cliente = inputPublicarClienteSemana.value.trim();
+  const estadoDiv = document.getElementById('estadoPublicarSemana');
+
+  if (!cliente) { alert('Indica el cliente antes de copiar.'); return; }
+  if (!document.getElementById('hiddenDate').value) {
+    alert('Elige primero la fecha de esta semana (campo "Fecha" arriba).');
+    return;
+  }
+  if (!MESOCICLO_ACTUAL) {
+    alert('No se ha podido determinar el mesociclo de esta semana a partir del macrociclo del cliente — revisa el aviso de arriba antes de copiar.');
+    return;
+  }
+
+  const lunesActual = parseFechaDDMMYYYY(fechaParaDiaIndice(0));
+  const lunesAnterior = new Date(lunesActual);
+  lunesAnterior.setDate(lunesAnterior.getDate() - 7);
+  const fechaBuscada = formatFechaDDMMYYYY(lunesAnterior);
+
+  estadoDiv.innerHTML = `Comprobando la semana del ${fechaBuscada}...`;
+
+  try {
+    const qs = new URLSearchParams({ cliente, fecha: fechaBuscada });
+    const res = await fetch('/api/obtener-semana?' + qs.toString());
+    const data = await res.json();
+
+    if (!data.success) {
+      estadoDiv.innerHTML = `<div class="error">${data.error || 'No se pudo comprobar la semana anterior.'}</div>`;
+      return;
+    }
+    if (!data.sesiones.length) {
+      estadoDiv.innerHTML = `<div class="error">No hay nada publicado la semana del ${fechaBuscada} — no hay de dónde copiar.</div>`;
+      return;
+    }
+
+    // Misma excepción que ya usa cargarSemanaPublicada: si esta semana es
+    // TAPERING y la anterior era la cualidad de origen, no es un cambio de
+    // mesociclo real, solo la etapa previa al descanso.
+    const mesocicloAnterior = mesocicloRealDeSesiones(data.sesiones);
+    const esOrigenTapering = MESOCICLO_ACTUAL === 'TAPERING' && mesocicloAnterior === MESOCICLO_ORIGEN_TAPERING;
+    if (mesocicloAnterior && mesocicloAnterior !== MESOCICLO_ACTUAL && !esOrigenTapering) {
+      estadoDiv.innerHTML = `<div class="error">⚠ Cambio de mesociclo: la semana del ${fechaBuscada} era ${mesocicloAnterior}, pero esta semana es ${MESOCICLO_ACTUAL} — no se copia nada.</div>`;
+      return;
+    }
+
+    limpiarTabla();
+    pintarCajasEnDias(data.dias, data.sesiones);
+    estadoDiv.innerHTML = `<div class="ok">✓ Copiada la semana del ${fechaBuscada} para ${cliente}.</div>`;
+  } catch (e) {
+    estadoDiv.innerHTML = `<div class="error">Error de red: ${e.message}</div>`;
+  }
+}
+document.getElementById('btnCopiarSemanaAnterior').addEventListener('click', copiarSemanaAnterior);
 
 document.getElementById('btnPublicarSemana').addEventListener('click', async () => {
   const cliente = inputPublicarClienteSemana.value.trim();

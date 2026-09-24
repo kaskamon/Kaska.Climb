@@ -213,7 +213,7 @@ async function cargarGrid(){
     const hoyStr = lunesDeHoy();
     cont.innerHTML = data.clientes.map(c => `
       <div class="fila-cliente" data-correo="${escapeHtml(c.correo)}">
-        <a class="nombre-cliente-grid" href="cliente/semana.html?${new URLSearchParams({ cliente: c.correo, nombre: c.nombre || c.correo }).toString()}" target="_blank" rel="noopener" title="Abrir su página tal como la ve">
+        <a class="nombre-cliente-grid" href="cliente/semana.html?${new URLSearchParams({ cliente: c.correo, nombre: c.nombre || c.correo, previsualizar: '1' }).toString()}" target="_blank" rel="noopener" title="Abrir su página tal como la ve">
           <span class="nombre">${escapeHtml(c.nombre || c.correo)}</span>
           <span class="correo">${escapeHtml(c.correo)}</span>
         </a>
