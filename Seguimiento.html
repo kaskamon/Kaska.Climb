@@ -1429,22 +1429,27 @@ function renderNotificaciones(){
 async function cargarNotificaciones(){
   const cont = document.getElementById('contenidoNotificaciones');
   try {
-    // El aviso de "semana que viene sin programar" se consulta cualquier
-    // día — la clave incluye el lunes siguiente (lunesDe(hoy)+7), que es EL
-    // MISMO durante toda la semana en curso (de lunes a domingo), así que
-    // el aviso persiste hasta que se marca leída (o hasta que se publica
-    // esa semana y deja de detectarse como pendiente), igual que ya hacen
-    // "inactivo" y "vence" — no solo el día en que se detecta por primera
-    // vez.
+    // El aviso de "semana que viene sin programar" solo se consulta
+    // sábado/domingo — entre semana (lunes a viernes) el lunes siguiente
+    // está a 3-6 días vista, y es normal que todavía no esté programado;
+    // avisar ya en ese momento salía para todos los clientes a la vez sin
+    // que hubiera nada raro. Sábado/domingo sí tiene sentido: quedan 1-2
+    // días de margen real antes de que empiece esa semana. La clave incluye
+    // el lunes siguiente (lunesDe(hoy)+7), que es EL MISMO tanto el sábado
+    // como el domingo de la semana en curso, así que el aviso persiste
+    // hasta que se marca leída (o hasta que se publica esa semana), igual
+    // que ya hacen "inactivo" y "vence" — no solo el día en que se detecta.
+    const diaSemana = new Date().getDay(); // 0=domingo .. 6=sábado
+    const tocaRevisarSemana = diaSemana === 6 || diaSemana === 0;
     const [resSesiones, resClientes, resSemana] = await Promise.all([
       fetch('/api/obtener-historial-sesiones?accion=recientes'),
       fetch('/api/listar-clientes?completo=1'),
-      fetch('/api/macrociclo?accion=semana-siguiente-pendientes'),
+      tocaRevisarSemana ? fetch('/api/macrociclo?accion=semana-siguiente-pendientes') : Promise.resolve(null),
       cargarLeidas(),
     ]);
     const dataSesiones = await resSesiones.json();
     const dataClientes = await resClientes.json();
-    const dataSemana = await resSemana.json();
+    const dataSemana = resSemana ? await resSemana.json() : { success: true, pendientes: [] };
 
     if (!dataSesiones.success && !dataClientes.success) {
       cont.innerHTML = `<div class="vacio-notif">${escapeHtml(dataSesiones.error || dataClientes.error || 'No se pudo cargar.')}</div>`;
@@ -1488,6 +1493,8 @@ async function cargarNotificaciones(){
     notificacionesCache = [...inactivos, ...vencen, ...semanas, ...sesiones];
     // Solo si TODAS las fuentes cargaron bien la lista es completa — si no,
     // el servidor no debe podar leídas en base a ella (ver marcarNotificacionLeida).
+    // Entre semana no se pide dataSemana (ver tocaRevisarSemana), así que su
+    // success:true por defecto no cuenta como "incompleta".
     notifCargaCompleta = dataSesiones.success && dataClientes.success && dataSemana.success;
     renderNotificaciones();
   } catch (e) {

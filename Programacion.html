@@ -76,6 +76,20 @@
   .semana-celda:hover{ transform:translateY(-2px); }
   .semana-celda.pendiente{ background:transparent; border:2px solid var(--line-strong); }
   .semana-celda.hoy{ box-shadow:0 0 0 2px var(--chalk); }
+  /* Hueco: la columna de esa semana existe en la línea de tiempo compartida
+     (porque OTRO cliente sí tiene macrociclo esa semana) pero este cliente
+     en concreto no — clase aparte (no .semana-celda) para que ni el hover
+     ni el click de la rejilla la traten como una celda real. */
+  .semana-hueco{ flex:0 0 38px; height:42px; }
+
+  .fila-fechas{ display:flex; border-bottom:1px solid var(--line-strong); width:max-content; min-width:100%; }
+  .celda-esquina-fechas{ position:sticky; left:0; z-index:2; background:var(--stone-800); flex:0 0 190px; border-right:1px solid var(--line-strong); }
+  .fechas-scroll{ display:flex; gap:5px; padding:6px 16px 0; align-items:flex-end; flex:0 0 auto; }
+  .fecha-celda{
+    flex:0 0 38px; height:20px; display:flex; align-items:flex-end; justify-content:center;
+    font-size:10px; font-weight:800; letter-spacing:0.3px; text-transform:uppercase; color:var(--chalk-faint);
+  }
+  .fecha-celda.hoy{ color:var(--chalk); }
 
   .overlay-semana{
     display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:100;
@@ -179,7 +193,8 @@ const { CATEGORIA_VISUAL } = window.MESOCICLOS_CONFIG || {};
 // Misma fuente que ya usa el backend (api/macrociclo.js) y Semanas.html para
 // "qué lunes toca" — antes esta página tenía su propia copia de la misma
 // cuenta, con riesgo de desincronizarse si se tocaba una sin la otra.
-const { lunesDe, formatFechaDDMMYYYY } = window.PLANIFICACION_SEMANAS || {};
+const { lunesDe, formatFechaDDMMYYYY, parseFechaDDMMYYYY } = window.PLANIFICACION_SEMANAS || {};
+const MESES_CORTOS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
 function lunesDeHoy(){
   return formatFechaDDMMYYYY(lunesDe(new Date()));
@@ -208,15 +223,66 @@ async function cargarGrid(){
       return;
     }
     const hoyStr = lunesDeHoy();
-    cont.innerHTML = data.clientes.map(c => `
+
+    // Línea de tiempo compartida: un lunes por columna, desde el primero
+    // hasta el último que use CUALQUIER cliente — así la misma columna
+    // representa la misma semana real de calendario en todas las filas, en
+    // vez de que cada cliente empiece a contar en "semana 1" por su cuenta
+    // (lo que antes hacía que dos clientes con macrociclos en fechas
+    // completamente distintas aparecieran uno encima del otro en las
+    // mismas columnas, sin que eso significara que coincidían en el tiempo).
+    let minLunes = null, maxLunes = null;
+    data.clientes.forEach(c => c.semanas.forEach(s => {
+      const d = parseFechaDDMMYYYY(s.fechaLunes);
+      if (!d) return;
+      if (!minLunes || d < minLunes) minLunes = d;
+      if (!maxLunes || d > maxLunes) maxLunes = d;
+    }));
+    if (!minLunes) {
+      cont.innerHTML = `<div class="vacio">Ningún cliente activo tiene semanas en su macrociclo todavía.</div>`;
+      return;
+    }
+    const timeline = [];
+    for (let d = new Date(minLunes); d <= maxLunes; d.setDate(d.getDate() + 7)) {
+      timeline.push(formatFechaDDMMYYYY(d));
+    }
+
+    // Cabecera con el mes en la primera columna de cada mes nuevo (estilo
+    // diagrama de Gantt) — sin esto, una fila de fechas dd/mm no cabría en
+    // columnas de 38px, y sin ninguna referencia de fecha no hay línea de
+    // tiempo real, solo columnas sueltas.
+    let mesAnterior = null;
+    const cabeceraFechas = timeline.map(fechaLunes => {
+      const d = parseFechaDDMMYYYY(fechaLunes);
+      const claveMes = d.getFullYear() + '-' + d.getMonth();
+      const esNuevoMes = claveMes !== mesAnterior;
+      mesAnterior = claveMes;
+      const etiqueta = esNuevoMes ? MESES_CORTOS[d.getMonth()] : '';
+      const clase = fechaLunes === hoyStr ? 'fecha-celda hoy' : 'fecha-celda';
+      return `<div class="${clase}" title="${escapeHtml(fechaLunes)}">${etiqueta}</div>`;
+    }).join('');
+
+    cont.innerHTML = `
+      <div class="fila-fechas">
+        <div class="celda-esquina-fechas"></div>
+        <div class="fechas-scroll">${cabeceraFechas}</div>
+      </div>` +
+      data.clientes.map(c => {
+        const porFecha = new Map(c.semanas.map(s => [s.fechaLunes, s]));
+        return `
       <div class="fila-cliente" data-correo="${escapeHtml(c.correo)}">
         <a class="nombre-cliente-grid" href="cliente/semana.html?${new URLSearchParams({ cliente: c.correo, nombre: c.nombre || c.correo, previsualizar: '1' }).toString()}" target="_blank" rel="noopener" title="Abrir su página tal como la ve">
           <span class="nombre">${escapeHtml(c.nombre || c.correo)}</span>
           <span class="correo">${escapeHtml(c.correo)}</span>
         </a>
         <div class="semanas-scroll" data-cliente="${escapeHtml(c.correo)}">
-          ${c.semanas.map(s => {
-            const esHoy = s.fechaLunes === hoyStr;
+          ${timeline.map(fechaLunes => {
+            const s = porFecha.get(fechaLunes);
+            // Este cliente no tiene macrociclo esa semana (empezó después,
+            // terminó antes, o está entre dos macrociclos) — hueco vacío
+            // para que las columnas de las demás filas sigan alineadas.
+            if (!s) return `<div class="semana-hueco"></div>`;
+            const esHoy = fechaLunes === hoyStr;
             let clase = 'semana-celda';
             let estilo = '';
             const colorMeso = (CATEGORIA_VISUAL && CATEGORIA_VISUAL[s.mesociclo] && CATEGORIA_VISUAL[s.mesociclo].color) || '#888';
@@ -225,14 +291,7 @@ async function cargarGrid(){
             } else {
               // Sin publicar: hueco, pero con el contorno del color de la
               // fase que le toca según el macrociclo — así se ve de un
-              // vistazo QUÉ falta publicar, no solo que falta algo. Antes
-              // las semanas de hace más de una semana se marcaban aparte
-              // como "histórica/sin datos fiables" (por si la fila se había
-              // podado y no se podía distinguir de "nunca se publicó") —
-              // pero como "publicada" ya manda siempre que el dato SÍ
-              // exista, esa distinción no aportaba nada real: solo
-              // confundía, pareciendo un fallo de carga en vez de "aquí no
-              // hay nada registrado".
+              // vistazo QUÉ falta publicar, no solo que falta algo.
               clase += ' pendiente';
               estilo = `border-color:${colorMeso}; color:${colorMeso};`;
             }
@@ -243,7 +302,8 @@ async function cargarGrid(){
               data-fecha-lunes="${escapeHtml(s.fechaLunes)}" data-semana="${escapeHtml(String(s.semanaGlobal))}">${s.semanaGlobal}</div>`;
           }).join('')}
         </div>
-      </div>`).join('');
+      </div>`;
+      }).join('');
 
     // ?correo=... (llega desde el aviso de "semana sin programar" de
     // Seguimiento.html): resalta la fila de ese cliente y centra en SU
