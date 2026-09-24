@@ -193,13 +193,6 @@ async function manejarGrid(req, res, sheets) {
   try {
     const { clientesActivos, macrociclosPorCorreo, semanasPublicadas } = await datosBaseParaRevision(sheets);
 
-    // Las filas de Sesiones_Programadas más viejas que esta ventana pueden
-    // haber sido podadas por api/publicar-sesion.js (que borra, por cliente,
-    // lo anterior a hoy-7d al publicar) sin que eso signifique que esa semana
-    // nunca se publicó — no se puede distinguir, así que no se marcan en rojo.
-    const cortePorAntiguedad = lunesDe(new Date());
-    cortePorAntiguedad.setDate(cortePorAntiguedad.getDate() - 7);
-
     const clientes = clientesActivos
       .map(c => {
         const plan = macrociclosPorCorreo.get(c.correo.toLowerCase());
@@ -215,7 +208,6 @@ async function manejarGrid(req, res, sheets) {
             return {
               ...s,
               publicada: semanasPublicadas.has(key),
-              historica: lunesFecha < cortePorAntiguedad,
             };
           }),
         };

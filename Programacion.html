@@ -54,7 +54,6 @@
   .leyenda .item{ display:flex; align-items:center; gap:7px; }
   .leyenda .muestra{ width:14px; height:14px; border-radius:4px; flex:0 0 auto; }
   .leyenda .muestra.pendiente{ background:transparent; border:2px solid var(--chalk-faint); }
-  .leyenda .muestra.historica{ background:rgba(255,255,255,0.06); border:1px solid var(--line-strong); }
 
   .fila-cliente{ display:flex; border-bottom:1px solid var(--line); width:max-content; min-width:100%; }
   .fila-cliente:last-child{ border-bottom:none; }
@@ -76,7 +75,6 @@
   }
   .semana-celda:hover{ transform:translateY(-2px); }
   .semana-celda.pendiente{ background:transparent; border:2px solid var(--line-strong); }
-  .semana-celda.historica{ background:rgba(255,255,255,0.05); border:1px solid var(--line-strong); color:var(--chalk-faint); }
   .semana-celda.hoy{ box-shadow:0 0 0 2px var(--chalk); }
 
   .overlay-semana{
@@ -193,7 +191,6 @@ function pintarLeyenda(){
     <div class="item"><span class="muestra" style="background:${(CATEGORIA_VISUAL && CATEGORIA_VISUAL[f] && CATEGORIA_VISUAL[f].color) || '#888'}"></span>${f}</div>
   `).join('') + `
     <div class="item"><span class="muestra pendiente"></span>Sin publicar</div>
-    <div class="item"><span class="muestra historica"></span>Histórica / sin datos fiables</div>
   `;
 }
 
@@ -224,26 +221,23 @@ async function cargarGrid(){
             let estilo = '';
             const colorMeso = (CATEGORIA_VISUAL && CATEGORIA_VISUAL[s.mesociclo] && CATEGORIA_VISUAL[s.mesociclo].color) || '#888';
             if (s.publicada) {
-              // Publicada manda siempre sobre "histórica": esta última solo
-              // marca que, si NO estuviera publicada, tampoco se podría
-              // distinguir de un hueco borrado por la poda de Sesiones_
-              // Programadas (api/publicar-sesion.js) — pero si la fila
-              // todavía está ahí (publicada:true), es un dato real, por
-              // vieja que sea la semana. Antes "histórica" se comprobaba
-              // primero y tapaba esto, mostrando como "sin datos fiables"
-              // semanas que sí tenían datos.
               estilo = `background:${colorMeso}`;
-            } else if (s.historica) {
-              clase += ' historica';
             } else {
               // Sin publicar: hueco, pero con el contorno del color de la
               // fase que le toca según el macrociclo — así se ve de un
-              // vistazo QUÉ falta publicar, no solo que falta algo.
+              // vistazo QUÉ falta publicar, no solo que falta algo. Antes
+              // las semanas de hace más de una semana se marcaban aparte
+              // como "histórica/sin datos fiables" (por si la fila se había
+              // podado y no se podía distinguir de "nunca se publicó") —
+              // pero como "publicada" ya manda siempre que el dato SÍ
+              // exista, esa distinción no aportaba nada real: solo
+              // confundía, pareciendo un fallo de carga en vez de "aquí no
+              // hay nada registrado".
               clase += ' pendiente';
               estilo = `border-color:${colorMeso}; color:${colorMeso};`;
             }
             if (esHoy) clase += ' hoy';
-            const titulo = `Semana ${s.semanaGlobal} · ${s.mesociclo || '—'} · ${s.fechaLunes}${s.publicada ? ' · publicada' : (s.historica ? ' · sin datos' : ' · sin publicar')}`;
+            const titulo = `Semana ${s.semanaGlobal} · ${s.mesociclo || '—'} · ${s.fechaLunes}${s.publicada ? ' · publicada' : ' · sin publicar'}`;
             return `<div class="${clase}" style="${estilo}" title="${escapeHtml(titulo)}" data-hoy="${esHoy ? '1' : ''}"
               data-correo="${escapeHtml(c.correo)}" data-nombre="${escapeHtml(c.nombre || c.correo)}"
               data-fecha-lunes="${escapeHtml(s.fechaLunes)}" data-semana="${escapeHtml(String(s.semanaGlobal))}">${s.semanaGlobal}</div>`;
