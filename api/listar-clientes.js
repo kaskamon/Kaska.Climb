@@ -793,8 +793,11 @@ async function manejarAlta(req, res, sheets) {
   // cliente se equivoque al escribir; aquí, al ser la comprobación real del
   // servidor, además evita que un correo con espacios o saltos de línea
   // (\r\n) acabe colándose como identificador del cliente o en la cabecera
-  // "To:" de sus correos.
-  if (!nombre || !apellidos || !correo || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(correo))) {
+  // "To:" de sus correos. Además, solo caracteres de correo normales: el
+  // patrón anterior ([^\s@]+) dejaba pasar cosas como
+  // <img/src=x/onerror=...>@a.bc (sin espacios), que acababan pintándose sin
+  // escapar en algún mensaje de estado de las herramientas del entrenador.
+  if (!nombre || !apellidos || !correo || !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/.test(String(correo).trim())) {
     return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (nombre, apellidos o un correo válido).' });
   }
   // Igual que arriba: el checkbox de alta.html ya bloquea el envío en el

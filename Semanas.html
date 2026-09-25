@@ -1138,7 +1138,7 @@ async function cargarSemanaPublicada() {
     const data = await res.json();
 
     if (!data.success) {
-      estadoDiv.innerHTML = `<div class="error">${data.error || 'No se pudo cargar la semana.'}</div>`;
+      estadoDiv.innerHTML = `<div class="error">${escapeHtml(data.error || 'No se pudo cargar la semana.')}</div>`;
       return;
     }
     if (!data.sesiones.length) {
@@ -1183,9 +1183,9 @@ async function cargarSemanaPublicada() {
       aviso = `<div class="error">⚠ Lo publicado esa semana era ${mesocicloSemana}, pero el macrociclo actual dice ${MESOCICLO_ACTUAL} — revisa cuál es correcto antes de volver a publicar.</div>`;
     }
 
-    estadoDiv.innerHTML = `<div class="ok">✓ Cargada la semana del ${fechaLunes} para ${cliente}.</div>` + aviso;
+    estadoDiv.innerHTML = `<div class="ok">✓ Cargada la semana del ${fechaLunes} para ${escapeHtml(cliente)}.</div>` + aviso;
   } catch (e) {
-    estadoDiv.innerHTML = `<div class="error">Error de red: ${e.message}</div>`;
+    estadoDiv.innerHTML = `<div class="error">Error de red: ${escapeHtml(e.message)}</div>`;
   }
 }
 
@@ -1225,7 +1225,7 @@ async function copiarSemanaAnterior() {
     const data = await res.json();
 
     if (!data.success) {
-      estadoDiv.innerHTML = `<div class="error">${data.error || 'No se pudo comprobar la semana anterior.'}</div>`;
+      estadoDiv.innerHTML = `<div class="error">${escapeHtml(data.error || 'No se pudo comprobar la semana anterior.')}</div>`;
       return;
     }
     if (!data.sesiones.length) {
@@ -1245,9 +1245,9 @@ async function copiarSemanaAnterior() {
 
     limpiarTabla();
     pintarCajasEnDias(data.dias, data.sesiones);
-    estadoDiv.innerHTML = `<div class="ok">✓ Copiada la semana del ${fechaBuscada} para ${cliente}.</div>`;
+    estadoDiv.innerHTML = `<div class="ok">✓ Copiada la semana del ${fechaBuscada} para ${escapeHtml(cliente)}.</div>`;
   } catch (e) {
-    estadoDiv.innerHTML = `<div class="error">Error de red: ${e.message}</div>`;
+    estadoDiv.innerHTML = `<div class="error">Error de red: ${escapeHtml(e.message)}</div>`;
   }
 }
 document.getElementById('btnCopiarSemanaAnterior').addEventListener('click', copiarSemanaAnterior);
@@ -1322,7 +1322,7 @@ document.getElementById('btnPublicarSemana').addEventListener('click', async () 
   }
 
   estadoDiv.innerHTML = resultados.length
-    ? resultados.map(r => `<div class="${r.clase}">${r.texto}</div>`).join('')
+    ? resultados.map(r => `<div class="${r.clase}">${escapeHtml(r.texto)}</div>`).join('')
     : 'No hay ninguna sesión asignada esta semana.';
 });
 
@@ -1348,11 +1348,11 @@ document.getElementById('btnBorrarSemana').addEventListener('click', async () =>
     });
     const data = await res.json();
     estadoDiv.innerHTML = data.success
-      ? `<div class="ok">✓ ${data.message}</div>`
-      : `<div class="error">${data.error}</div>`;
+      ? `<div class="ok">✓ ${escapeHtml(data.message)}</div>`
+      : `<div class="error">${escapeHtml(data.error)}</div>`;
     if (data.success) limpiarTabla();
   } catch (e) {
-    estadoDiv.innerHTML = `<div class="error">Error de red: ${e.message}</div>`;
+    estadoDiv.innerHTML = `<div class="error">Error de red: ${escapeHtml(e.message)}</div>`;
   }
 });
 
@@ -1382,7 +1382,7 @@ async function iniciarDesdeEnlaceDirecto() {
       localStorage.setItem('kaska_cliente_actual', clienteParam);
     } else {
       document.getElementById('estadoPublicarSemana').innerHTML =
-        `<div class="error">El cliente ${clienteParam} no aparece en la lista (¿ha pasado a Inactivo?) — elígelo a mano si sigue siendo el correcto.</div>`;
+        `<div class="error">El cliente ${escapeHtml(clienteParam)} no aparece en la lista (¿ha pasado a Inactivo?) — elígelo a mano si sigue siendo el correcto.</div>`;
     }
   }
   if (fechaParam) {
