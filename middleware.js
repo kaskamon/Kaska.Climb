@@ -20,6 +20,7 @@ const RUTAS_PUBLICAS = [
   '/robots.txt',
   '/logo-192.png',
   '/logo-512.png',
+  '/logo-fondo.webp',
   '/favicon.ico',
   '/apple-touch-icon.png',
   '/apple-touch-icon-precomposed.png',

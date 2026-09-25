@@ -7,13 +7,14 @@
 // contraseña) — nunca deben estar aquí. Precachearlas dispara el popup nativo
 // de usuario/contraseña del navegador para clientes reales en cuanto el
 // service worker se instala, aunque estén viendo login.html o su propia página.
-const CACHE_NAME = 'kaska-climb-v5';
+const CACHE_NAME = 'kaska-climb-v6';
 const urlsToCache = [
   './login.html',
   './manifest.json',
   './manifest-cliente.json',
   './logo-192.png',
   './logo-512.png',
+  './logo-fondo.webp',
 ];
 
 self.addEventListener('install', event => {
