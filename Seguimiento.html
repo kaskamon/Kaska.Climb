@@ -565,23 +565,29 @@ function pintarPanelFuerza(panel, historial){
       </div>`;
   };
 
-  // Asimetría entre manos en la última sesión con las dos medidas: qué % de
-  // diferencia hay entre la mano fuerte y la débil (sobre la fuerte). Un
-  // desequilibrio grande y sostenido es lo que más interesa vigilar (lesión,
-  // compensaciones) — se resalta en ámbar a partir del 10%.
-  const ultimaConAmbas = [...historial].reverse().find(h => h.fmaxIzq != null && h.fmaxDer != null);
+  // Asimetría entre manos: media, sobre todas las sesiones con las dos
+  // medidas, del % de diferencia entre la mano fuerte y la débil (sobre la
+  // fuerte) — así una sesión suelta rara no la dispara. Un desequilibrio
+  // grande y sostenido es lo que más interesa vigilar (lesión,
+  // compensaciones): se resalta en ámbar a partir del 10%. Qué mano manda se
+  // decide con la media de Fmax de cada una en esas mismas sesiones.
+  const conAmbas = historial.filter(h => h.fmaxIzq != null && h.fmaxDer != null);
   let cajaAsimetria;
-  if(!ultimaConAmbas){
+  if(!conAmbas.length){
     cajaAsimetria = `<div class="stat-tile"><div class="k">Asimetría izq./der.</div><div class="v">—</div><div class="delta">Sin sesión con las dos manos</div></div>`;
   } else {
-    const fuerte = Math.max(ultimaConAmbas.fmaxIzq, ultimaConAmbas.fmaxDer);
-    const asim = fuerte === 0 ? 0 : Math.abs(ultimaConAmbas.fmaxDer - ultimaConAmbas.fmaxIzq) / fuerte * 100;
-    const quien = ultimaConAmbas.fmaxDer === ultimaConAmbas.fmaxIzq ? 'equilibradas' : (ultimaConAmbas.fmaxDer > ultimaConAmbas.fmaxIzq ? 'más fuerte la derecha' : 'más fuerte la izquierda');
+    const asimMedia = conAmbas.reduce((s, h) => {
+      const fuerte = Math.max(h.fmaxIzq, h.fmaxDer);
+      return s + (fuerte === 0 ? 0 : Math.abs(h.fmaxDer - h.fmaxIzq) / fuerte * 100);
+    }, 0) / conAmbas.length;
+    const mediaDer = conAmbas.reduce((s, h) => s + h.fmaxDer, 0) / conAmbas.length;
+    const mediaIzq = conAmbas.reduce((s, h) => s + h.fmaxIzq, 0) / conAmbas.length;
+    const quien = mediaDer === mediaIzq ? 'equilibradas' : (mediaDer > mediaIzq ? 'más fuerte la derecha' : 'más fuerte la izquierda');
     cajaAsimetria = `
       <div class="stat-tile">
-        <div class="k">Asimetría izq./der.</div>
-        <div class="v"${asim >= 10 ? ' style="color:var(--amber);"' : ''}>${asim.toFixed(1)}<small>%</small></div>
-        <div class="delta">${quien} · ${escapeHtml(ultimaConAmbas.fecha)}</div>
+        <div class="k">Asimetría izq./der. (media)</div>
+        <div class="v"${asimMedia >= 10 ? ' style="color:var(--amber);"' : ''}>${asimMedia.toFixed(1)}<small>%</small></div>
+        <div class="delta">${quien} · ${conAmbas.length} ses.</div>
       </div>`;
   }
 
