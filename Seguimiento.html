@@ -382,12 +382,7 @@ const VARIABLES = {
 const VARIABLES_ACTIVAS = { pfInicial: true, fmaxDer: true, fmaxIzq: true };
 let HISTORIAL_ACTUAL = null;
 
-// Además de la fuerza (siempre disponible), cada mesociclo lleva sus propios
-// "campos" secundarios (series de suspensiones, campus, pegues bloque/trave,
-// tiempo de escalada continua en AERO...) — mismo mapeo que ya usa
-// cliente/sesion.html para pintar el formulario, así no hay que duplicarlo.
-// VARIABLE_ACTIVA vale 'fuerza' o 'campo:<índice>' (índice dentro de
-// FIELD_MAP[meso].campos, que coincide con el índice del array historial.campos).
+// Variable mostrada en el panel: 'fuerza', 'pfpct', 'pffinalpct' o 'resumen'.
 let VARIABLE_ACTIVA = 'fuerza';
 
 function camposDelMesoActivo(){
@@ -405,16 +400,8 @@ function poblarSelectorVariable(){
   if(cfgMeso && cfgMeso.pfFinal){
     opciones.push('<option value="pffinalpct">PFfinal en % (fatiga de la sesión)</option>');
   }
-  camposDelMesoActivo().forEach((c, i) => {
-    opciones.push(`<option value="campo:${i}">${escapeHtml(c.label)} (${escapeHtml(c.match)})</option>`);
-  });
-  // Dominadas con lastre no es un campo propio de FMAX (se registra en los
-  // días de gimnasio, no en la sesión de fuerza), pero el entrenador quiere
-  // verla desde la pestaña FMAX — por eso se añade aparte, no vía
-  // camposDelMesoActivo().
-  if(MESO_ACTIVO === 'FMAX'){
-    opciones.push('<option value="dominadas">Dominadas con lastre (días de gimnasio)</option>');
-  }
+  // Ya no hay opciones por campo secundario (series, pegues, tiempo) ni de
+  // dominadas con lastre: todo eso se ve en "Resumen (todos los datos)".
   opciones.push('<option value="resumen">Resumen (todos los datos)</option>');
   sel.innerHTML = opciones.join('');
   VARIABLE_ACTIVA = 'fuerza';
@@ -432,60 +419,6 @@ function formatCampoValor(v, tipo){
   // Series/pegues/campus son siempre recuentos enteros — redondeamos solo
   // las medias/ejes calculados, los valores tal cual introducidos no cambian.
   return String(Math.round(v * 10) / 10);
-}
-
-// Gráfica de una sola variable secundaria (series, pegues, campus, tiempo…) —
-// misma factura visual que dibujarGrafica, pero sin las 3 líneas fijas de
-// fuerza ni el eje en "N", ya que aquí la unidad cambia según el campo.
-function dibujarGraficaCampo(svg, historial, indice, color, tipo){
-  const M = { left:44, right:14, top:16, bottom:30 };
-  const W = 640, H = 260;
-  const plotW = W - M.left - M.right, plotH = H - M.top - M.bottom;
-
-  const valores = historial.map(h => (h.campos || [])[indice]).filter(v => v !== undefined && v !== null);
-  const hayValores = valores.length > 0;
-  const rawMin = hayValores ? Math.min(...valores) : 0;
-  const rawMax = hayValores ? Math.max(...valores) : 10;
-  const margen = Math.max(tipo === 'tiempo' ? 5 : 1, (rawMax - rawMin) * 0.15);
-  const yMin = Math.max(0, rawMin - margen);
-  const yMax = rawMax + margen;
-
-  const n = historial.length;
-  const x = i => M.left + (n > 1 ? (i / (n - 1)) * plotW : plotW / 2);
-  const y = v => M.top + plotH - ((v - yMin) / (yMax - yMin || 1)) * plotH;
-
-  let svgStr = '';
-  const pasosY = 4;
-  for(let p = 0; p <= pasosY; p++){
-    const valor = yMin + (yMax - yMin) * (p / pasosY);
-    const yy = y(valor);
-    svgStr += `<line class="grid-linea" x1="${M.left}" y1="${yy.toFixed(1)}" x2="${W - M.right}" y2="${yy.toFixed(1)}"/>`;
-    svgStr += `<text class="eje-label" x="${M.left - 8}" y="${yy.toFixed(1)}" text-anchor="end" dominant-baseline="middle">${escapeHtml(formatCampoValor(valor, tipo))}</text>`;
-  }
-
-  const salto = Math.max(1, Math.ceil(n / 8));
-  historial.forEach((h, i) => {
-    if(i % salto !== 0 && i !== n - 1) return;
-    svgStr += `<text class="eje-label" x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${escapeHtml(h.fecha)}</text>`;
-  });
-
-  const pts = [];
-  historial.forEach((h, i) => {
-    const v = (h.campos || [])[indice];
-    if(v !== undefined && v !== null) pts.push([x(i), y(v)]);
-  });
-  if(pts.length >= 2){
-    const area = `${M.left},${(M.top+plotH).toFixed(1)} ` + pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ') + ` ${pts[pts.length-1][0].toFixed(1)},${(M.top+plotH).toFixed(1)}`;
-    svgStr += `<polygon points="${area}" fill="${color}" fill-opacity="0.14"/>`;
-    svgStr += `<polyline points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
-  }
-  pts.forEach(([px,py], idx) => {
-    const esUltimo = idx === pts.length - 1;
-    svgStr += `<circle class="${esUltimo?'punto-final':''}" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${esUltimo?4.5:3}" fill="${color}"/>`;
-  });
-
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svg.innerHTML = svgStr;
 }
 
 function escapeHtml(str){
@@ -594,14 +527,6 @@ function pintarDatos(){
   const panel = document.getElementById('panelDatos');
   if(!PORMESOCICLO) return;
 
-  // Dominadas con lastre vive en su propia serie (días de gimnasio, no de
-  // fuerza) — se pinta antes de mirar el historial de FMAX, que puede estar
-  // vacío sin que eso signifique que no hay dominadas que enseñar.
-  if(VARIABLE_ACTIVA === 'dominadas'){
-    pintarPanelDominadas(panel);
-    return;
-  }
-
   const historial = (PORMESOCICLO[MESO_ACTIVO] || []).filter(h => h.entrenada);
 
   if(!historial.length){
@@ -613,36 +538,70 @@ function pintarDatos(){
   else if(VARIABLE_ACTIVA === 'pfpct') pintarPanelPfPct(panel, historial);
   else if(VARIABLE_ACTIVA === 'pffinalpct') pintarPanelPfFinalPct(panel, historial);
   else if(VARIABLE_ACTIVA === 'resumen') pintarPanelResumen(panel);
-  else pintarPanelCampo(panel, historial, Number(VARIABLE_ACTIVA.split(':')[1]));
 }
 
 function pintarPanelFuerza(panel, historial){
-  const ultimo = historial[historial.length - 1];
-  const primero = historial[0];
-  const media = Math.round(historial.reduce((s,h) => s + h.pfInicial, 0) / historial.length);
-  // primero.pfInicial === 0 es un valor real (igual que en pintarPanelPfPct/
-  // pintarPanelCampo) — con denominador 0 no hay % que calcular, así que se
-  // muestra la diferencia absoluta en vez de forzar un "0%" que parecería
-  // "sin cambios" cuando en realidad no se puede saber.
-  const primerEsCero = primero.pfInicial === 0;
-  const deltaAbsoluto = ultimo.pfInicial - primero.pfInicial;
-  const tendenciaPct = primerEsCero ? null : ((ultimo.pfInicial - primero.pfInicial) / primero.pfInicial * 100);
-  const tendenciaPositiva = primerEsCero ? deltaAbsoluto >= 0 : tendenciaPct >= 0;
-  const tendenciaTexto = primerEsCero
-    ? `${deltaAbsoluto >= 0 ? '+' : ''}${deltaAbsoluto}<small>N</small>`
-    : `${tendenciaPct >= 0 ? '+' : ''}${tendenciaPct.toFixed(1)}<small>%</small>`;
-  const noRecuperadas = (PORMESOCICLO[MESO_ACTIVO] || []).filter(h => !h.entrenada).length;
+  // Tendencia de UNA mano: de su primera sesión con dato a la última, sobre
+  // las sesiones entrenadas de este mesociclo. Con primer valor 0 no hay %
+  // que calcular (denominador 0), así que se da la diferencia absoluta en
+  // vez de forzar un "0%" que parecería "sin cambios".
+  const tendenciaMano = campo => {
+    const puntos = historial.filter(h => h[campo] !== undefined && h[campo] !== null);
+    if(puntos.length < 2) return null;
+    const a = puntos[0][campo], b = puntos[puntos.length - 1][campo];
+    return { a, b, delta: b - a, pct: a === 0 ? null : (b - a) / a * 100, n: puntos.length };
+  };
+  const cajaTendencia = (titulo, t) => {
+    if(!t) return `<div class="stat-tile"><div class="k">${titulo}</div><div class="v">—</div><div class="delta">Hacen falta 2 sesiones con dato</div></div>`;
+    const sube = t.pct === null ? t.delta >= 0 : t.pct >= 0;
+    const texto = t.pct === null
+      ? `${t.delta >= 0 ? '+' : ''}${t.delta}<small>N</small>`
+      : `${t.pct >= 0 ? '+' : ''}${t.pct.toFixed(1)}<small>%</small>`;
+    return `
+      <div class="stat-tile">
+        <div class="k">${titulo}</div>
+        <div class="v" style="color:${sube ? 'var(--moss-light)' : 'var(--danger)'};">${texto}</div>
+        <div class="delta ${sube ? 'up' : 'down'}">${sube ? '↑' : '↓'} ${t.a} → ${t.b} N · ${t.n} ses.</div>
+      </div>`;
+  };
+
+  // Asimetría entre manos en la última sesión con las dos medidas: qué % de
+  // diferencia hay entre la mano fuerte y la débil (sobre la fuerte). Un
+  // desequilibrio grande y sostenido es lo que más interesa vigilar (lesión,
+  // compensaciones) — se resalta en ámbar a partir del 10%.
+  const ultimaConAmbas = [...historial].reverse().find(h => h.fmaxIzq != null && h.fmaxDer != null);
+  let cajaAsimetria;
+  if(!ultimaConAmbas){
+    cajaAsimetria = `<div class="stat-tile"><div class="k">Asimetría izq./der.</div><div class="v">—</div><div class="delta">Sin sesión con las dos manos</div></div>`;
+  } else {
+    const fuerte = Math.max(ultimaConAmbas.fmaxIzq, ultimaConAmbas.fmaxDer);
+    const asim = fuerte === 0 ? 0 : Math.abs(ultimaConAmbas.fmaxDer - ultimaConAmbas.fmaxIzq) / fuerte * 100;
+    const quien = ultimaConAmbas.fmaxDer === ultimaConAmbas.fmaxIzq ? 'equilibradas' : (ultimaConAmbas.fmaxDer > ultimaConAmbas.fmaxIzq ? 'más fuerte la derecha' : 'más fuerte la izquierda');
+    cajaAsimetria = `
+      <div class="stat-tile">
+        <div class="k">Asimetría izq./der.</div>
+        <div class="v"${asim >= 10 ? ' style="color:var(--amber);"' : ''}>${asim.toFixed(1)}<small>%</small></div>
+        <div class="delta">${quien} · ${escapeHtml(ultimaConAmbas.fecha)}</div>
+      </div>`;
+  }
+
+  // Mejor marca de Fmax (cualquiera de las dos manos) en este mesociclo.
+  let record = null;
+  historial.forEach(h => {
+    [['fmaxDer', 'derecha'], ['fmaxIzq', 'izquierda']].forEach(([campo, mano]) => {
+      if(h[campo] != null && (!record || h[campo] > record.valor)) record = { valor: h[campo], mano, fecha: h.fecha };
+    });
+  });
+  const cajaRecord = record
+    ? `<div class="stat-tile"><div class="k">Mejor Fmax</div><div class="v">${record.valor}<small>N</small></div><div class="delta">mano ${record.mano} · ${escapeHtml(record.fecha)}</div></div>`
+    : `<div class="stat-tile"><div class="k">Mejor Fmax</div><div class="v">—</div><div class="delta">Sin datos de Fmax</div></div>`;
 
   panel.innerHTML = `
     <div class="stat-tiles">
-      <div class="stat-tile"><div class="k">PFinicial medio</div><div class="v">${media}<small>N</small></div></div>
-      <div class="stat-tile">
-        <div class="k">Tendencia (${historial.length} ses.)</div>
-        <div class="v" style="color:${tendenciaPositiva?'var(--moss-light)':'var(--danger)'};">${tendenciaTexto}</div>
-        <div class="delta ${tendenciaPositiva?'up':'down'}">${tendenciaPositiva?'↑ progresando':'↓ en descenso'}</div>
-      </div>
-      <div class="stat-tile"><div class="k">Última PFinicial</div><div class="v">${ultimo.pfInicial}<small>N</small></div></div>
-      <div class="stat-tile"><div class="k">Sesiones no recuperadas</div><div class="v">${noRecuperadas}<small>/${historial.length + noRecuperadas}</small></div></div>
+      ${cajaTendencia('Tendencia Fmax izq.', tendenciaMano('fmaxIzq'))}
+      ${cajaTendencia('Tendencia Fmax der.', tendenciaMano('fmaxDer'))}
+      ${cajaAsimetria}
+      ${cajaRecord}
     </div>
     <div class="chart-shell">
       <div class="leyenda" id="leyendaVariables">
@@ -676,119 +635,6 @@ function pintarPanelFuerza(panel, historial){
       dibujarGrafica(document.getElementById('chartPF'), HISTORIAL_ACTUAL, MESO_COLORS[MESO_ACTIVO]);
     });
   });
-}
-
-// Panel para una variable secundaria (series de suspensiones, campus, pegues
-// bloque/trave, tiempo de escalada continua…) — un valor por sesión entrenada,
-// no siempre presente (p.ej. en DESOX travesías/multibloque son alternativas,
-// así que huecos sueltos son normales y no un error).
-function pintarPanelCampo(panel, historial, indice){
-  const cfgCampo = camposDelMesoActivo()[indice];
-  if(!cfgCampo){ panel.innerHTML = '<div class="estado-panel">Variable no disponible para este mesociclo.</div>'; return; }
-  const tipo = cfgCampo.tipo;
-  const color = MESO_COLORS[MESO_ACTIVO];
-
-  const conValor = historial
-    .map(h => ({ fecha: h.fecha, valor: (h.campos || [])[indice] }))
-    .filter(x => x.valor !== undefined && x.valor !== null);
-
-  if(!conValor.length){
-    panel.innerHTML = `<div class="estado-panel">Este cliente todavía no tiene datos de "${escapeHtml(cfgCampo.label)} (${escapeHtml(cfgCampo.match)})".</div>`;
-    return;
-  }
-
-  const ultimo = conValor[conValor.length - 1];
-  const primero = conValor[0];
-  const media = conValor.reduce((s,x) => s + x.valor, 0) / conValor.length;
-  // primero.valor === 0 es un dato real y válido (varios campos admiten "0
-  // si no aplica") — el % de cambio no se puede calcular con denominador 0,
-  // así que ahí se muestra la diferencia absoluta en vez de forzar un "0%"
-  // que parecería "sin cambios" cuando en realidad puede haber mejorado mucho.
-  const primerEsCero = primero.valor === 0;
-  const tendenciaPct = primerEsCero ? null : ((ultimo.valor - primero.valor) / primero.valor * 100);
-  const deltaAbsoluto = ultimo.valor - primero.valor;
-  const tendenciaPositiva = primerEsCero ? deltaAbsoluto >= 0 : tendenciaPct >= 0;
-  const tendenciaTexto = primerEsCero
-    ? `${deltaAbsoluto >= 0 ? '+' : ''}${escapeHtml(formatCampoValor(deltaAbsoluto, tipo))}`
-    : `${tendenciaPct >= 0 ? '+' : ''}${tendenciaPct.toFixed(1)}<small>%</small>`;
-
-  panel.innerHTML = `
-    <div class="stat-tiles">
-      <div class="stat-tile"><div class="k">${escapeHtml(cfgCampo.label)} media</div><div class="v">${escapeHtml(formatCampoValor(media, tipo))}</div></div>
-      <div class="stat-tile">
-        <div class="k">Tendencia (${conValor.length} ses.)</div>
-        <div class="v" style="color:${tendenciaPositiva?'var(--moss-light)':'var(--danger)'};">${tendenciaTexto}</div>
-        <div class="delta ${tendenciaPositiva?'up':'down'}">${tendenciaPositiva?'↑ progresando':'↓ en descenso'}</div>
-      </div>
-      <div class="stat-tile"><div class="k">Último valor</div><div class="v">${escapeHtml(formatCampoValor(ultimo.valor, tipo))}</div></div>
-      <div class="stat-tile"><div class="k">Sesiones con dato</div><div class="v">${conValor.length}<small>/${historial.length}</small></div></div>
-    </div>
-    <div class="chart-shell">
-      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260" width="640" height="260"></svg></div>
-    </div>
-    <div class="tabla-datos-wrap">
-      <table class="tabla-datos">
-        <thead><tr><th>Fecha</th><th>${escapeHtml(cfgCampo.label)}</th><th>Sesión</th></tr></thead>
-        <tbody>${historial.map(h => {
-          const v = (h.campos || [])[indice];
-          return v !== undefined && v !== null
-            ? `<tr><td>${escapeHtml(h.fecha)}</td><td>${escapeHtml(formatCampoValor(v, tipo))}</td><td>ROCO</td></tr>`
-            : `<tr><td>${escapeHtml(h.fecha)}</td><td class="no-entrenada">—</td><td class="no-entrenada">Sin dato</td></tr>`;
-        }).join('')}</tbody>
-      </table>
-    </div>`;
-
-  dibujarGraficaCampo(document.getElementById('chartPF'), historial, indice, color, tipo);
-}
-
-// Dominadas con lastre — no es un campo de la sesión de FMAX en sí, se
-// registra en los días de gimnasio (GYM-FMAX/GYM-ANTAGONISTAS, el bloque
-// "Fmax tracción" puede aparecer en cualquiera de los dos) — por eso llega
-// en su propia clave de porMesociclo en vez de dentro de FMAX.campos, y este
-// panel no depende de si hay sesiones de FMAX entrenadas o no.
-function pintarPanelDominadas(panel){
-  const datos = PORMESOCICLO['DOMINADAS_LASTRE'] || [];
-  const cfgUnico = window.MESOCICLOS_CONFIG && window.MESOCICLOS_CONFIG.FIELD_MAP['GYM-FMAX'] && window.MESOCICLOS_CONFIG.FIELD_MAP['GYM-FMAX'].unico;
-  const etiqueta = (cfgUnico && cfgUnico.label) || 'Dominadas con lastre';
-
-  if(!datos.length){
-    panel.innerHTML = '<div class="estado-panel">Este cliente todavía no tiene series de dominadas con lastre registradas.</div>';
-    return;
-  }
-
-  const ultimo = datos[datos.length - 1];
-  const primero = datos[0];
-  const media = datos.reduce((s,d) => s + d.valor, 0) / datos.length;
-  const primerEsCero = primero.valor === 0;
-  const tendenciaPct = primerEsCero ? null : ((ultimo.valor - primero.valor) / primero.valor * 100);
-  const deltaAbsoluto = ultimo.valor - primero.valor;
-  const tendenciaPositiva = primerEsCero ? deltaAbsoluto >= 0 : tendenciaPct >= 0;
-  const tendenciaTexto = primerEsCero
-    ? `${deltaAbsoluto >= 0 ? '+' : ''}${deltaAbsoluto}`
-    : `${tendenciaPct >= 0 ? '+' : ''}${tendenciaPct.toFixed(1)}<small>%</small>`;
-
-  panel.innerHTML = `
-    <div class="stat-tiles">
-      <div class="stat-tile"><div class="k">${escapeHtml(etiqueta)} media</div><div class="v">${media.toFixed(1)}</div></div>
-      <div class="stat-tile">
-        <div class="k">Tendencia (${datos.length} ses.)</div>
-        <div class="v" style="color:${tendenciaPositiva?'var(--moss-light)':'var(--danger)'};">${tendenciaTexto}</div>
-        <div class="delta ${tendenciaPositiva?'up':'down'}">${tendenciaPositiva?'↑ progresando':'↓ en descenso'}</div>
-      </div>
-      <div class="stat-tile"><div class="k">Último valor</div><div class="v">${ultimo.valor}</div></div>
-      <div class="stat-tile"><div class="k">Sesiones con dato</div><div class="v">${datos.length}</div></div>
-    </div>
-    <div class="chart-shell">
-      <div class="chart-holder"><svg class="grafica" id="chartPF" viewBox="0 0 640 260" width="640" height="260"></svg></div>
-    </div>
-    <div class="tabla-datos-wrap">
-      <table class="tabla-datos">
-        <thead><tr><th>Fecha</th><th>${escapeHtml(etiqueta)}</th></tr></thead>
-        <tbody>${datos.map(d => `<tr><td>${escapeHtml(d.fecha)}</td><td>${d.valor}</td></tr>`).join('')}</tbody>
-      </table>
-    </div>`;
-
-  dibujarGraficaCampo(document.getElementById('chartPF'), datos.map(d => ({ fecha: d.fecha, campos: [d.valor] })), 0, MESO_COLORS.FMAX, undefined);
 }
 
 // Resumen — todos los datos de este mesociclo en una sola tabla (PFinicial,
@@ -1095,7 +941,21 @@ function agregarBloqueImpresion(contenedor, titulo, fn, quitarTabla){
   const cuerpo = document.createElement('div');
   bloque.appendChild(cuerpo);
   contenedor.appendChild(bloque);
-  fn(cuerpo);
+  // OJO: getElementById devuelve el PRIMER #chartPF del documento — y si el
+  // entrenador tiene abierta en pantalla una variable con gráfica (Fuerza es
+  // la que sale por defecto), ese es el de la vista interactiva, que va
+  // antes en el DOM que #areaImpresion. Sin esto el informe dibujaba la
+  // gráfica encima de la de pantalla y la suya salía vacía (solo se veía el
+  // marco) — pasaba siempre en el uso real y nunca en las pruebas con otra
+  // variable abierta. Se le quita el id a cualquier otro mientras se dibuja
+  // este bloque, y se devuelve justo después.
+  const ajenos = Array.from(document.querySelectorAll('[id="chartPF"]'));
+  ajenos.forEach(el => el.removeAttribute('id'));
+  try{
+    fn(cuerpo);
+  }finally{
+    ajenos.forEach(el => el.setAttribute('id', 'chartPF'));
+  }
   const svg = cuerpo.querySelector('#chartPF');
   if(svg) svg.removeAttribute('id');
   if(quitarTabla){
@@ -1517,7 +1377,7 @@ function asegurarOpcionCliente(correo, nombre){
 
 // Pinchar una notificación: la marca leída y selecciona a ese cliente — las
 // de sesión, además, saltan directamente a su meso (o, si era un día de
-// gimnasio con dominadas, a FMAX con "Dominadas con lastre" ya elegido); las
+// gimnasio con dominadas, a FMAX con "Resumen" ya elegido, donde salen las dominadas); las
 // de cliente pasado a inactivo o próximo a vencer llevan a Clientes,
 // filtrado a ese cliente (para renovarlo con "+1 mes"/"+3 meses" o editar
 // su fecha de fin directamente); las de semana sin programar llevan a
@@ -1545,7 +1405,7 @@ async function irANotificacion(n){
     let variableDestino = null;
     if (mesoDestino === 'GYM-FMAX') {
       mesoDestino = 'FMAX';
-      variableDestino = 'dominadas';
+      variableDestino = 'resumen';
     } else if (!MESOS_CON_TAB.includes(mesoDestino)) {
       // GYM-ANTAGONISTAS/ROCA/DESCANSO no tienen pestaña propia — nos quedamos
       // en la que ya estuviera activa, al menos el cliente sí queda elegido.
