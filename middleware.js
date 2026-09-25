@@ -18,7 +18,6 @@ const RUTAS_PUBLICAS = [
   '/manifest-cliente.json',
   '/sw.js',
   '/robots.txt',
-  '/logo.png',
   '/logo-192.png',
   '/logo-512.png',
   '/favicon.ico',
