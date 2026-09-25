@@ -102,7 +102,15 @@ async function registrarEstadoTarea(sheets, spreadsheetId, tarea, ok, mensaje) {
 // protegida por middleware.js) — se protegen a sí mismas con el mismo popup
 // nativo (WWW-Authenticate) que usa el resto del área de entrenador.
 function exigirEntrenador(req, res) {
-  if (verificarEntrenador(req).ok) return true;
+  const acceso = verificarEntrenador(req);
+  if (acceso.ok) return true;
+  // IP bloqueada por demasiados fallos: 429 sin pedir la contraseña otra vez
+  // (con el popup, el navegador seguiría insistiendo y renovando el bloqueo).
+  if (acceso.bloqueado) {
+    res.writeHead(429, { 'Retry-After': '600', 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end(acceso.error);
+    return false;
+  }
   res.writeHead(401, { 'WWW-Authenticate': 'Basic realm="Kaska.Climb"' });
   res.end('Acceso restringido — zona de entrenador.');
   return false;
