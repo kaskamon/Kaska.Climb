@@ -878,11 +878,7 @@
 
   <!-- ============ GUIÓN ============ -->
   <section class="panel" id="panel-formulas">
-    <div class="section-head" style="flex-wrap:wrap; align-items:center;">
-      <h2>Fórmulas por cualidad</h2>
-      <button class="icon-btn" id="btnPlantillaFormulas" type="button" style="text-transform:none;">Aplicar plantilla de formato</button>
-      <span class="estado-publicar" id="estadoPlantilla"></span>
-    </div>
+    <div class="section-head"><h2>Fórmulas por cualidad</h2></div>
 
     <div class="card">
       <h3>FMAX</h3>
@@ -2034,6 +2030,7 @@ function nombreClienteBateriaSeleccionado(){
 }
 
 function limpiarCamposBateria(){
+  PLANTILLA_SIN_TOCAR = false;
   document.querySelectorAll('input').forEach(el=> el.value='');
   document.querySelectorAll('textarea').forEach(el=> el.value='');
   document.querySelectorAll('select:not(#selectorClienteBateria)').forEach(el=> el.selectedIndex=0);
@@ -2104,52 +2101,41 @@ function textoPlantillaFormulas(id, conValores){
   return PLANTILLA_FORMULAS[id].map(par=> lineaFormula(par[0], conValores ? par[1] : '')).join('\n\n');
 }
 
-// Estilo de espaciado dentro del valor: "3´recup" (sin espacio tras ´) y un único espacio
-// antes de un "(RIR …)" al final de la línea. El resto del valor no se toca.
-function ajustarValorFormula(valor){
-  return valor
-    .replace(/´[ \t ]+(recup)/gi, '´$1')
-    .replace(/[ \t ]*(\(RIR[^)]*\))[ \t ]*$/, (m, grupo, pos)=> pos === 0 ? m : ' ' + grupo);
-}
-
-// Cambia el formato: columna de valores (tabulador), línea en blanco entre fórmulas y el
-// estilo de espaciado de ajustarValorFormula. Etiquetas y valores no se tocan;
-// lo que no tiene forma de "-Etiqueta: valor" se deja como está.
-function aplicarFormatoPlantilla(texto){
-  let cambiadas = 0, sinReconocer = 0;
-  const original = texto.replace(/\r\n?/g, '\n');
-  const salida = original.split('\n').map(linea=>{
-    if(!linea.trim()) return linea;
-    const m = linea.match(RE_LINEA_FORMULA);
-    if(!m){ sinReconocer++; return linea; }
-    const nueva = lineaFormula(m[1], ajustarValorFormula(m[3]));
-    if(nueva !== linea) cambiadas++;
-    return nueva;
-  });
-  const resultado = sinReconocer === 0 ? salida.filter(l=> l.trim()).join('\n\n') : salida.join('\n');
-  if(sinReconocer === 0 && resultado !== original) cambiadas = Math.max(cambiadas, 1);
-  return { texto: resultado, cambiadas, sinReconocer };
-}
-
 /* Cada cuadro de fórmulas lleva detrás una copia del texto que es la que se ve (el texto
    del propio cuadro es transparente, solo queda el cursor): así los títulos ("-Etiqueta:")
-   salen en verde y resaltados, el resto en blanco, y donde una línea "-Etiqueta:" no tiene
-   valor se muestra en gris el de la plantilla. Los anchos son los mismos, así que nada se desplaza. */
+   salen en verde y resaltados y el resto en blanco. En un test nuevo (PLANTILLA_SIN_TOCAR) el
+   texto de la plantilla es texto real, editable, y lo que aún coincide con ella se ve en gris:
+   al cambiar un valor solo ese trozo pasa a blanco. Los anchos son los mismos que los del
+   cuadro, así que nada se desplaza. */
 const IDS_CUADROS_FORMULAS = IDS_FORMULAS.concat(['formula-tap']);
 const FONDOS_FORMULAS = {};
+let PLANTILLA_SIN_TOCAR = false;
 function escaparHtmlFormula(s){ return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+// [inicio igual, parte cambiada, final igual] de un valor respecto al de la plantilla.
+function partesFormulaSegunPlantilla(valor, ref){
+  const max = Math.min(valor.length, ref.length);
+  let i = 0;
+  while(i < max && valor[i] === ref[i]) i++;
+  let j = 0;
+  while(j < max - i && valor[valor.length - 1 - j] === ref[ref.length - 1 - j]) j++;
+  return [valor.slice(0, i), valor.slice(i, valor.length - j), valor.slice(valor.length - j)];
+}
 
 function pintarSombraFormulas(id){
   const ta = $(id), fondo = FONDOS_FORMULAS[id];
   if(!ta || !fondo) return;
-  const valores = VALORES_PLANTILLA[id] || {};
+  const valores = (PLANTILLA_SIN_TOCAR && VALORES_PLANTILLA[id]) || null;
+  const gris = t=> t ? '<span class="sombra">' + escaparHtmlFormula(t) + '</span>' : '';
   fondo.innerHTML = ta.value.replace(/\r\n?/g, '\n').split('\n').map(linea=>{
     const m = linea.match(RE_LINEA_FORMULA);
     if(!m) return escaparHtmlFormula(linea);
     const i = linea.indexOf(':') + 1;
-    const sombra = !m[3].trim() ? valores[claveEtiquetaFormula(m[1])] : undefined;
-    return '<span class="tit">' + escaparHtmlFormula(linea.slice(0, i)) + '</span>' + escaparHtmlFormula(linea.slice(i))
-      + (sombra ? '<span class="sombra">' + escaparHtmlFormula(sombra) + '</span>' : '');
+    const titulo = '<span class="tit">' + escaparHtmlFormula(linea.slice(0, i)) + '</span>';
+    const ref = valores ? valores[claveEtiquetaFormula(m[1])] : undefined;
+    if(ref === undefined) return titulo + escaparHtmlFormula(linea.slice(i));
+    const p = partesFormulaSegunPlantilla(m[3], ref);
+    return titulo + escaparHtmlFormula(m[2]) + gris(p[0]) + escaparHtmlFormula(p[1]) + gris(p[2]);
   }).join('\n') + '\n';
   fondo.scrollTop = ta.scrollTop;
 }
@@ -2177,30 +2163,13 @@ function refrescarSombrasFormulas(){
   });
 }
 
-// Test nuevo: cada cuadro arranca con las etiquetas de la plantilla y sus valores en sombra.
+// Test nuevo: cada cuadro arranca con la plantilla completa como texto real (editable); en gris
+// se ve lo que todavía es igual que ella.
 function rellenarFormulasConPlantilla(){
-  IDS_FORMULAS.forEach(id=>{ const el = $(id); if(el) el.value = textoPlantillaFormulas(id, false); });
   refrescarSombrasFormulas();
+  PLANTILLA_SIN_TOCAR = true;
+  IDS_FORMULAS.forEach(id=>{ const el = $(id); if(el) el.value = textoPlantillaFormulas(id, true); });
 }
-
-$('btnPlantillaFormulas').addEventListener('click', ()=>{
-  const estado = $('estadoPlantilla');
-  let cambiadas = 0, sinReconocer = 0, rellenados = 0;
-  IDS_FORMULAS.forEach(id=>{
-    const el = $(id); if(!el) return;
-    if(!el.value.trim()){ el.value = textoPlantillaFormulas(id, false); rellenados++; return; }
-    const r = aplicarFormatoPlantilla(el.value);
-    el.value = r.texto; cambiadas += r.cambiadas; sinReconocer += r.sinReconocer;
-  });
-  refrescarSombrasFormulas();
-  saveState();
-  const partes = [];
-  if(cambiadas) partes.push(cambiadas + ' línea' + (cambiadas === 1 ? '' : 's') + ' reformateada' + (cambiadas === 1 ? '' : 's'));
-  if(rellenados) partes.push(rellenados + ' vacío' + (rellenados === 1 ? '' : 's') + ' rellenado' + (rellenados === 1 ? '' : 's') + ' con las etiquetas de la plantilla');
-  if(sinReconocer) partes.push(sinReconocer + ' línea' + (sinReconocer === 1 ? '' : 's') + ' sin reconocer, sin tocar');
-  estado.textContent = (partes.length ? partes.join(' · ') : 'Ya tenían el formato de la plantilla') + '. Falta publicar para guardarlo.';
-  estado.className = 'estado-publicar ' + (sinReconocer ? '' : 'ok');
-});
 
 async function cargarBateriaCliente(){
   const sel = $('selectorClienteBateria');
@@ -2227,7 +2196,7 @@ async function cargarBateriaCliente(){
       estado.className = 'estado-publicar ok';
     } else {
       rellenarFormulasConPlantilla();
-      estado.textContent = nombreClienteBateriaSeleccionado() + ' todavía no tiene batería publicada — puedes rellenar una nueva. En Fórmulas, los valores de referencia salen en gris: escribe los tuyos encima.';
+      estado.textContent = nombreClienteBateriaSeleccionado() + ' todavía no tiene batería publicada — puedes rellenar una nueva. En Fórmulas, el texto en gris es el de la plantilla: cambia solo lo que haga falta.';
       estado.className = 'estado-publicar';
     }
     refrescarSombrasFormulas();
