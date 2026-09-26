@@ -161,12 +161,13 @@
   /* Fórmulas: el cuadro va sobre una copia invisible de su texto que enseña, en gris,
      los valores de referencia de la plantilla donde la línea aún no tiene valor. */
   .ta-sombra{ position:relative; background:var(--stone-800); border-radius:10px; }
-  .ta-sombra textarea{ display:block; position:relative; background:transparent; }
+  .ta-sombra textarea{ display:block; position:relative; background:transparent; tab-size:210px; -moz-tab-size:210px; }
   .ta-sombra textarea::placeholder{ color:var(--chalk-faint); opacity:.6; }
   .ta-sombra-fondo{
     position:absolute; inset:0; overflow:hidden; pointer-events:none; box-sizing:border-box;
     white-space:pre-wrap; overflow-wrap:break-word; color:transparent;
     padding:10px 12px; border:1px solid transparent; font-size:14px; font-family:'Work Sans',sans-serif; line-height:normal;
+    tab-size:210px; -moz-tab-size:210px;
   }
   .ta-sombra-fondo .sombra{ color:var(--chalk-faint); opacity:.65; }
 
@@ -2043,8 +2044,9 @@ function limpiarCamposBateria(){
    PLANTILLA DE FÓRMULAS — textos de Mikel García como referencia.
    Sus valores salen en sombra junto a cada etiqueta vacía (no se guardan): se
    escribe encima y el formato se mantiene. La columna de valores empieza en el
-   mismo sitio en todos los mesociclos: los espacios se calculan midiendo el
-   texto con la fuente real del cuadro (Work Sans, no monoespaciada).
+   mismo sitio en todos los mesociclos: cada etiqueta lleva un tabulador y el
+   cuadro fija la tabulación a 210 px (CSS tab-size), así que la alineación es
+   exacta aunque la fuente (Work Sans) no sea monoespaciada.
    ============================================================ */
 const IDS_FORMULAS = ['formula-fmax', 'formula-reox', 'formula-desox', 'formula-aero'];
 const PLANTILLA_FORMULAS = {
@@ -2072,7 +2074,6 @@ const PLANTILLA_FORMULAS = {
     ['Roca', 'Vías largas continuas, sin secciones duras (placa técnica)'],
   ],
 };
-const COLUMNA_VALORES_PX = 210;   // dónde empieza la columna de valores (en px, fuente 14px)
 const ESPACIOS_ANTES_RIR = 4;     // hueco antes de un "(RIR …)" al final de la línea
 
 // "-Etiqueta:<espacios>valor" — la etiqueta llega hasta el primer ":".
@@ -2090,23 +2091,11 @@ function normalizarRirFormula(valor){
   return valor.replace(RE_RIR_FINAL, (m, espacios, grupo, pos)=> pos === 0 ? m : ' '.repeat(ESPACIOS_ANTES_RIR) + grupo);
 }
 
-let _ctxFormulas = null;
-function anchoTextoFormula(texto){
-  if(!_ctxFormulas) _ctxFormulas = document.createElement('canvas').getContext('2d');
-  const cs = getComputedStyle($('formula-fmax'));
-  _ctxFormulas.font = cs.fontSize + ' ' + cs.fontFamily;
-  return _ctxFormulas.measureText(texto).width;
-}
-
-// Espacios tras los ":" para que el valor empiece en COLUMNA_VALORES_PX (mínimo 2).
-function separadorFormula(etiqueta){
-  const hueco = COLUMNA_VALORES_PX - anchoTextoFormula('-' + etiqueta + ':');
-  return ' '.repeat(Math.max(2, Math.round(hueco / anchoTextoFormula(' '))));
-}
-
+// Un tabulador tras los ":" lleva el valor a la siguiente parada de tabulación, que en estos
+// cuadros mide 210 px (CSS tab-size): la columna queda exacta con cualquier etiqueta más corta.
 function lineaFormula(etiqueta, valor){
   const v = normalizarRirFormula((valor || '').replace(/[ \t ]+$/, ''));
-  return '-' + etiqueta + ':' + separadorFormula(etiqueta) + v;
+  return '-' + etiqueta + ':\t' + v;
 }
 
 const VALORES_PLANTILLA = {};
@@ -2177,13 +2166,8 @@ function rellenarFormulasConPlantilla(){
   refrescarSombrasFormulas();
 }
 
-async function esperarFuenteFormulas(){
-  try{ await document.fonts.load('14px "Work Sans"'); }catch(e){}
-}
-
-$('btnPlantillaFormulas').addEventListener('click', async ()=>{
+$('btnPlantillaFormulas').addEventListener('click', ()=>{
   const estado = $('estadoPlantilla');
-  await esperarFuenteFormulas();
   let cambiadas = 0, sinReconocer = 0, rellenados = 0;
   IDS_FORMULAS.forEach(id=>{
     const el = $(id); if(!el) return;
@@ -2297,12 +2281,9 @@ if(_datosGuardados){
   });
 }
 recalcAll();
-// Con la fuente ya cargada: los cuadros vacíos enseñan la plantilla completa en gris y las sombras se pintan.
-(async function(){
-  await esperarFuenteFormulas();
-  IDS_FORMULAS.forEach(id=>{ const ta = $(id); if(ta) ta.placeholder = textoPlantillaFormulas(id, true); });
-  refrescarSombrasFormulas();
-})();
+// Los cuadros vacíos enseñan la plantilla completa en gris y las sombras se pintan.
+IDS_FORMULAS.forEach(id=>{ const ta = $(id); if(ta) ta.placeholder = textoPlantillaFormulas(id, true); });
+refrescarSombrasFormulas();
 let _resizeTO;
 window.addEventListener('resize', ()=>{ clearTimeout(_resizeTO); _resizeTO = setTimeout(syncOTChartHeight, 120); });
 </script>
