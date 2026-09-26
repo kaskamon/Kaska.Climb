@@ -161,15 +161,17 @@
   /* Fórmulas: el cuadro va sobre una copia invisible de su texto que enseña, en gris,
      los valores de referencia de la plantilla donde la línea aún no tiene valor. */
   .ta-sombra{ position:relative; background:var(--stone-800); border-radius:10px; }
-  .ta-sombra textarea{ display:block; position:relative; background:transparent; tab-size:210px; -moz-tab-size:210px; }
+  .ta-sombra textarea{ display:block; position:relative; background:transparent; tab-size:210px; -moz-tab-size:210px; color:transparent; caret-color:var(--chalk); }
+  .ta-sombra textarea::selection{ background:rgba(124,144,112,0.4); color:transparent; }
   .ta-sombra textarea::placeholder{ color:var(--chalk-faint); opacity:.6; }
   .ta-sombra-fondo{
     position:absolute; inset:0; overflow:hidden; pointer-events:none; box-sizing:border-box;
-    white-space:pre-wrap; overflow-wrap:break-word; color:transparent;
+    white-space:pre-wrap; overflow-wrap:break-word; color:var(--chalk);
     padding:10px 12px; border:1px solid transparent; font-size:14px; font-family:'Work Sans',sans-serif; line-height:normal;
     tab-size:210px; -moz-tab-size:210px;
   }
   .ta-sombra-fondo .sombra{ color:var(--chalk-faint); opacity:.65; }
+  .ta-sombra-fondo .tit{ color:var(--moss-light); -webkit-text-stroke:0.4px var(--moss-light); }
 
   .out{
     display:flex; align-items:baseline; justify-content:space-between; gap:10px;
@@ -2102,8 +2104,17 @@ function textoPlantillaFormulas(id, conValores){
   return PLANTILLA_FORMULAS[id].map(par=> lineaFormula(par[0], conValores ? par[1] : '')).join('\n\n');
 }
 
-// Solo cambia el formato (columna de valores y línea en blanco entre fórmulas).
-// Etiquetas y valores no se tocan, ni los espacios dentro del valor; lo que no tiene forma de "-Etiqueta: valor" se deja como está.
+// Estilo de espaciado dentro del valor: "3´recup" (sin espacio tras ´) y un único espacio
+// antes de un "(RIR …)" al final de la línea. El resto del valor no se toca.
+function ajustarValorFormula(valor){
+  return valor
+    .replace(/´[ \t ]+(recup)/gi, '´$1')
+    .replace(/[ \t ]*(\(RIR[^)]*\))[ \t ]*$/, (m, grupo, pos)=> pos === 0 ? m : ' ' + grupo);
+}
+
+// Cambia el formato: columna de valores (tabulador), línea en blanco entre fórmulas y el
+// estilo de espaciado de ajustarValorFormula. Etiquetas y valores no se tocan;
+// lo que no tiene forma de "-Etiqueta: valor" se deja como está.
 function aplicarFormatoPlantilla(texto){
   let cambiadas = 0, sinReconocer = 0;
   const original = texto.replace(/\r\n?/g, '\n');
@@ -2111,7 +2122,7 @@ function aplicarFormatoPlantilla(texto){
     if(!linea.trim()) return linea;
     const m = linea.match(RE_LINEA_FORMULA);
     if(!m){ sinReconocer++; return linea; }
-    const nueva = lineaFormula(m[1], m[3]);
+    const nueva = lineaFormula(m[1], ajustarValorFormula(m[3]));
     if(nueva !== linea) cambiadas++;
     return nueva;
   });
@@ -2120,8 +2131,11 @@ function aplicarFormatoPlantilla(texto){
   return { texto: resultado, cambiadas, sinReconocer };
 }
 
-/* Valores de referencia en sombra: detrás de cada cuadro hay una copia invisible
-   del texto; donde una línea "-Etiqueta:" no tiene valor, muestra el de la plantilla. */
+/* Cada cuadro de fórmulas lleva detrás una copia del texto que es la que se ve (el texto
+   del propio cuadro es transparente, solo queda el cursor): así los títulos ("-Etiqueta:")
+   salen en verde y resaltados, el resto en blanco, y donde una línea "-Etiqueta:" no tiene
+   valor se muestra en gris el de la plantilla. Los anchos son los mismos, así que nada se desplaza. */
+const IDS_CUADROS_FORMULAS = IDS_FORMULAS.concat(['formula-tap']);
 const FONDOS_FORMULAS = {};
 function escaparHtmlFormula(s){ return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
@@ -2131,14 +2145,17 @@ function pintarSombraFormulas(id){
   const valores = VALORES_PLANTILLA[id] || {};
   fondo.innerHTML = ta.value.replace(/\r\n?/g, '\n').split('\n').map(linea=>{
     const m = linea.match(RE_LINEA_FORMULA);
-    const sombra = (m && !m[3].trim()) ? valores[claveEtiquetaFormula(m[1])] : undefined;
-    return escaparHtmlFormula(linea) + (sombra ? '<span class="sombra">' + escaparHtmlFormula(sombra) + '</span>' : '');
+    if(!m) return escaparHtmlFormula(linea);
+    const i = linea.indexOf(':') + 1;
+    const sombra = !m[3].trim() ? valores[claveEtiquetaFormula(m[1])] : undefined;
+    return '<span class="tit">' + escaparHtmlFormula(linea.slice(0, i)) + '</span>' + escaparHtmlFormula(linea.slice(i))
+      + (sombra ? '<span class="sombra">' + escaparHtmlFormula(sombra) + '</span>' : '');
   }).join('\n') + '\n';
   fondo.scrollTop = ta.scrollTop;
 }
 
 function refrescarSombrasFormulas(){
-  IDS_FORMULAS.forEach(id=>{
+  IDS_CUADROS_FORMULAS.forEach(id=>{
     const ta = $(id);
     if(!ta) return;
     if(!FONDOS_FORMULAS[id]){
@@ -2146,6 +2163,13 @@ function refrescarSombrasFormulas(){
       const fondo = document.createElement('div'); fondo.className = 'ta-sombra-fondo'; fondo.setAttribute('aria-hidden', 'true');
       ta.parentNode.insertBefore(caja, ta); caja.appendChild(fondo); caja.appendChild(ta);
       FONDOS_FORMULAS[id] = fondo;
+      // Cualquier cambio de texto por código (cargar cliente, botón, test nuevo…) repinta la copia.
+      const desc = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value');
+      Object.defineProperty(ta, 'value', {
+        configurable: true,
+        get(){ return desc.get.call(this); },
+        set(v){ desc.set.call(this, v); pintarSombraFormulas(id); },
+      });
       ta.addEventListener('input', ()=> pintarSombraFormulas(id));
       ta.addEventListener('scroll', ()=>{ fondo.scrollTop = ta.scrollTop; });
     }
