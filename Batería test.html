@@ -864,7 +864,11 @@
 
   <!-- ============ GUIÓN ============ -->
   <section class="panel" id="panel-formulas">
-    <div class="section-head"><h2>Fórmulas por cualidad</h2></div>
+    <div class="section-head" style="flex-wrap:wrap; align-items:center;">
+      <h2>Fórmulas por cualidad</h2>
+      <button class="icon-btn" id="btnPlantillaFormulas" type="button" style="text-transform:none;">Aplicar plantilla de formato</button>
+      <span class="estado-publicar" id="estadoPlantilla"></span>
+    </div>
 
     <div class="card">
       <h3>FMAX</h3>
@@ -2023,6 +2027,115 @@ function limpiarCamposBateria(){
   document.querySelectorAll('[id^="guion-d"]').forEach(el=> el.dataset.auto = 'true');
 }
 
+/* ============================================================
+   PLANTILLA DE FÓRMULAS — formato de Mikel García (espaciado de columnas
+   hecho a mano). El texto va tal cual, con sus espacios: la fuente del cuadro
+   no es monoespaciada, así que la alineación depende de este número exacto de
+   espacios. TAP aún no tiene plantilla (queda tal cual está).
+   ============================================================ */
+const PLANTILLA_FORMULAS = {
+  'formula-fmax': `-SuspMax:                             2 a 8 series x 20mm x 80% x 6"(25") x 3´ recup    (RIR19")
+
+-Lastre dominadas al 85%:     28Kg
+
+-Bloque:                               3-6 pegues x 4-6 movs >85% x 3´ recup
+
+-Roca:                                  Boulder / Vías físicas a bloque`,
+  'formula-reox': `-SuspInt (OT):                       Hasta 8 series x 20mm x 55% x 6(7":3") x 1´ recup     (RIR 17")
+
+-Campus (HMH):                   Hasta 3 series x 5"/mano (OT) x 2´x 3´recup
+
+-Traves con sueltas:              25 movs (OT)(con sueltas >3")(RIR 2) x 3´recup
+
+-Roca:                                  Vías paso-reposo`,
+  'formula-desox': `-SuspSub (OT):                       Hasta 8 series x 20mm x 55% x 39"(56") x 1´ recup    (RIR 17")
+
+-Campus McClure:                  Hasta 3 series x 39" x 2´ recup
+
+-Traves:                                  25 movs (OT) (sin sueltas) (RIR 2) x 3´recup
+
+-Roca:                                    Vías intensas sin reposos`,
+  'formula-aero': `-SuspInt (CF):                         Hasta 10 series x 20mm x 40% x 6(10":2") x 1´ recup     (RIR 24")
+
+-Escalada continua:                S1: 23´15"  ;  S2: 25´05"  ;  S3: 26´55"  ;  S4: 28´45"
+
+-Roca:                                   Vías largas continuas, sin secciones duras (placa técnica)`,
+};
+
+// "-Etiqueta:<espacios>valor" — la etiqueta llega hasta el primer ":".
+const RE_LINEA_FORMULA = /^\s*-\s*([^:]+?)\s*:([ \t ]*)(.*)$/;
+// Grupo "(RIR ...)" al final de la línea, con los espacios que lo preceden.
+const RE_RIR_FINAL = /([ \t ]*)(\(RIR[^)]*\))[ \t ]*$/;
+
+// Dígitos como "#" para que "Lastre dominadas al 85%" y "... al 90%" sean la misma línea.
+function claveEtiquetaFormula(etiqueta){
+  return etiqueta.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\d+/g, '#').replace(/\s+/g, ' ').trim();
+}
+
+// Por cada cuadro y etiqueta: los espacios tras los ":" y los previos al "(RIR…)" final.
+const ESPACIADO_PLANTILLA = (()=>{
+  const mapa = {};
+  Object.keys(PLANTILLA_FORMULAS).forEach(id=>{
+    mapa[id] = {};
+    PLANTILLA_FORMULAS[id].split('\n').forEach(linea=>{
+      const m = linea.match(RE_LINEA_FORMULA);
+      if(!m) return;
+      const rir = m[3].match(RE_RIR_FINAL);
+      mapa[id][claveEtiquetaFormula(m[1])] = { tras: m[2], antesRir: rir && rir[1].length >= 2 ? rir[1] : null };
+    });
+  });
+  return mapa;
+})();
+
+// Solo cambia el espaciado (columna de valores y columna "(RIR…)"): etiquetas y valores no se tocan.
+// Las líneas que no reconoce se dejan exactamente como están.
+function aplicarFormatoPlantilla(id, texto){
+  const espaciado = ESPACIADO_PLANTILLA[id];
+  if(!espaciado) return { texto, cambiadas: 0, sinReconocer: 0 };
+  let cambiadas = 0, sinReconocer = 0;
+  const lineas = texto.replace(/\r\n?/g, '\n').split('\n');
+  const salida = lineas.map(linea=>{
+    if(!linea.trim()) return linea;
+    const m = linea.match(RE_LINEA_FORMULA);
+    const e = m ? espaciado[claveEtiquetaFormula(m[1])] : undefined;
+    if(!e){ sinReconocer++; return linea; }
+    let valor = m[3].replace(/[ \t ]+$/, '');
+    if(e.antesRir){ valor = valor.replace(RE_RIR_FINAL, (_, __, grupo)=> e.antesRir + grupo); }
+    const nueva = '-' + m[1] + ':' + e.tras + valor;
+    if(nueva !== linea) cambiadas++;
+    return nueva;
+  });
+  // Como en la plantilla, una línea en blanco entre fórmulas (solo si todas se reconocen).
+  const texto2 = sinReconocer === 0 ? salida.filter(l=> l.trim()).join('\n\n') : salida.join('\n');
+  if(sinReconocer === 0 && texto2 !== texto.replace(/\r\n?/g, '\n')) cambiadas = Math.max(cambiadas, 1);
+  return { texto: texto2, cambiadas, sinReconocer };
+}
+
+// Test nuevo: los cuadros arrancan con la plantilla (quien la use debe cambiar
+// los valores personales — lastre, RIR, porcentajes — antes de publicar).
+function rellenarFormulasConPlantilla(){
+  Object.keys(PLANTILLA_FORMULAS).forEach(id=>{ const el = $(id); if(el) el.value = PLANTILLA_FORMULAS[id]; });
+}
+
+$('btnPlantillaFormulas').addEventListener('click', ()=>{
+  const estado = $('estadoPlantilla');
+  let cambiadas = 0, sinReconocer = 0, rellenados = 0;
+  Object.keys(PLANTILLA_FORMULAS).forEach(id=>{
+    const el = $(id); if(!el) return;
+    if(!el.value.trim()){ el.value = PLANTILLA_FORMULAS[id]; rellenados++; return; }
+    const r = aplicarFormatoPlantilla(id, el.value);
+    el.value = r.texto; cambiadas += r.cambiadas; sinReconocer += r.sinReconocer;
+  });
+  saveState();
+  const partes = [];
+  if(cambiadas) partes.push(cambiadas + ' línea' + (cambiadas === 1 ? '' : 's') + ' reformateada' + (cambiadas === 1 ? '' : 's'));
+  if(rellenados) partes.push(rellenados + ' vacío' + (rellenados === 1 ? '' : 's') + ' rellenado' + (rellenados === 1 ? '' : 's') + ' con la plantilla (revisa los valores personales)');
+  if(sinReconocer) partes.push(sinReconocer + ' línea' + (sinReconocer === 1 ? '' : 's') + ' sin reconocer, sin tocar');
+  estado.textContent = (partes.length ? partes.join(' · ') : 'Ya tenían el formato de la plantilla') + '. Falta publicar para guardarlo.';
+  estado.className = 'estado-publicar ' + (sinReconocer ? '' : 'ok');
+});
+
 async function cargarBateriaCliente(){
   const sel = $('selectorClienteBateria');
   const email = sel ? sel.value : '';
@@ -2047,7 +2160,8 @@ async function cargarBateriaCliente(){
       estado.textContent = 'Perfil cargado (test del ' + fechaLegible + ') — ' + nombreClienteBateriaSeleccionado() + '.';
       estado.className = 'estado-publicar ok';
     } else {
-      estado.textContent = nombreClienteBateriaSeleccionado() + ' todavía no tiene batería publicada — puedes rellenar una nueva.';
+      rellenarFormulasConPlantilla();
+      estado.textContent = nombreClienteBateriaSeleccionado() + ' todavía no tiene batería publicada — puedes rellenar una nueva. Las fórmulas vienen de la plantilla: cambia los valores personales.';
       estado.className = 'estado-publicar';
     }
     recalcAll(); saveState();
@@ -2101,6 +2215,7 @@ $('btnReset').addEventListener('click', ()=>{
   if(!confirm('Esto borrará todos los datos del test actual. ¿Continuar?')) return;
   localStorage.removeItem('kaska_bateria_test');
   limpiarCamposBateria();
+  rellenarFormulasConPlantilla();
   $('selectorClienteBateria').selectedIndex = 0;
   CLIENTE_BATERIA_ACTUAL = '';
   $('estadoBateria').textContent = '';
