@@ -2051,35 +2051,32 @@ function limpiarCamposBateria(){
 const IDS_FORMULAS = ['formula-fmax', 'formula-reox', 'formula-desox', 'formula-aero'];
 const PLANTILLA_FORMULAS = {
   'formula-fmax': [
-    ['SuspMax', '2 a 8 series x 20mm x 80% x 6"(25") x 3´ recup (RIR19")'],
+    ['SuspMax', '2 a 8 series x 20mm x 80% x 6"(25") x 3´ recup    (RIR19")'],
     ['Lastre dominadas al 85%', '28Kg'],
     ['Bloque', '3-6 pegues x 4-6 movs >85% x 3´ recup'],
     ['Roca', 'Boulder / Vías físicas a bloque'],
   ],
   'formula-reox': [
-    ['SuspInt (OT)', 'Hasta 8 series x 20mm x 55% x 6(7":3") x 1´ recup (RIR 17")'],
+    ['SuspInt (OT)', 'Hasta 8 series x 20mm x 55% x 6(7":3") x 1´ recup     (RIR 17")'],
     ['Campus (HMH)', 'Hasta 3 series x 5"/mano (OT) x 2´x 3´recup'],
     ['Traves con sueltas', '25 movs (OT)(con sueltas >3")(RIR 2) x 3´recup'],
     ['Roca', 'Vías paso-reposo'],
   ],
   'formula-desox': [
-    ['SuspSub (OT)', 'Hasta 8 series x 20mm x 55% x 39"(56") x 1´ recup (RIR 17")'],
+    ['SuspSub (OT)', 'Hasta 8 series x 20mm x 55% x 39"(56") x 1´ recup    (RIR 17")'],
     ['Campus McClure', 'Hasta 3 series x 39" x 2´ recup'],
     ['Traves', '25 movs (OT) (sin sueltas) (RIR 2) x 3´recup'],
     ['Roca', 'Vías intensas sin reposos'],
   ],
   'formula-aero': [
-    ['SuspInt (CF)', 'Hasta 10 series x 20mm x 40% x 6(10":2") x 1´ recup (RIR 24")'],
+    ['SuspInt (CF)', 'Hasta 10 series x 20mm x 40% x 6(10":2") x 1´ recup     (RIR 24")'],
     ['Escalada continua', 'S1: 23´15"  ;  S2: 25´05"  ;  S3: 26´55"  ;  S4: 28´45"'],
     ['Roca', 'Vías largas continuas, sin secciones duras (placa técnica)'],
   ],
 };
-const ESPACIOS_ANTES_RIR = 4;     // hueco antes de un "(RIR …)" al final de la línea
 
 // "-Etiqueta:<espacios>valor" — la etiqueta llega hasta el primer ":".
 const RE_LINEA_FORMULA = /^\s*-\s*([^:]+?)\s*:([ \t ]*)(.*)$/;
-// Grupo "(RIR ...)" al final de la línea, con los espacios que lo preceden.
-const RE_RIR_FINAL = /([ \t ]*)(\(RIR[^)]*\))[ \t ]*$/;
 
 // Dígitos como "#" para que "Lastre dominadas al 85%" y "... al 90%" sean la misma línea.
 function claveEtiquetaFormula(etiqueta){
@@ -2087,21 +2084,17 @@ function claveEtiquetaFormula(etiqueta){
     .replace(/\d+/g, '#').replace(/\s+/g, ' ').trim();
 }
 
-function normalizarRirFormula(valor){
-  return valor.replace(RE_RIR_FINAL, (m, espacios, grupo, pos)=> pos === 0 ? m : ' '.repeat(ESPACIOS_ANTES_RIR) + grupo);
-}
-
 // Un tabulador tras los ":" lleva el valor a la siguiente parada de tabulación, que en estos
 // cuadros mide 210 px (CSS tab-size): la columna queda exacta con cualquier etiqueta más corta.
+// El valor se deja tal cual, con sus espacios internos (los ajusta el entrenador a mano).
 function lineaFormula(etiqueta, valor){
-  const v = normalizarRirFormula((valor || '').replace(/[ \t ]+$/, ''));
-  return '-' + etiqueta + ':\t' + v;
+  return '-' + etiqueta + ':\t' + (valor || '');
 }
 
 const VALORES_PLANTILLA = {};
 IDS_FORMULAS.forEach(id=>{
   VALORES_PLANTILLA[id] = {};
-  PLANTILLA_FORMULAS[id].forEach(par=>{ VALORES_PLANTILLA[id][claveEtiquetaFormula(par[0])] = normalizarRirFormula(par[1]); });
+  PLANTILLA_FORMULAS[id].forEach(par=>{ VALORES_PLANTILLA[id][claveEtiquetaFormula(par[0])] = par[1]; });
 });
 
 // Texto de la plantilla de un cuadro: solo etiquetas (valores vacíos) o con los valores de referencia.
@@ -2109,8 +2102,8 @@ function textoPlantillaFormulas(id, conValores){
   return PLANTILLA_FORMULAS[id].map(par=> lineaFormula(par[0], conValores ? par[1] : '')).join('\n\n');
 }
 
-// Solo cambia el formato (columna de valores, hueco antes del "(RIR…)", línea en blanco entre fórmulas).
-// Etiquetas y valores no se tocan; lo que no tiene forma de "-Etiqueta: valor" se deja como está.
+// Solo cambia el formato (columna de valores y línea en blanco entre fórmulas).
+// Etiquetas y valores no se tocan, ni los espacios dentro del valor; lo que no tiene forma de "-Etiqueta: valor" se deja como está.
 function aplicarFormatoPlantilla(texto){
   let cambiadas = 0, sinReconocer = 0;
   const original = texto.replace(/\r\n?/g, '\n');
