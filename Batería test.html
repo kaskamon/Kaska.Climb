@@ -878,7 +878,11 @@
 
   <!-- ============ GUIÓN ============ -->
   <section class="panel" id="panel-formulas">
-    <div class="section-head"><h2>Fórmulas por cualidad</h2></div>
+    <div class="section-head" style="flex-wrap:wrap; align-items:center;">
+      <h2>Fórmulas por cualidad</h2>
+      <button class="icon-btn" id="btnPublicarFormulas" type="button">Publicar fórmulas</button>
+      <span class="estado-publicar" id="estadoFormulas"></span>
+    </div>
 
     <div class="card">
       <h3>FMAX</h3>
@@ -2170,6 +2174,41 @@ function rellenarFormulasConPlantilla(){
   PLANTILLA_SIN_TOCAR = true;
   IDS_FORMULAS.forEach(id=>{ const el = $(id); if(el) el.value = textoPlantillaFormulas(id, true); });
 }
+
+// "Publicar fórmulas": guarda solo los cuadros de fórmulas sobre la batería ya publicada del
+// cliente (no toca el resto ni pide fecha), para poder usarlo cuando quieras durante el test
+// sin publicar a medias lo demás. Al publicarlas se dan por buenas: el gris de la plantilla
+// se apaga. ("Publicar" de arriba no lo apaga: sigue siendo el de la batería completa.)
+async function publicarFormulas(){
+  const estado = $('estadoFormulas'), btn = $('btnPublicarFormulas');
+  if(!CLIENTE_BATERIA_ACTUAL){ alert('Elige primero un cliente en el desplegable.'); return; }
+  const formulas = {};
+  IDS_CUADROS_FORMULAS.forEach(id=>{ const el = $(id); if(el) formulas[id] = el.value; });
+  btn.disabled = true; btn.textContent = 'Publicando...';
+  estado.textContent = ''; estado.className = 'estado-publicar';
+  try{
+    const res = await fetch('/api/bateria-test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ correo: CLIENTE_BATERIA_ACTUAL, soloFormulas: true, formulas }),
+    });
+    const data = await res.json();
+    if(data.success){
+      PLANTILLA_SIN_TOCAR = false;
+      refrescarSombrasFormulas();
+      estado.textContent = '✓ Fórmulas publicadas — ' + nombreClienteBateriaSeleccionado() + '.';
+      estado.className = 'estado-publicar ok';
+    } else {
+      estado.textContent = '✗ ' + (data.error || 'No se pudieron publicar las fórmulas.');
+      estado.className = 'estado-publicar error';
+    }
+  }catch(e){
+    estado.textContent = '✗ Error de red: ' + e.message;
+    estado.className = 'estado-publicar error';
+  }
+  btn.disabled = false; btn.textContent = 'Publicar fórmulas';
+}
+$('btnPublicarFormulas').addEventListener('click', publicarFormulas);
 
 async function cargarBateriaCliente(){
   const sel = $('selectorClienteBateria');

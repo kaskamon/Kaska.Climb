@@ -73,12 +73,78 @@ async function manejarGet(req, res, sheets) {
   res.status(200).json({ success: true, datos, fecha: filaEncontrada[3] || '', marcaTemporal: filaEncontrada[0] || '' });
 }
 
+// Cuadros de "Fórmulas por cualidad" — los únicos campos que puede tocar "Publicar fórmulas".
+const IDS_FORMULAS = ['formula-fmax', 'formula-reox', 'formula-desox', 'formula-aero', 'formula-tap'];
+
+// POST {correo, soloFormulas: true, formulas: {formula-…: texto}} — publica SOLO las fórmulas:
+// las escribe sobre el perfil más reciente del cliente (el mismo que carga "Cargar") y deja
+// intacto el resto de la batería, así se puede publicar varias veces durante el test sin que
+// una pantalla a medio rellenar pise datos ya guardados. Tampoco pide la fecha: usa la fila
+// existente. Solo toca las celdas A (marca temporal) y E (datos), nunca correo/nombre/fecha.
+async function manejarPostFormulas(req, res, sheets) {
+  const { correo, formulas } = req.body || {};
+  if (!correo || !formulas || typeof formulas !== 'object') {
+    return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (correo o formulas).' });
+  }
+  const nuevas = {};
+  IDS_FORMULAS.forEach(id => { if (typeof formulas[id] === 'string') nuevas[id] = formulas[id]; });
+  if (!Object.keys(nuevas).length) {
+    return res.status(400).json({ success: false, error: 'No hay ninguna fórmula que publicar.' });
+  }
+
+  try {
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${SHEET_NAME}'!A:E`,
+    });
+    const filas = resp.data.values || [];
+    const correoNorm = correo.trim().toLowerCase();
+    let idx = -1;
+    filas.forEach((f, i) => {
+      if ((f[1] || '').trim().toLowerCase() !== correoNorm) return;
+      if (idx === -1 || (f[3] || '') > (filas[idx][3] || '')) idx = i;
+    });
+    if (idx === -1) {
+      return res.status(409).json({
+        success: false,
+        sinBateria: true,
+        error: 'Este cliente aún no tiene batería publicada. Pulsa Publicar (arriba) una vez, con la fecha rellena, y después podrás publicar solo las fórmulas.',
+      });
+    }
+
+    let datos;
+    try {
+      datos = JSON.parse(filas[idx][4] || '{}');
+    } catch (e) {
+      return res.status(500).json({ success: false, error: 'El perfil guardado tiene un JSON inválido.' });
+    }
+    Object.assign(datos, nuevas);
+
+    const filaSheet = idx + 1; // fila real del Sheet (1-based)
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        valueInputOption: 'USER_ENTERED',
+        data: [
+          { range: `'${SHEET_NAME}'!A${filaSheet}`, values: [[new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })]] },
+          { range: `'${SHEET_NAME}'!E${filaSheet}`, values: [[JSON.stringify(datos)]] },
+        ],
+      },
+    });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: `No se pudieron publicar las fórmulas (${e.message}).` });
+  }
+
+  res.status(200).json({ success: true, message: 'Fórmulas publicadas correctamente.' });
+}
+
 // POST — publica (sobrescribe) el perfil de batería de un cliente para una fecha.
 async function manejarPost(req, res, sheets) {
   const acceso = verificarEntrenador(req);
   if (!acceso.ok) {
     return res.status(401).json({ success: false, error: acceso.error });
   }
+  if (req.body && req.body.soloFormulas) return manejarPostFormulas(req, res, sheets);
   const { correo, nombre, datos } = req.body || {};
   if (!correo || !datos || typeof datos !== 'object') {
     return res.status(400).json({ success: false, error: 'Faltan datos obligatorios (correo o datos).' });
