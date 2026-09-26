@@ -502,20 +502,68 @@ function pintarTabs(){
 }
 pintarTabs();
 
-async function cargarCliente(email){
+// Mesociclo que le toca HOY a un cliente según su macrociclo publicado — la
+// misma cuenta que ya hacen Semanas.html y cliente/semana.html
+// (libs/planificacion-semanas.js). null si no tiene macrociclo o hoy queda
+// fuera de su rango.
+async function mesocicloActualDe(email){
+  try{
+    const res = await fetch('/api/macrociclo?' + new URLSearchParams({ cliente: email }).toString());
+    const data = await res.json();
+    if(!data.success || !data.plan || !data.plan.inicio) return null;
+    const { calcularFaseYSemana, lunesDe } = window.PLANIFICACION_SEMANAS;
+    const calc = calcularFaseYSemana(data.plan.inicio, data.plan.bloques, formatFechaDDMMYYYY(lunesDe(new Date())));
+    return calc.fueraDeRango ? null : calc.mesociclo;
+  }catch(e){ return null; }
+}
+
+// Plan B si no hay macrociclo aplicable hoy: el mesociclo de la sesión más
+// reciente (con o sin datos entrenados) de las 5 pestañas.
+function mesocicloDeUltimaSesion(porMesociclo){
+  let mejor = null, mejorT = -Infinity;
+  ['REOX', 'AERO', 'DESOX', 'FMAX', 'TAPERING'].forEach(m => {
+    (porMesociclo[m] || []).forEach(h => {
+      const d = parseFechaDDMMYYYY(h.fecha);
+      if(d && d.getTime() > mejorT){ mejorT = d.getTime(); mejor = m; }
+    });
+  });
+  return mejor;
+}
+
+// Cada carga lleva su número: si el entrenador cambia de cliente mientras
+// una petición sigue en vuelo, la respuesta que llegue tarde no debe pisar
+// la del cliente que ya está elegido.
+let cargaClienteId = 0;
+
+// opciones.mantenerMeso: no cambiar la pestaña (lo usan las notificaciones,
+// que ya eligen su propio mesociclo).
+async function cargarCliente(email, opciones = {}){
   const panel = document.getElementById('panelDatos');
   const btnExportar = document.getElementById('btnExportar');
   if(!email){ panel.innerHTML = '<div class="estado-panel">Elige un cliente para ver su progresión.</div>'; btnExportar.disabled = true; return; }
   panel.innerHTML = '<div class="estado-panel">Cargando historial…</div>';
   btnExportar.disabled = true;
+  const miId = ++cargaClienteId;
   try{
-    const res = await fetch('/api/obtener-historial?' + new URLSearchParams({ cliente: email }).toString());
+    const [res, mesoPlan] = await Promise.all([
+      fetch('/api/obtener-historial?' + new URLSearchParams({ cliente: email }).toString()),
+      opciones.mantenerMeso ? Promise.resolve(null) : mesocicloActualDe(email),
+    ]);
     const data = await res.json();
+    if(miId !== cargaClienteId) return;
     if(!data.success){
       panel.innerHTML = `<div class="estado-panel">${escapeHtml(data.error || 'No se pudo cargar el historial.')}</div>`;
       return;
     }
     PORMESOCICLO = data.porMesociclo;
+    if(!opciones.mantenerMeso){
+      const meso = mesoPlan || mesocicloDeUltimaSesion(data.porMesociclo);
+      if(meso && meso !== MESO_ACTIVO){
+        MESO_ACTIVO = meso;
+        pintarTabs();
+        poblarSelectorVariable();
+      }
+    }
     btnExportar.disabled = false;
     pintarDatos();
   }catch(e){
@@ -1427,7 +1475,7 @@ async function irANotificacion(n){
   }
 
   panelNotificaciones.classList.remove('abierto');
-  await cargarCliente(n.correo);
+  await cargarCliente(n.correo, { mantenerMeso: true });
   document.getElementById('panelDatos').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
