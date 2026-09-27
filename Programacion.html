@@ -75,10 +75,6 @@
   }
   .semana-celda:hover{ transform:translateY(-2px); }
   .semana-celda.pendiente{ background:transparent; border:2px solid var(--line-strong); }
-  /* Entrenada pero sin fila en Sesiones_Programadas (podada por antigüedad):
-     mismo color que una celda publicada, pero apagada — para distinguirla de
-     un vistazo de una publicación real y de una semana que sí falta. */
-  .semana-celda.entrenada-sin-publicar{ opacity:.45; border:2px dashed rgba(0,0,0,0.35); }
   .semana-celda.hoy{ box-shadow:0 0 0 2px var(--chalk); }
   /* Hueco: la columna de esa semana existe en la línea de tiempo compartida
      (porque OTRO cliente sí tiene macrociclo esa semana) pero este cliente
@@ -210,7 +206,6 @@ function pintarLeyenda(){
     <div class="item"><span class="muestra" style="background:${(CATEGORIA_VISUAL && CATEGORIA_VISUAL[f] && CATEGORIA_VISUAL[f].color) || '#888'}"></span>${f}</div>
   `).join('') + `
     <div class="item"><span class="muestra pendiente"></span>Sin publicar</div>
-    <div class="item"><span class="muestra" style="background:var(--chalk-faint); opacity:.6;"></span>Entrenada (dato antiguo, sin detalle)</div>
   `;
 }
 
@@ -298,14 +293,12 @@ async function cargarGrid(){
             } else if (s.entrenadaSinPublicar) {
               // Sin fila en Sesiones_Programadas (se poda a las 2 últimas
               // semanas al publicar, ver api/publicar-sesion.js) pero el
-              // cliente sí llegó a enviar una sesión esa semana — se pinta
-              // con el color de lo entrenado, pero apagada, para no
-              // confundirla con una semana publicada de verdad ni con una
-              // que de verdad falte por programar.
+              // cliente sí llegó a enviar una sesión esa semana — mismo color
+              // sólido que una semana publicada de verdad (el cliente
+              // entrenó, eso es lo que importa aquí), solo cambia el tooltip.
               const colorEntrenado = (CATEGORIA_VISUAL && CATEGORIA_VISUAL[s.mesocicloEntrenado] && CATEGORIA_VISUAL[s.mesocicloEntrenado].color) || colorMesoPlan;
-              clase += ' entrenada-sin-publicar';
               estilo = `background:${colorEntrenado}`;
-              titulo = `Semana ${s.semanaGlobal} · ${s.fechaLunes} · el cliente entrenó (${s.mesocicloEntrenado || '—'}), pero ya no queda el detalle programado de ese día`;
+              titulo = `Semana ${s.semanaGlobal} · ${s.fechaLunes} · entrenada (${s.mesocicloEntrenado || '—'}) — ya no queda el detalle programado de ese día`;
             } else {
               // Sin publicar de verdad: hueco, pero con el contorno del
               // color de la fase que le toca según el macrociclo — así se

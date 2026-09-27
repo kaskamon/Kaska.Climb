@@ -1,6 +1,7 @@
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
 const { lunesDe, parseFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
 const { authSheets, SCOPE_SOLO_LECTURA } = require('../libs/sheets-auth.js');
+const { COLUMNS } = require('../libs/mesociclos-config.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Respuestas de formulario 1';
@@ -86,9 +87,19 @@ async function manejarHistorialCliente(req, res, sheets) {
   // atrás, esa fila se añade al final del Sheet aunque su fecha sea más
   // antigua, y el orden de inserción dejaba de coincidir con el
   // cronológico. Las filas sin fecha parseable se quedan al final.
+  //
+  // "entrenada" — igual que en api/obtener-historial.js: si el mesociclo de
+  // ese día lleva Fmax (COLUMNS[...].fmaxIzq) y esa celda quedó vacía, es que
+  // la sesión se bloqueó por no estar recuperado (cliente/sesion.html), no
+  // que se entrenara de verdad. Los mesociclos sin ese campo (GYM, ROCA,
+  // DESCANSO, TAPERING) siempre cuentan como entrenados.
   const historial = filas
     .filter(f => f[COL_CORREO] === cliente)
-    .map(f => ({ fecha: f[2], mesociclo: f[3], marcaTemporal: f[0], _t: fechaMs(f[2]) }))
+    .map(f => {
+      const cfg = COLUMNS[f[3]];
+      const entrenada = cfg && cfg.fmaxIzq !== undefined ? (f[cfg.fmaxIzq] !== undefined && f[cfg.fmaxIzq] !== '') : true;
+      return { fecha: f[2], mesociclo: f[3], marcaTemporal: f[0], entrenada, _t: fechaMs(f[2]) };
+    })
     .sort((a, b) => (b._t ?? -Infinity) - (a._t ?? -Infinity)) // más reciente primero
     .slice(0, max)
     .map(({ _t, ...resto }) => resto);
