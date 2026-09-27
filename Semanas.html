@@ -473,6 +473,14 @@ select.head-select option {
 .modal-sesion-acciones .estado-publicar { flex-basis:100%; font-size:12px; color: var(--chalk-dim); min-height:16px; }
 .modal-sesion-acciones .estado-publicar.ok { color: var(--moss-light); font-weight:700; }
 .modal-sesion-acciones .estado-publicar.error { color:#d99a8f; font-weight:700; }
+.panel-formulas-cliente {
+  background: rgba(124,144,112,0.08); border: 1px dashed rgba(242,237,225,0.18); border-radius:10px;
+  padding:10px 14px; font-size:12.5px; color: var(--chalk-dim);
+}
+.panel-formulas-cab { font-weight:700; color: var(--chalk-dim); margin-bottom:6px; }
+.panel-formulas-cab span { color: var(--moss-light); }
+.panel-formulas-fila { display:flex; gap:8px; padding:2px 0; }
+.panel-formulas-fila b { color: var(--chalk); flex:0 0 auto; }
 .modal-titulo-sesion {
   background: var(--stone-800); border: 1px solid rgba(242,237,225,0.16);
   color: var(--chalk); border-radius:8px; padding:10px 12px; font-size:15px; font-weight:700;
@@ -660,6 +668,13 @@ select.head-select option {
       <span>Bloque integrado:</span>
       <label><input type="radio" name="modalDesoxAlternativa" value="traves" checked> Traves sin sueltas</label>
       <label><input type="radio" name="modalDesoxAlternativa" value="multibloque"> Multibloque</label>
+    </div>
+    <!-- Solo lectura: las fórmulas de este cliente para el mesociclo elegido,
+         a la vista mientras se escribe la sesión a mano — nunca escribe nada
+         sola en las celdas de ejercicios (ver notas en cargarFormulasCliente). -->
+    <div class="panel-formulas-cliente" id="panelFormulasCliente" hidden>
+      <div class="panel-formulas-cab">Fórmulas de <span id="panelFormulasMeso"></span></div>
+      <div id="panelFormulasLista"></div>
     </div>
     <div class="modal-sesion-acciones">
       <button class="btn-action" id="modalBtnCargarUltimo" type="button">Cargar último publicado</button>
@@ -935,12 +950,61 @@ function abrirModalSesion(cliente, mesociclo) {
   document.getElementById('modalEstadoPublicar').className = 'estado-publicar';
   document.getElementById('modalDisenarSesion').hidden = false;
   cargarListaPlantillasModal();
+  cargarFormulasCliente();
 }
 
 document.getElementById('modalSelectMesociclo').addEventListener('change', e => {
   MODAL_MESOCICLO = e.target.value;
   document.getElementById('modalPanelDesoxAlternativa').hidden = MODAL_MESOCICLO !== 'DESOX';
+  cargarFormulasCliente();
 });
+
+// Panel de solo lectura con las fórmulas de este cliente para el mesociclo
+// elegido — para tenerlas a la vista mientras se escribe la sesión a mano.
+// A propósito NO toca ninguna celda de ejercicios: las fórmulas son texto
+// libre y no siempre se corresponden 1:1 con el nombre que le hayas puesto
+// al ejercicio en la sesión (ver la "Sesiones" de Ana con Campus Board como
+// ejemplo), así que rellenarlas solas podía pisar mal una nota o un nombre
+// ya escritos. Mismo patrón "-Etiqueta:<tab>valor" que usa Batería test.html.
+const RE_LINEA_FORMULA_SEMANAS = /^\s*-\s*([^:]+?)\s*:([ \t ]*)(.*)$/;
+const MESO_A_CAMPO_FORMULA = { FMAX: 'formula-fmax', REOX: 'formula-reox', DESOX: 'formula-desox', AERO: 'formula-aero' };
+let formulasClienteRequestId = 0;
+
+function parsearLineasFormula(texto) {
+  return (texto || '').replace(/\r\n?/g, '\n').split('\n')
+    .map(l => l.match(RE_LINEA_FORMULA_SEMANAS))
+    .filter(Boolean)
+    .map(m => ({ etiqueta: m[1].trim(), valor: m[3].trim() }))
+    .filter(p => p.etiqueta && p.valor);
+}
+
+async function cargarFormulasCliente() {
+  const panel = document.getElementById('panelFormulasCliente');
+  const lista = document.getElementById('panelFormulasLista');
+  const campo = MESO_A_CAMPO_FORMULA[MODAL_MESOCICLO];
+  document.getElementById('panelFormulasMeso').textContent = MODAL_MESOCICLO;
+
+  if (!campo) { panel.hidden = true; return; } // GYM-ANTAGONISTAS no tiene cuadro de fórmulas
+  const miRequestId = ++formulasClienteRequestId;
+  panel.hidden = false;
+  lista.innerHTML = '<div class="panel-formulas-fila">Cargando…</div>';
+  try {
+    const res = await fetch('/api/bateria-test?' + new URLSearchParams({ cliente: MODAL_CLIENTE }));
+    const data = await res.json();
+    if (miRequestId !== formulasClienteRequestId) return; // cambiaste de cliente/mesociclo mientras cargaba
+    if (!data.success || !data.datos) {
+      lista.innerHTML = '<div class="panel-formulas-fila">Este cliente no tiene ninguna Batería de test publicada.</div>';
+      return;
+    }
+    const pares = parsearLineasFormula(data.datos[campo]);
+    lista.innerHTML = pares.length
+      ? pares.map(p => `<div class="panel-formulas-fila"><b>${escapeHtml(p.etiqueta)}:</b> ${escapeHtml(p.valor)}</div>`).join('')
+      : `<div class="panel-formulas-fila">Sin valores en la fórmula de ${escapeHtml(MODAL_MESOCICLO)} de este cliente.</div>`;
+  } catch (e) {
+    if (miRequestId !== formulasClienteRequestId) return;
+    lista.innerHTML = '<div class="panel-formulas-fila">Error de red al cargar las fórmulas.</div>';
+  }
+}
 
 document.getElementById('btnCerrarModalSesion').addEventListener('click', () => {
   document.getElementById('modalDisenarSesion').hidden = true;
