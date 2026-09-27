@@ -1354,7 +1354,7 @@ function buildPerfil(kind){
         <h3>${capLabel}</h3>
         <table class="grid-table">
           <tr><td>Mínimo</td><td>800</td><td>N/kg·s</td></tr>
-          <tr><td>Objetivo</td><td>4000</td><td>N/kg·s</td></tr>
+          <tr><td>Objetivo</td><td class="v linked" id="${kind}-fa-obj">–</td><td>N/kg·s</td></tr>
           <tr><td>Actual</td><td class="v linked" id="${kind}-fa-act">–</td><td>N/kg·s</td></tr>
         </table>
         <div class="out hi" style="margin-top:10px;"><span class="k">Nota <span class="unit">(0–10)</span></span><span class="v" id="${kind}-fa-nota">–</span></div>
@@ -1846,6 +1846,8 @@ function recalcAll(){
 
   /* ---------- PERFILES ---------- */
   const rp = num('g-gradoRP'), rpObj = num('g-gradoObj');
+  // Objetivo FTIanae escalado por grado (ajuste 27/09/2026 sobre 9 escaladores reales, suelo fijo en IRCRA10=800)
+  const objetivoFTIanae = irc => irc===null ? 4000 : 800 + 207.8*(Math.min(33, Math.max(10, irc))-10);
   ['deportiva','boulder'].forEach(kind=>{
     const isDep = kind==='deportiva';
     out(kind+'-ot', otFinal, 0, otFinal!==null?' %':''); out(kind+'-cf', cfmaxD, 1, cfmaxD!==null?' %':'');
@@ -1861,8 +1863,10 @@ function recalcAll(){
     out(kind+'-ft-act', rmpct, 1, rmpct!==null ? ' %' : '');
     out(kind+'-ft-nota', ftNota, 1);
 
+    const faObjetivo = objetivoFTIanae(rpObj);
+    out(kind+'-fa-obj', faObjetivo, 0);
     out(kind+'-fa-act', ftianae, 1);
-    const faNota = nota(800,4000, ftianae); out(kind+'-fa-nota', faNota, 1);
+    const faNota = nota(800, faObjetivo, ftianae); out(kind+'-fa-nota', faNota, 1);
 
     let scores, labels;
     if(isDep){
