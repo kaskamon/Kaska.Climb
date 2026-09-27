@@ -134,6 +134,9 @@
   table.tabla-datos td{ padding:10px 14px; font-size:12.5px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; white-space:nowrap; }
   table.tabla-datos td.no-entrenada{ color:var(--chalk-faint); font-style:italic; }
   table.tabla-datos td.gym-fila{ color:var(--chalk-dim); }
+  /* Fila entera apagada — no solo el texto — para que un "no recuperado" se
+     note de un vistazo entre las filas de sesiones sí entrenadas. */
+  table.tabla-datos tr.no-entrenada{ opacity:.5; }
   .nota-marcador{
     display:inline-block; font-size:11px; font-weight:700; letter-spacing:0.3px; text-transform:uppercase;
     color:var(--moss-light); background:rgba(124,144,112,0.14); border:1px solid rgba(124,144,112,0.35);
@@ -673,7 +676,7 @@ function pintarPanelFuerza(panel, historial){
         <thead><tr><th>Fecha</th><th>PFinicial (N)</th><th>Fmax izq. (N)</th><th>Fmax der. (N)</th><th>Sesión</th></tr></thead>
         <tbody>${(PORMESOCICLO[MESO_ACTIVO] || []).map(h => h.entrenada
           ? `<tr><td>${escapeHtml(h.fecha)}</td><td>${h.pfInicial}</td><td>${h.fmaxIzq ?? '—'}</td><td>${h.fmaxDer ?? '—'}</td><td>ROCO</td></tr>`
-          : `<tr><td>${escapeHtml(h.fecha)}</td><td>${h.pfInicial}</td><td class="no-entrenada">—</td><td class="no-entrenada">—</td><td class="no-entrenada">No recuperado</td></tr>`
+          : `<tr class="no-entrenada"><td>${escapeHtml(h.fecha)}</td><td>${h.pfInicial}</td><td class="no-entrenada">—</td><td class="no-entrenada">—</td><td class="no-entrenada">No recuperado</td></tr>`
         ).join('')}</tbody>
       </table>
     </div>`;
@@ -788,7 +791,8 @@ function pintarPanelResumen(panel){
           const notaHtml = f.notas
             ? `<td${claseNota}><span class="nota-marcador" role="button" tabindex="0" data-nota="${escapeHtml(f.notas)}" title="${escapeHtml(f.notas)}">Ver nota</span></td>`
             : `<td${claseNota}>—</td>`;
-          return `<tr>${celdasHtml}${notaHtml}</tr>`;
+          const claseFila = (!f.gym && !f.entrenada) ? ' class="no-entrenada"' : '';
+          return `<tr${claseFila}>${celdasHtml}${notaHtml}</tr>`;
         }).join('')}</tbody>
       </table>
     </div>`;

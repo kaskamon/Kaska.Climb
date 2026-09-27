@@ -14,6 +14,17 @@ const { sanearFormula } = require('../libs/sheets-sanitize.js');
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Macrociclos_Cliente';
 const SESIONES_PROGRAMADAS_SHEET = 'Sesiones_Programadas';
+// Historial real de sesiones enviadas por el cliente (mismo Sheet que lee
+// api/obtener-historial.js) — a diferencia de Sesiones_Programadas (el plan
+// del entrenador, que se poda a las 2 últimas semanas en cada publicación,
+// ver api/publicar-sesion.js), esta pestaña nunca se borra. La rejilla de
+// Programación la usa solo para saber si un cliente entrenó una semana
+// aunque su fila programada ya no exista — no para recuperar qué se le
+// mandó hacer ese día, ese detalle sí se pierde con la poda.
+const RESPUESTAS_SHEET = 'Respuestas de formulario 1';
+const COL_RESPUESTAS_CORREO = 34; // AI
+
+
 
 // Sheet de clientes (distinto del de sesiones/macrociclos) — mismo que usa
 // api/listar-clientes.js.
@@ -146,10 +157,11 @@ async function manejarPost(req, res, sheets) {
 // Programación (manejarGrid), para no repetir una llamada a Sheets por
 // cliente.
 async function datosBaseParaRevision(sheets) {
-  const [respClientes, respMacros, respProgramadas] = await Promise.all([
+  const [respClientes, respMacros, respProgramadas, respHistorial] = await Promise.all([
     sheets.spreadsheets.values.get({ spreadsheetId: CLIENTES_SPREADSHEET_ID, range: `'${CLIENTES_SHEET_NAME}'!A:N` }),
     sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NAME}'!A:F` }),
     sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SESIONES_PROGRAMADAS_SHEET}'!A:D` }),
+    sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${RESPUESTAS_SHEET}'!A:AI` }),
   ]);
 
   const clientesActivos = (respClientes.data.values || [])
@@ -178,7 +190,21 @@ async function datosBaseParaRevision(sheets) {
     semanasPublicadas.add(correo + '|' + lunesDe(fechaFila).getTime());
   });
 
-  return { clientesActivos, macrociclosPorCorreo, semanasPublicadas };
+  // Semanas con constancia real de entreno (el cliente llegó a enviar una
+  // sesión), aunque Sesiones_Programadas ya la haya podado por antigüedad.
+  // Guarda el mesociclo entrenado para poder colorear la celda igual que si
+  // estuviera publicada, en vez de darla por "sin publicar".
+  const semanasEntrenadas = new Map(); // "correo|timestampDelLunes" -> mesociclo
+  (respHistorial.data.values || []).slice(1).forEach(f => {
+    const correo = (f[COL_RESPUESTAS_CORREO] || '').trim().toLowerCase();
+    const mesociclo = (f[3] || '').trim();
+    const fechaFila = parseFechaDDMMYYYY(f[2]);
+    if (!correo || !fechaFila) return;
+    const key = correo + '|' + lunesDe(fechaFila).getTime();
+    if (!semanasEntrenadas.has(key)) semanasEntrenadas.set(key, mesociclo);
+  });
+
+  return { clientesActivos, macrociclosPorCorreo, semanasPublicadas, semanasEntrenadas };
 }
 
 // GET ?accion=grid — datos para la rejilla visual de Programacion.html: por
@@ -191,7 +217,7 @@ async function manejarGrid(req, res, sheets) {
   if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
 
   try {
-    const { clientesActivos, macrociclosPorCorreo, semanasPublicadas } = await datosBaseParaRevision(sheets);
+    const { clientesActivos, macrociclosPorCorreo, semanasPublicadas, semanasEntrenadas } = await datosBaseParaRevision(sheets);
 
     const clientes = clientesActivos
       .map(c => {
@@ -205,9 +231,17 @@ async function manejarGrid(req, res, sheets) {
           semanas: semanas.map(s => {
             const lunesFecha = parseFechaDDMMYYYY(s.fechaLunes);
             const key = c.correo.toLowerCase() + '|' + lunesFecha.getTime();
+            const publicada = semanasPublicadas.has(key);
+            const mesocicloEntrenado = !publicada ? semanasEntrenadas.get(key) : undefined;
             return {
               ...s,
-              publicada: semanasPublicadas.has(key),
+              publicada,
+              // Sin fila en Sesiones_Programadas (podada por antigüedad) pero con
+              // constancia de que el cliente sí entrenó esa semana — no es lo
+              // mismo que "sin publicar" de verdad, aunque ya no se pueda
+              // recuperar QUÉ se le programó ese día.
+              entrenadaSinPublicar: !!mesocicloEntrenado,
+              mesocicloEntrenado: mesocicloEntrenado || undefined,
             };
           }),
         };
