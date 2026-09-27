@@ -1353,7 +1353,7 @@ function buildPerfil(kind){
       <div class="card">
         <h3>${capLabel}</h3>
         <table class="grid-table">
-          <tr><td>Mínimo</td><td>800</td><td>N/kg·s</td></tr>
+          <tr><td>Mínimo</td><td>1000</td><td>N/kg·s</td></tr>
           <tr><td>Objetivo</td><td class="v linked" id="${kind}-fa-obj">–</td><td>N/kg·s</td></tr>
           <tr><td>Actual</td><td class="v linked" id="${kind}-fa-act">–</td><td>N/kg·s</td></tr>
         </table>
@@ -1846,8 +1846,8 @@ function recalcAll(){
 
   /* ---------- PERFILES ---------- */
   const rp = num('g-gradoRP'), rpObj = num('g-gradoObj');
-  // Objetivo FTIanae escalado por grado (ajuste 27/09/2026 sobre 9 escaladores reales, suelo fijo en IRCRA10=800)
-  const objetivoFTIanae = irc => irc===null ? 4000 : 800 + 207.8*(Math.min(33, Math.max(10, irc))-10);
+  // Objetivo FTIanae escalado por grado (ajuste 27/09/2026 sobre 9 escaladores reales, suelo fijo en IRCRA10=1000 -- <1000 sigue siendo "muy baja"/nota 0 para todos)
+  const objetivoFTIanae = irc => irc===null ? 4000 : 1000 + 189.3*(Math.min(33, Math.max(10, irc))-10);
   ['deportiva','boulder'].forEach(kind=>{
     const isDep = kind==='deportiva';
     out(kind+'-ot', otFinal, 0, otFinal!==null?' %':''); out(kind+'-cf', cfmaxD, 1, cfmaxD!==null?' %':'');
@@ -1866,7 +1866,7 @@ function recalcAll(){
     const faObjetivo = objetivoFTIanae(rpObj);
     out(kind+'-fa-obj', faObjetivo, 0);
     out(kind+'-fa-act', ftianae, 1);
-    const faNota = nota(800, faObjetivo, ftianae); out(kind+'-fa-nota', faNota, 1);
+    const faNota = nota(1000, faObjetivo, ftianae); out(kind+'-fa-nota', faNota, 1);
 
     let scores, labels;
     if(isDep){
@@ -2066,7 +2066,7 @@ const PLANTILLA_FORMULAS = {
   ],
   'formula-reox': [
     ['SuspInt (OT)', 'Hasta 8 series x 20mm x 55% x 6(7":3") x 1´recup (RIR 17")'],
-    ['Campus (HMH)', 'Hasta 3 series x 5"/mano (OT) x 2´x 3´recup'],
+    ['Campus (HMH)', 'Hasta 3 series x 5"/mano (OT) x 2´x 2´recup'],
     ['Traves con sueltas', '25 movs (OT)(con sueltas >3")(RIR 2) x 3´recup'],
     ['Roca', 'Vías paso-reposo'],
   ],
