@@ -249,7 +249,9 @@ function fechaReferenciaDDMMYYYY(){
   return formatearFecha(ref);
 }
 
+let MODALIDAD_CLIENTE = '';
 function tituloMesociclo(mesociclo){
+  if(mesociclo === 'DESOX' && MODALIDAD_CLIENTE.trim().toLowerCase() === 'boulder') return 'ANAE (ROCO)';
   return (TITULOS && TITULOS[mesociclo]) || mesociclo;
 }
 
@@ -317,6 +319,7 @@ async function cargar(){
       if(dataCliente.success){
         driveUrl = dataCliente.cliente.drive || null;
         mostrarAvisoVence(dataCliente.cliente.fechaFin);
+        MODALIDAD_CLIENTE = dataCliente.cliente.modalidad || '';
       }
     }catch(e){ /* si falla, simplemente no mostramos el acceso a documentos ni el aviso de vencimiento */ }
     renderAccesosRapidos(driveUrl);

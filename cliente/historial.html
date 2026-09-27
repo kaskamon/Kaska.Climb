@@ -149,7 +149,9 @@ const TOKEN = tokenParaCliente(CLIENTE);
   document.getElementById('btnVolver').href = 'semana.html?' + qs.toString();
 })();
 
+let MODALIDAD_CLIENTE = '';
 function tituloMesociclo(mesociclo){
+  if(mesociclo === 'DESOX' && MODALIDAD_CLIENTE.trim().toLowerCase() === 'boulder') return 'ANAE (ROCO)';
   return (TITULOS && TITULOS[mesociclo]) || mesociclo;
 }
 function colorMesociclo(mesociclo){
@@ -159,13 +161,20 @@ function colorMesociclo(mesociclo){
 
 async function cargar(){
   try{
-    const res = await fetch('/api/obtener-historial-sesiones?' + new URLSearchParams({ cliente: CLIENTE, limite: '80', token: TOKEN }).toString());
+    const [res, resCliente] = await Promise.all([
+      fetch('/api/obtener-historial-sesiones?' + new URLSearchParams({ cliente: CLIENTE, limite: '80', token: TOKEN }).toString()),
+      fetch('/api/verificar-cliente?' + new URLSearchParams({ email: CLIENTE, token: TOKEN }).toString()),
+    ]);
     if(res.status === 401){ manejarSesionInvalida(); return; }
     const data = await res.json();
     if(!data.success){
       mostrarError(data.error || 'Ha ocurrido un error inesperado.');
       return;
     }
+    try{
+      const dataCliente = await resCliente.json();
+      if(dataCliente.success) MODALIDAD_CLIENTE = dataCliente.cliente.modalidad || '';
+    }catch(e){ /* si falla, el rotulo de mesociclo cae al nombre por defecto */ }
 
     if(data.historial.length === 0){
       document.getElementById('contenido').innerHTML = `<div class="vacio">Todavía no has completado ninguna sesión.</div>`;

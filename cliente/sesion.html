@@ -362,6 +362,7 @@ if(!CLIENTE || !FECHA_PARAM || !MESOCICLO){
   throw new Error('Parámetros incompletos');
 }
 const TOKEN = tokenParaCliente(CLIENTE);
+let MODALIDAD_CLIENTE = '';
 if(!FIELD_MAP || !FIELD_MAP[MESOCICLO]){
   mostrarError(`El mesociclo "${MESOCICLO}" no existe todavía.`);
   throw new Error('Mesociclo desconocido');
@@ -691,7 +692,9 @@ function renderSesion(sesion, ultimaValida, semanaFinal, semanaMesocicloFinal, m
   // AERO/TAP), nunca el tipo de esta caja (ver mesocicloRealSemana arriba).
   document.getElementById('eyebrowTxt').textContent =
     `${NOMBRE_DISPLAY}${mesocicloRealSemana ? ' · Mesociclo ' + mesocicloRealSemana : ''}${semanaFinal ? ' · Semana ' + semanaFinal : ''}`;
-  const titulo = (TITULOS && TITULOS[MESOCICLO]) || MESOCICLO;
+  const titulo = (MESOCICLO === 'DESOX' && MODALIDAD_CLIENTE.trim().toLowerCase() === 'boulder')
+    ? 'ANAE (ROCO)'
+    : (TITULOS && TITULOS[MESOCICLO]) || MESOCICLO;
   document.getElementById('sessionTitleTxt').innerHTML =
     titulo.replace(/\s*\(([^)]+)\)\s*$/, ' <span>($1)</span>');
   document.title = `Kaska.Climb | Sesión — ${MESOCICLO}`;
@@ -1039,6 +1042,7 @@ async function cargar(){
     const promSesion = fetch('/api/obtener-sesion?' + qsSesion.toString());
     const promSemana = esMesocicloReal ? null : fetch('/api/obtener-semana?' + new URLSearchParams({ cliente: CLIENTE, fecha: FECHA_PARAM, token: TOKEN }));
     const promHistorial = necesitaHistorial ? fetch('/api/obtener-historial?' + new URLSearchParams({ cliente: CLIENTE, mesociclo: MESOCICLO, limite: '10', token: TOKEN })) : null;
+    const promCliente = fetch('/api/verificar-cliente?' + new URLSearchParams({ email: CLIENTE, token: TOKEN }));
 
     const respSesion = await promSesion;
     if(respSesion.status === 401){ manejarSesionInvalida(); return; }
@@ -1078,6 +1082,11 @@ async function cargar(){
         ultimaConFmax = entrenadas.find(h => h.fmaxIzq !== undefined) || null;
       }
     }
+
+    try{
+      const dataCliente = await promCliente.then(r => r.json());
+      if(dataCliente.success) MODALIDAD_CLIENTE = dataCliente.cliente.modalidad || '';
+    }catch(e){ /* si falla, el rotulo de mesociclo cae al nombre por defecto */ }
 
     // "Semana" viene de lo que ya publicó el entrenador (los mismos valores
     // de la cabecera de Semanas.html) — si por lo que sea no vino, caemos al
