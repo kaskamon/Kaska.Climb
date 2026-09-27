@@ -663,15 +663,19 @@ select.head-select option {
     </div>
     <div class="modal-sesion-acciones">
       <button class="btn-action" id="modalBtnCargarUltimo" type="button">Cargar último publicado</button>
-      <button class="btn-action" id="modalBtnPublicar" type="button">Publicar sesión</button>
-      <div class="estado-publicar" id="modalEstadoPublicar"></div>
-    </div>
-    <input type="text" id="titulo-entreno-principal" class="modal-titulo-sesion" placeholder="Título de la sesión...">
-    <div class="modal-sesion-acciones">
-      <button class="btn-action" id="modalBtnNuevaParte" type="button">Añadir Nueva Parte</button>
       <select id="modalSelectorPlantilla" class="btn-action">
         <option value="">Abrir tabla existente…</option>
       </select>
+      <button class="btn-action" id="modalBtnPublicar" type="button">Publicar sesión</button>
+      <div class="estado-publicar" id="modalEstadoPublicar"></div>
+    </div>
+    <!-- Título de la sesión y "Añadir nueva parte" ocultos a petición del
+         entrenador (no se usaban en Semanas.html) — se dejan en el DOM, solo
+         ocultos, porque libs/editor-sesion.js (compartido con Sesiones.html,
+         donde sí hacen falta) los busca por id sin comprobar que existan. -->
+    <input type="text" id="titulo-entreno-principal" class="modal-titulo-sesion" placeholder="Título de la sesión..." hidden>
+    <div class="modal-sesion-acciones">
+      <button class="btn-action" id="modalBtnNuevaParte" type="button" hidden>Añadir Nueva Parte</button>
     </div>
     <div id="contenedor-partes"></div>
   </div>
