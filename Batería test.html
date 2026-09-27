@@ -1367,7 +1367,7 @@ function buildPerfil(kind){
         <h3>Capacidad Reoxigenación (FTIreox/FTIanae)</h3>
         <table class="grid-table">
           <tr><td>Mínimo</td><td>1</td><td>%</td></tr>
-          <tr><td>Objetivo</td><td>2.5</td><td>%</td></tr>
+          <tr><td>Objetivo</td><td class="v linked" id="${kind}-reox-obj">–</td><td>%</td></tr>
           <tr><td>Actual</td><td class="v linked" id="${kind}-reox-act">–</td><td>%</td></tr>
         </table>
         <div class="out hi" style="margin-top:10px;"><span class="k">Nota <span class="unit">(0–10)</span></span><span class="v" id="${kind}-reox-nota">–</span></div>
@@ -1848,6 +1848,9 @@ function recalcAll(){
   const rp = num('g-gradoRP'), rpObj = num('g-gradoObj');
   // Objetivo FTIanae escalado por grado (ajuste 27/09/2026 sobre 9 escaladores reales, suelo fijo en IRCRA10=1000 -- <1000 sigue siendo "muy baja"/nota 0 para todos)
   const objetivoFTIanae = irc => irc===null ? 4000 : 1000 + 189.3*(Math.min(33, Math.max(10, irc))-10);
+  // Objetivo FTIreox escalado igual (mismo rango IRCRA 10-33), sin datos reales propios todavía --
+  // interpolación lineal simple entre el suelo (IRCRA10=1) y el techo actual (IRCRA33=2.5). Suelo fijo en 1 para todos.
+  const objetivoFTIreox = irc => irc===null ? 2.5 : 1 + 1.5*(Math.min(33, Math.max(10, irc))-10)/23;
   ['deportiva','boulder'].forEach(kind=>{
     const isDep = kind==='deportiva';
     out(kind+'-ot', otFinal, 0, otFinal!==null?' %':''); out(kind+'-cf', cfmaxD, 1, cfmaxD!==null?' %':'');
@@ -1870,8 +1873,10 @@ function recalcAll(){
 
     let scores, labels;
     if(isDep){
+      const reoxObjetivo = objetivoFTIreox(rpObj);
+      out(kind+'-reox-obj', reoxObjetivo, 2);
       out(kind+'-reox-act', reox!==null? reox : null, 2);
-      const reoxNota = nota(1,2.5, reox); out(kind+'-reox-nota', reoxNota, 1);
+      const reoxNota = nota(1, reoxObjetivo, reox); out(kind+'-reox-nota', reoxNota, 1);
       out(kind+'-aer-min', rp, 0); out(kind+'-aer-obj', rpObj, 0); out(kind+'-aer-act', ircraCF, 0);
       const aerNota = nota(rp, rpObj, ircraCF); out(kind+'-aer-nota', aerNota, 1);
       // Orden del perfil: Fmax agarre → RFD 200ms → Desox. → Reox. → Aero. → Tracción
