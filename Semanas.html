@@ -302,6 +302,12 @@ select.head-select option {
   font-family: 'Work Sans', sans-serif;
   transition: all 0.2s ease;
 }
+/* El "display: block" de arriba gana siempre al [hidden] nativo del
+   navegador (misma prioridad, pero una regla de autor le gana a la regla de
+   la hoja de estilos del navegador) — así que un .btn-action oculto con el
+   atributo hidden se seguía viendo. Mismo patrón que .panel-desox-alt-modal
+   más abajo. */
+.btn-action[hidden] { display: none; }
 .btn-action:hover {
   background: var(--moss);
   color: var(--stone-900);
@@ -956,7 +962,11 @@ function abrirModalSesion(cliente, mesociclo) {
 document.getElementById('modalSelectMesociclo').addEventListener('change', e => {
   MODAL_MESOCICLO = e.target.value;
   document.getElementById('modalPanelDesoxAlternativa').hidden = MODAL_MESOCICLO !== 'DESOX';
-  cargarFormulasCliente();
+  // El panel de fórmulas NO se recarga aquí a propósito: se queda fijo en el
+  // mesociclo REAL de ese día (MODAL_MESOCICLO_INICIAL), aunque cambies el
+  // desplegable a GYM-ANTAGONISTAS para registrar un día de gimnasio en su
+  // lugar — las cargas de su mesociclo real (p.ej. el lastre de dominadas)
+  // siguen siendo la referencia útil ese día.
 });
 
 // Panel de solo lectura con las fórmulas de este cliente para el mesociclo
@@ -981,8 +991,10 @@ function parsearLineasFormula(texto) {
 async function cargarFormulasCliente() {
   const panel = document.getElementById('panelFormulasCliente');
   const lista = document.getElementById('panelFormulasLista');
-  const campo = MESO_A_CAMPO_FORMULA[MODAL_MESOCICLO];
-  document.getElementById('panelFormulasMeso').textContent = MODAL_MESOCICLO;
+  // Siempre el mesociclo REAL de ese día, no el que esté elegido ahora mismo
+  // en el desplegable (ver el comentario en el listener de arriba).
+  const campo = MESO_A_CAMPO_FORMULA[MODAL_MESOCICLO_INICIAL];
+  document.getElementById('panelFormulasMeso').textContent = MODAL_MESOCICLO_INICIAL;
 
   if (!campo) { panel.hidden = true; return; } // GYM-ANTAGONISTAS no tiene cuadro de fórmulas
   const miRequestId = ++formulasClienteRequestId;
