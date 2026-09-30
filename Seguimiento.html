@@ -725,9 +725,10 @@ function pintarPanelResumen(panel){
   cabeceras.push('Sesión', 'Notas');
 
   // PFinicial (%) — misma variación que pintarPanelPfPct, frente a la
-  // sesión ENTRENADA anterior (los días no recuperados no cuentan como
-  // referencia ni tienen su propio %, igual que ahí). Positivo en verde,
-  // negativo en rojo — mismo criterio de color que ya usa pintarPanelPfPct.
+  // sesión ENTRENADA anterior. Un día "No recuperado" SÍ lleva su propio %
+  // (es justo la pérdida que provocó el bloqueo), pero no se convierte en la
+  // referencia de la siguiente fila — igual que decide el bloqueo real.
+  // Positivo en verde, negativo en rojo — mismo criterio que pintarPanelPfPct.
   const celdaPct = pct => ({ texto: `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`, color: pct >= 0 ? 'var(--moss-light)' : 'var(--danger)' });
   // PFfinal (%) — a diferencia de PFinicial (%), esto no es una variación
   // que pueda ir bien o mal: es la caída DENTRO de la misma sesión
@@ -767,11 +768,16 @@ function pintarPanelResumen(panel){
       celdas.push('ROCO');
       anteriorPfInicial = h.pfInicial;
     } else {
-      celdas.push('—', '—', '—');
+      const pfInicialCelda = (anteriorPfInicial !== undefined && anteriorPfInicial !== 0)
+        ? celdaPct((h.pfInicial - anteriorPfInicial) / anteriorPfInicial * 100)
+        : '—';
+      celdas.push(pfInicialCelda, '—', '—');
       if(tienePfFinal) celdas.push('—', '—');
       campos.forEach(() => celdas.push('—'));
       if(conDominadas) celdas.push('—');
       celdas.push('No recuperado');
+      // anteriorPfInicial NO se actualiza aquí -- un intento bloqueado no
+      // pasa a ser la referencia de la siguiente fila (ver comentario arriba).
     }
     return { celdas, entrenada: h.entrenada, notas: h.notas };
   });
