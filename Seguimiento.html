@@ -578,7 +578,8 @@ function pintarDatos(){
   const panel = document.getElementById('panelDatos');
   if(!PORMESOCICLO) return;
 
-  const historial = (PORMESOCICLO[MESO_ACTIVO] || []).filter(h => h.entrenada);
+  const todos = PORMESOCICLO[MESO_ACTIVO] || [];
+  const historial = todos.filter(h => h.entrenada);
 
   if(!historial.length){
     panel.innerHTML = '<div class="estado-panel">Este cliente todavía no tiene sesiones entrenadas de este mesociclo.</div>';
@@ -586,7 +587,7 @@ function pintarDatos(){
   }
 
   if(VARIABLE_ACTIVA === 'fuerza') pintarPanelFuerza(panel, historial);
-  else if(VARIABLE_ACTIVA === 'pfpct') pintarPanelPfPct(panel, historial);
+  else if(VARIABLE_ACTIVA === 'pfpct') pintarPanelPfPct(panel, todos);
   else if(VARIABLE_ACTIVA === 'pffinalpct') pintarPanelPfFinalPct(panel, historial);
   else if(VARIABLE_ACTIVA === 'resumen') pintarPanelResumen(panel);
 }
@@ -804,11 +805,17 @@ function pintarPanelResumen(panel){
 // recuperado (perdida = (anterior-actual)/anterior*100, sesión bloqueada si
 // perdida > umbralControl) — aquí en positivo cuando hay GANANCIA respecto a
 // la sesión de antes, en negativo cuando hay pérdida, para verlo en el tiempo.
-function pintarPanelPfPct(panel, historial){
+function pintarPanelPfPct(panel, todos){
   const cfg = window.MESOCICLOS_CONFIG && window.MESOCICLOS_CONFIG.FIELD_MAP[MESO_ACTIVO];
   const umbralControl = cfg ? cfg.umbralControl : undefined;
   const color = MESO_COLORS[MESO_ACTIVO];
 
+  // Igual que cliente/sesion.html: la referencia ("anterior") es siempre el
+  // PFinicial de la última sesión de verdad ENTRENADA, no la fila de antes sin
+  // más -- así un intento bloqueado por no estar recuperado (no-entrenada)
+  // entra también en el cálculo (es justo el caso "pérdida > umbral" que
+  // provocó el bloqueo), pero no se convierte él mismo en la nueva referencia.
+  //
   // PFinicial=0 es un valor real que se puede registrar (sin mínimo forzado
   // en el servidor) — no es "sin dato". Con denominador 0 el % no se puede
   // calcular, así que ese punto concreto se omite de la gráfica (no hay
@@ -817,11 +824,14 @@ function pintarPanelPfPct(panel, historial){
   // saltaba sin distinguir "sin dato" de "0 real".
   const puntos = [];
   let omitidosPorCero = 0;
-  for(let i = 1; i < historial.length; i++){
-    const anterior = historial[i-1].pfInicial, actual = historial[i].pfInicial;
-    if(anterior === undefined || anterior === null) continue;
-    if(anterior === 0){ omitidosPorCero++; continue; }
-    puntos.push({ fecha: historial[i].fecha, valor: ((actual - anterior) / anterior) * 100 });
+  let referencia = null;
+  for(let i = 0; i < todos.length; i++){
+    const actual = todos[i].pfInicial;
+    if(referencia !== null && actual !== undefined && actual !== null){
+      if(referencia === 0){ omitidosPorCero++; }
+      else{ puntos.push({ fecha: todos[i].fecha, valor: ((actual - referencia) / referencia) * 100 }); }
+    }
+    if(todos[i].entrenada && actual !== undefined && actual !== null) referencia = actual;
   }
 
   if(!puntos.length){
@@ -1239,8 +1249,32 @@ document.addEventListener('keydown', (e) => {
   poblarSelectorVariable();
   const sel = document.getElementById('selectorCliente');
   await cargarSelectorClientes(sel);
+
+  // Al entrar, salta directo al último cliente que ha entrenado esta semana
+  // (si lo hay) en vez del que quedó recordado de la última vez — así no hay
+  // que ir a buscarlo a mano. Si falla o no hay nadie entrenado esta semana
+  // todavía, se queda con el recordado de siempre (ver cargarSelectorClientes).
+  let clienteInicial = sel.value;
+  try{
+    const resRecientes = await fetch('/api/obtener-historial-sesiones?accion=recientes');
+    const dataRecientes = await resRecientes.json();
+    const correoReciente = dataRecientes.success && dataRecientes.sesiones && dataRecientes.sesiones[0]
+      ? dataRecientes.sesiones[0].correo : null;
+    if(correoReciente && Array.from(sel.options).some(o => o.value === correoReciente)){
+      clienteInicial = correoReciente;
+      sel.value = correoReciente;
+      try{ localStorage.setItem('kaska_cliente_actual', correoReciente); }catch(e){}
+    }
+  }catch(e){ /* sin conexión o sin datos: se queda con el recordado */ }
+
   sel.addEventListener('change', () => cargarCliente(sel.value));
-  if(sel.value) cargarCliente(sel.value);
+  if(clienteInicial){
+    await cargarCliente(clienteInicial);
+    // "Resumen (todos los datos)" en vez de "Fuerza" (por defecto de poblarSelectorVariable).
+    VARIABLE_ACTIVA = 'resumen';
+    document.getElementById('selectorVariable').value = 'resumen';
+    pintarDatos();
+  }
 })();
 
 // Panel de notificaciones — dos tipos: sesiones registradas esta semana, y
