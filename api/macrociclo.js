@@ -482,6 +482,117 @@ async function manejarCerrarSemanaCumplimiento(req, res, sheets) {
   }
 }
 
+// Semana histórica SIN registro real de lo programado (Sesiones_Programadas
+// ya la podó) — asume la plantilla estándar 2 roco + 1 gym, y busca en
+// Respuestas de formulario 1 lo que de verdad se entrenó esa semana (hasta 2
+// filas del mesociclo roco de esa semana, cualquier fila de gym). Decisión
+// cerrada con el usuario el 30/09/2026 — ver proyecto_cumplimiento_semanal.md.
+function calcularSemanaAsumida(correo, lunesFecha, mesociclo, filasRespuestas) {
+  const lunesMs = lunesFecha.getTime();
+  const domingoMs = lunesMs + 6 * 86400000 + 86399999;
+  const correoNorm = correo.trim().toLowerCase();
+  const filasSemana = filasRespuestas.filter(f => {
+    if ((f[COL_RESPUESTAS_CORREO] || '').trim().toLowerCase() !== correoNorm) return false;
+    const fecha = parseFechaDDMMYYYY(f[2]);
+    if (!fecha) return false;
+    const t = fecha.getTime();
+    return t >= lunesMs && t <= domingoMs;
+  });
+
+  let puntos = 0, posible = 0;
+  if (CUMPLIMIENTO_SEMANAL.MESOCICLOS_ROCO_PUNTUABLES.includes(mesociclo)) {
+    const cfg = COLUMNS[mesociclo];
+    const maxPorSesion = CUMPLIMIENTO_SEMANAL.puntosSesionRoco(mesociclo, []).posible;
+    posible += maxPorSesion * 2; // plantilla asumida: 2 roco
+    filasSemana.filter(f => f[3] === mesociclo).slice(0, 2).forEach(f => {
+      if (!entrenadaDeFilaRoco(cfg, f)) return;
+      const campos = Array.isArray(cfg.campos) ? cfg.campos.map(col => f[col]) : [];
+      puntos += CUMPLIMIENTO_SEMANAL.puntosSesionRoco(mesociclo, campos).puntos;
+    });
+  }
+  posible += CUMPLIMIENTO_SEMANAL.PESO_GYM; // plantilla asumida: 1 gym
+  if (filasSemana.some(f => CUMPLIMIENTO_SEMANAL.MESOCICLOS_GYM.includes(f[3]))) puntos += CUMPLIMIENTO_SEMANAL.PESO_GYM;
+
+  if (posible > 0 && puntos > posible) puntos = posible;
+  const porcentaje = posible > 0 ? Math.round((puntos / posible) * 1000) / 10 : null;
+  return { puntos, posible, porcentaje };
+}
+
+// GET ?accion=backfill-cumplimiento — migración manual, de un solo uso (la
+// dispara el entrenador a mano, no un cron): para cada cliente activo con
+// macrociclo, rellena en Cumplimiento_Semanal todas las semanas PASADAS
+// (nunca la actual ni futuras, de eso ya se encargan el cron semanal y la
+// lectura en vivo) que todavía no tengan fila, usando la plantilla asumida
+// 2+1. Si se ejecuta más de una vez, nunca pisa una fila que ya exista
+// (ni las que puso el cron semanal ni las de una ejecución anterior de esto).
+async function manejarBackfillCumplimiento(req, res, sheets) {
+  if (!exigirEntrenadorOCron(req, res)) return;
+
+  try {
+    const [respClientes, respMacros, respRespuestas, respCumplimiento] = await Promise.all([
+      sheets.spreadsheets.values.get({ spreadsheetId: CLIENTES_SPREADSHEET_ID, range: `'${CLIENTES_SHEET_NAME}'!A:N` }),
+      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NAME}'!A:F` }),
+      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${RESPUESTAS_SHEET}'!A:AL` }),
+      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${CUMPLIMIENTO_SHEET}'!A:G` }).catch(() => ({ data: { values: [] } })),
+    ]);
+    await asegurarPestanaCumplimiento(sheets);
+
+    const clientesActivos = (respClientes.data.values || [])
+      .filter(f => (f[COL_CLIENTES.estado] || '').trim().toLowerCase() === 'activo' && (f[COL_CLIENTES.correo] || '').trim())
+      .map(f => (f[COL_CLIENTES.correo] || '').trim());
+
+    const macrociclosPorCorreo = new Map();
+    (respMacros.data.values || []).forEach(f => {
+      const correo = (f[1] || '').trim().toLowerCase();
+      if (!correo) return;
+      let bloques;
+      try { bloques = JSON.parse(f[5] || '[]'); } catch (e) { return; }
+      macrociclosPorCorreo.set(correo, { inicio: f[3] || '', bloques });
+    });
+
+    const filasRespuestas = (respRespuestas.data.values || []).slice(1);
+
+    const yaCongeladas = new Set(); // "correo|lunesTexto"
+    (respCumplimiento.data.values || []).slice(1).forEach(f => {
+      yaCongeladas.add((f[1] || '').trim().toLowerCase() + '|' + (f[2] || '').trim());
+    });
+
+    const lunesHoyMs = lunesDe(new Date()).getTime();
+    const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
+    const filasNuevas = [];
+
+    clientesActivos.forEach(correo => {
+      const plan = macrociclosPorCorreo.get(correo.toLowerCase());
+      if (!plan || !plan.inicio) return;
+      const { semanas } = semanasDelMacrociclo(plan.inicio, plan.bloques);
+      semanas.forEach(s => {
+        if (!s.mesociclo) return;
+        const lunesFecha = parseFechaDDMMYYYY(s.fechaLunes);
+        if (!lunesFecha || lunesFecha.getTime() >= lunesHoyMs) return; // la actual/futuras no se tocan aquí
+        const key = correo.toLowerCase() + '|' + s.fechaLunes;
+        if (yaCongeladas.has(key)) return;
+        const r = calcularSemanaAsumida(correo, lunesFecha, s.mesociclo, filasRespuestas);
+        if (r.posible <= 0) return;
+        filasNuevas.push([marcaTemporal, sanearFormula(correo), s.fechaLunes, s.mesociclo, r.puntos, r.posible, r.porcentaje]);
+      });
+    });
+
+    if (filasNuevas.length) {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `'${CUMPLIMIENTO_SHEET}'!A:G`,
+        valueInputOption: 'USER_ENTERED',
+        insertDataOption: 'INSERT_ROWS',
+        requestBody: { values: filasNuevas },
+      });
+    }
+
+    res.status(200).json({ success: true, procesados: filasNuevas.length });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
 // GET ?accion=cumplimiento&cliente=correo — cumplimiento semanal para la
 // página del cliente: la semana en curso calculada en vivo (Sesiones_
 // Programadas todavía tiene el dato fresco), más el total acumulado sumando
@@ -555,6 +666,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET' && accion === 'semana-siguiente-pendientes') return await manejarSemanaSiguientePendientes(req, res, sheets);
     if (req.method === 'GET' && accion === 'historial') return await manejarHistorialMacrociclos(req, res, sheets);
     if (req.method === 'GET' && accion === 'cerrar-semana-cumplimiento') return await manejarCerrarSemanaCumplimiento(req, res, sheets);
+    if (req.method === 'GET' && accion === 'backfill-cumplimiento') return await manejarBackfillCumplimiento(req, res, sheets);
     if (req.method === 'GET' && accion === 'cumplimiento') return await manejarCumplimiento(req, res, sheets);
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     return await manejarPost(req, res, sheets);
