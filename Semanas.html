@@ -643,10 +643,6 @@ select.head-select option {
     <select id="publicarClienteSemana"><option value="">Cargando clientes...</option></select>
     <button class="btn-action" id="btnCopiarSemanaAnterior" type="button">Copiar semana anterior</button>
     <button class="btn-action" id="btnDisenarSesion" type="button" disabled>Diseñar sesión de este mesociclo</button>
-    <div id="wrapCalidadTapering" class="no-print" hidden style="font-size:0.85em; margin-top:4px;">
-      Tapering de:
-      <select id="selectorCalidadTapering"></select>
-    </div>
     <button class="btn-action" id="btnPublicarSemana" type="button">Publicar semana completa</button>
     <button class="btn-action" id="btnBorrarSemana" type="button">Borrar semana publicada</button>
     <button class="btn-action" onclick="window.location.href='Programacion.html'">
@@ -813,15 +809,12 @@ const { calcularFaseYSemana, lunesDe, parseFechaDDMMYYYY, formatFechaDDMMYYYY } 
 let MESOCICLO_ACTUAL = null; // se rellena solo desde el macrociclo real del cliente
 let MESOCICLO_ORIGEN_TAPERING = null; // cualidad del bloque anterior, solo si esta semana es TAPERING
 
-// Durante una semana de TAPERING, el entrenador puede elegir etiquetar la
-// caja de "sesión" como el TAPERING genérico o como la cualidad de la que
-// viene (ver #selectorCalidadTapering) — para el resto de tipos de caja no
-// hay elección posible, siempre se resuelven solos.
+// La caja de "sesión" siempre se publica con el mesociclo real calculado del
+// macrociclo (antes había aquí un selector para etiquetarla a mano como el
+// TAPERING genérico o como la cualidad de origen — se quitó: una semana de
+// TAPERING SIEMPRE se guarda como TAPERING, con MESOCICLO_ORIGEN_TAPERING
+// como etiqueta interna aparte, para no perder nunca ese dato por elegir mal).
 function mesocicloParaSesion() {
-  const selector = document.getElementById('selectorCalidadTapering');
-  if (MESOCICLO_ACTUAL === 'TAPERING' && selector && !document.getElementById('wrapCalidadTapering').hidden) {
-    return selector.value || MESOCICLO_ACTUAL;
-  }
   return MESOCICLO_ACTUAL;
 }
 
@@ -848,13 +841,11 @@ async function recalcularMesocicloDesdeMacrociclo() {
   const estado = document.getElementById('estadoMacrociclo');
   const h1 = document.getElementById('h1'), h3 = document.getElementById('h3'), h4 = document.getElementById('h4');
   const btnDisenar = document.getElementById('btnDisenarSesion');
-  const wrapTapering = document.getElementById('wrapCalidadTapering');
 
   MESOCICLO_ACTUAL = null;
   MESOCICLO_ORIGEN_TAPERING = null;
   h1.innerText = '—'; h3.innerText = '—'; h4.innerText = '—';
   btnDisenar.disabled = true;
-  wrapTapering.hidden = true;
   estado.textContent = ''; estado.className = 'estado-macrociclo no-print';
 
   if (!cliente || !fechaLunes) return;
@@ -891,14 +882,6 @@ async function recalcularMesocicloDesdeMacrociclo() {
     h4.innerText = `${calc.semanaEnBloque}/${calc.semanasBloque}`;
     btnDisenar.disabled = false;
 
-    if (MESOCICLO_ORIGEN_TAPERING) {
-      const selector = document.getElementById('selectorCalidadTapering');
-      selector.innerHTML = `<option value="TAPERING">TAP genérico</option><option value="${MESOCICLO_ORIGEN_TAPERING}">${MESOCICLO_ORIGEN_TAPERING} (descarga)</option>`;
-      selector.value = 'TAPERING';
-      wrapTapering.hidden = false;
-    } else {
-      wrapTapering.hidden = true;
-    }
     estado.textContent = `✓ Semana ${calc.semanaEnBloque} de ${calc.semanasBloque} de ${calc.mesociclo} (según el macrociclo de ${data.plan.nombre || cliente}).`;
     estado.classList.add('ok');
   } catch (e) {
@@ -977,7 +960,7 @@ document.getElementById('modalSelectMesociclo').addEventListener('change', e => 
 // ejemplo), así que rellenarlas solas podía pisar mal una nota o un nombre
 // ya escritos. Mismo patrón "-Etiqueta:<tab>valor" que usa Batería test.html.
 const RE_LINEA_FORMULA_SEMANAS = /^\s*-\s*([^:]+?)\s*:([ \t ]*)(.*)$/;
-const MESO_A_CAMPO_FORMULA = { FMAX: 'formula-fmax', REOX: 'formula-reox', DESOX: 'formula-desox', AERO: 'formula-aero' };
+const MESO_A_CAMPO_FORMULA = { FMAX: 'formula-fmax', REOX: 'formula-reox', DESOX: 'formula-desox', AERO: 'formula-aero', TAPERING: 'formula-tap' };
 let formulasClienteRequestId = 0;
 
 function parsearLineasFormula(texto) {
@@ -994,7 +977,7 @@ async function cargarFormulasCliente() {
   // Siempre el mesociclo REAL de ese día, no el que esté elegido ahora mismo
   // en el desplegable (ver el comentario en el listener de arriba).
   const campo = MESO_A_CAMPO_FORMULA[MODAL_MESOCICLO_INICIAL];
-  document.getElementById('panelFormulasMeso').textContent = MODAL_MESOCICLO_INICIAL;
+  document.getElementById('panelFormulasMeso').textContent = MODAL_MESOCICLO_INICIAL === 'TAPERING' ? 'TAP' : MODAL_MESOCICLO_INICIAL;
 
   if (!campo) { panel.hidden = true; return; } // GYM-ANTAGONISTAS no tiene cuadro de fórmulas
   const miRequestId = ++formulasClienteRequestId;
