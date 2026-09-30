@@ -43,8 +43,14 @@
 
   const MESOCICLOS_GYM = ['GYM-FMAX', 'GYM-ANTAGONISTAS'];
 
+  // Un 0 explícito NO cuenta como hecho — 0 series/pegues/saltos es lo mismo
+  // que no haberlo hecho, aunque el cliente haya llegado a rellenar el campo.
+  // Un valor no numérico (no debería pasar, pero por si acaso) sí cuenta,
+  // igual que antes.
   function tieneValor(v) {
-    return v !== undefined && v !== null && v !== '';
+    if (v === undefined || v === null || v === '') return false;
+    const n = Number(v);
+    return isNaN(n) ? true : n !== 0;
   }
 
   function tieneAlguno(camposValores, idxs) {
@@ -89,10 +95,24 @@
     };
   }
 
+  // GYM-FMAX es el único gym con un dato real que mirar (dominadas con
+  // lastre, ver COLUMNS['GYM-FMAX'].unico) — 0 dominadas cuenta como medio
+  // punto (se presentó e intentó, pero no completó ninguna), cualquier valor
+  // por encima de 0 cuenta el punto entero. GYM-ANTAGONISTAS no tiene ningún
+  // campo que mirar, así que sigue siendo todo o nada (la fila existe o no).
+  function puntosSesionGym(mesociclo, dominadas) {
+    if (mesociclo === 'GYM-FMAX' && dominadas !== undefined && dominadas !== null && dominadas !== '') {
+      const n = Number(dominadas);
+      if (!isNaN(n)) return n > 0 ? PESO_GYM : PESO_GYM / 2;
+    }
+    return PESO_GYM;
+  }
+
   // sesionesRoco: [{ mesociclo, entrenada, campos }] — una por sesión roco
   // PROGRAMADA esa semana (si no se entrenó/bloqueada, campos viene vacío y
   // puntosSesionRoco ya da 0 puntos sin más).
-  // sesionesGym: [{ entrenada }] — una por sesión GYM programada esa semana.
+  // sesionesGym: [{ entrenada, mesociclo, dominadas }] — una por sesión GYM
+  // programada esa semana (dominadas solo aplica/importa para GYM-FMAX).
   // Semanas retroactivas (antes de que exista el registro real de lo
   // programado): pasar sesionesRoco/sesionesGym ya construidas con la
   // plantilla asumida 2+1 (ver construirProgramacionAsumida2Mas1).
@@ -105,7 +125,7 @@
     });
     (sesionesGym || []).forEach(s => {
       posible += PESO_GYM;
-      if (s.entrenada) puntos += PESO_GYM;
+      if (s.entrenada) puntos += puntosSesionGym(s.mesociclo, s.dominadas);
     });
     // Tope en 100% — una sesión extra no programada nunca infla el % (no
     // debería poder pasar con este cómputo, que solo mira sesiones
@@ -136,6 +156,7 @@
     MESOCICLOS_GYM,
     puntosSesionRoco,
     detalleSesionRoco,
+    puntosSesionGym,
     calcularCumplimientoSemana,
     construirProgramacionAsumida2Mas1,
   };

@@ -219,11 +219,14 @@ function renderChipRoco(s){
 }
 
 function renderChipGym(s){
+  const cero = s.mesociclo === 'GYM-FMAX' && Number(s.dominadas) === 0;
+  const estado = !s.entrenada ? 'Pendiente' : (cero ? 'Parcial (0)' : 'Hecho');
+  const claseEstado = !s.entrenada ? 'pendiente' : (cero ? 'bloq' : 'ok');
   return `<div class="chip chip-roco">
     <div class="chip-dia">${escapeHtml(nombreDia(s.fecha))}</div>
     <div class="chip-tipo">Gym</div>
-    <div class="chip-squares"><div class="chip-sq ${s.entrenada ? 'hecho' : 'no-hecho'}"></div></div>
-    <div class="chip-estado ${s.entrenada ? 'ok' : 'bloq'}">${s.entrenada ? 'Hecho' : 'Sin hacer'}</div>
+    <div class="chip-squares"><div class="chip-sq ${s.entrenada && !cero ? 'hecho' : 'no-hecho'}"></div></div>
+    <div class="chip-estado ${claseEstado}">${estado}</div>
   </div>`;
 }
 

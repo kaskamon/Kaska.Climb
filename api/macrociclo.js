@@ -375,43 +375,75 @@ async function asegurarPestanaCumplimiento(sheets) {
 // gym REALMENTE programadas esa semana (leídas de Sesiones_Programadas) con
 // su resultado real (leído de Respuestas de formulario 1) — puro cálculo, sin
 // red, a partir de filas ya leídas.
+//
+// OJO: el cruce entre lo programado y lo real NO exige que coincida la fecha
+// exacta — el día que el cliente entrena de verdad puede no ser el mismo día
+// para el que se programó esa sesión (horarios reales, imprevistos...). Así
+// que en vez de buscar "la fila de este mesociclo en ESTA fecha concreta",
+// se cuenta cuántas sesiones de cada tipo tocaban esta semana, y se emparejan
+// con las filas reales de ese mismo tipo que existan esa semana (cualquier
+// fecha), hasta ese número — ni una más (así el tope del 100% sigue
+// cumpliéndose solo, sin necesitar lógica aparte).
 function construirSemanaDesdeProgramadas(correo, lunesFecha, filasProgramadas, filasRespuestas) {
   const lunesMs = lunesFecha.getTime();
   const domingoMs = lunesMs + 6 * 86400000 + 86399999; // hasta el final del domingo
   const correoNorm = correo.trim().toLowerCase();
 
-  const programadasSemana = filasProgramadas.filter(f => {
-    const correoFila = (f[1] || '').trim().toLowerCase();
-    if (correoFila !== correoNorm) return false;
-    const fechaFila = parseFechaDDMMYYYY(f[2]);
-    if (!fechaFila) return false;
-    const t = fechaFila.getTime();
+  const enEstaSemana = (fecha) => {
+    const f = parseFechaDDMMYYYY(fecha);
+    if (!f) return false;
+    const t = f.getTime();
     return t >= lunesMs && t <= domingoMs;
-  });
+  };
 
-  const buscarRespuesta = (fecha, mesociclo) => filasRespuestas.find(f =>
-    (f[COL_RESPUESTAS_CORREO] || '').trim().toLowerCase() === correoNorm &&
-    f[2] === fecha && f[3] === mesociclo
+  const programadasSemana = filasProgramadas.filter(f =>
+    (f[1] || '').trim().toLowerCase() === correoNorm && enEstaSemana(f[2])
   );
+  const respuestasSemana = filasRespuestas.filter(f =>
+    (f[COL_RESPUESTAS_CORREO] || '').trim().toLowerCase() === correoNorm && enEstaSemana(f[2])
+  );
+  // Por fecha, de más antigua a más reciente — para emparejar la 1ª sesión
+  // programada con la 1ª realmente entrenada de ese tipo, la 2ª con la 2ª...
+  const porFecha = (a, b) => (parseFechaDDMMYYYY(a[2])?.getTime() ?? 0) - (parseFechaDDMMYYYY(b[2])?.getTime() ?? 0);
+  programadasSemana.sort(porFecha);
+  respuestasSemana.sort(porFecha);
+
+  const contarPorMesociclo = (filas) => {
+    const mapa = new Map();
+    filas.forEach(f => { const m = f[3]; if (!mapa.has(m)) mapa.set(m, []); mapa.get(m).push(f); });
+    return mapa;
+  };
+  const programadasPorMeso = contarPorMesociclo(programadasSemana);
+  const respuestasPorMeso = contarPorMesociclo(respuestasSemana);
 
   const sesionesRoco = [];
   const sesionesGym = [];
-  programadasSemana.forEach(f => {
-    const mesociclo = f[3];
-    const fecha = f[2];
+  programadasPorMeso.forEach((filasProgramadasDeEseTipo, mesociclo) => {
     if (CUMPLIMIENTO_SEMANAL.MESOCICLOS_ROCO_PUNTUABLES.includes(mesociclo)) {
       const cfg = COLUMNS[mesociclo];
-      const fila = buscarRespuesta(fecha, mesociclo);
-      const entrenada = !!fila && entrenadaDeFilaRoco(cfg, fila);
-      const campos = fila && Array.isArray(cfg.campos) ? cfg.campos.map(col => fila[col]) : [];
-      // intentada: hay fila ese día (llegó a hacer al menos el PFinicial),
-      // aunque se bloqueara por no estar recuperado. Sin fila = todavía no
-      // le ha tocado/no la ha hecho — no es lo mismo que "no recuperado"
-      // (eso implica que sí lo intentó), así que el front debe distinguirlas.
-      sesionesRoco.push({ mesociclo, fecha, entrenada, intentada: !!fila, campos });
+      const realesDeEseTipo = respuestasPorMeso.get(mesociclo) || [];
+      filasProgramadasDeEseTipo.forEach((filaProgramada, i) => {
+        const fila = realesDeEseTipo[i]; // misma posición cronológica, no misma fecha exacta
+        const entrenada = !!fila && entrenadaDeFilaRoco(cfg, fila);
+        const campos = fila && Array.isArray(cfg.campos) ? cfg.campos.map(col => fila[col]) : [];
+        // La fecha a mostrar es la REAL si existe (para que el chip refleje
+        // cuándo se entrenó de verdad); si no hay fila real, se usa la
+        // programada como referencia del día que tocaba.
+        const fecha = fila ? fila[2] : filaProgramada[2];
+        // intentada: hay fila real de ese tipo esta semana (llegó a hacer
+        // al menos el PFinicial), aunque se bloqueara por no estar
+        // recuperado. Sin fila = todavía no le ha tocado/no la ha hecho.
+        sesionesRoco.push({ mesociclo, fecha, entrenada, intentada: !!fila, campos });
+      });
     } else if (CUMPLIMIENTO_SEMANAL.MESOCICLOS_GYM.includes(mesociclo)) {
-      const fila = buscarRespuesta(fecha, mesociclo);
-      sesionesGym.push({ mesociclo, fecha, entrenada: !!fila });
+      const realesDeEseTipo = respuestasPorMeso.get(mesociclo) || [];
+      filasProgramadasDeEseTipo.forEach((filaProgramada, i) => {
+        const fila = realesDeEseTipo[i];
+        const cfgGym = COLUMNS[mesociclo];
+        const dominadas = fila && cfgGym && cfgGym.unico !== undefined ? fila[cfgGym.unico] : undefined;
+        const fecha = fila ? fila[2] : filaProgramada[2];
+        sesionesGym.push({ mesociclo, fecha, entrenada: !!fila, dominadas });
+      });
     }
     // ROCA/DESCANSO/cualquier otra cosa: no puntúan, se ignoran.
   });
@@ -515,7 +547,12 @@ function calcularSemanaAsumida(correo, lunesFecha, mesociclo, filasRespuestas) {
     });
   }
   posible += CUMPLIMIENTO_SEMANAL.PESO_GYM; // plantilla asumida: 1 gym
-  if (filasSemana.some(f => CUMPLIMIENTO_SEMANAL.MESOCICLOS_GYM.includes(f[3]))) puntos += CUMPLIMIENTO_SEMANAL.PESO_GYM;
+  const filaGym = filasSemana.find(f => CUMPLIMIENTO_SEMANAL.MESOCICLOS_GYM.includes(f[3]));
+  if (filaGym) {
+    const cfgGym = COLUMNS[filaGym[3]];
+    const dominadas = cfgGym && cfgGym.unico !== undefined ? filaGym[cfgGym.unico] : undefined;
+    puntos += CUMPLIMIENTO_SEMANAL.puntosSesionGym(filaGym[3], dominadas);
+  }
 
   if (posible > 0 && puntos > posible) puntos = posible;
   const porcentaje = posible > 0 ? Math.round((puntos / posible) * 1000) / 10 : null;
@@ -640,7 +677,7 @@ async function manejarCumplimiento(req, res, sheets) {
         mesociclo: s.mesociclo, fecha: s.fecha, entrenada: s.entrenada, intentada: s.intentada,
         detalle: CUMPLIMIENTO_SEMANAL.detalleSesionRoco(s.mesociclo, s.campos),
       }));
-      const detalleGym = sesionesGym.map(s => ({ mesociclo: s.mesociclo, fecha: s.fecha, entrenada: s.entrenada }));
+      const detalleGym = sesionesGym.map(s => ({ mesociclo: s.mesociclo, fecha: s.fecha, entrenada: s.entrenada, dominadas: s.dominadas }));
       semanaActual = { lunes: lunesFechaTexto, mesociclo: calc.mesociclo, ...r, sesionesRoco: detalleRoco, sesionesGym: detalleGym };
     }
 
