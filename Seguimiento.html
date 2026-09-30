@@ -114,6 +114,8 @@
   .cumpl-chips{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
   .cumpl-chip{ flex:1; min-width:90px; border-radius:12px; padding:12px 10px; display:flex; flex-direction:column; gap:8px; align-items:center; background:var(--stone-800); border:1px solid var(--line-strong); }
   .cumpl-chip.bloq{ background:rgba(201,154,91,0.08); border:1px dashed rgba(201,154,91,0.45); }
+  .cumpl-chip.pendiente{ background:rgba(242,237,225,0.04); border:1px dashed var(--line-strong); }
+  .cumpl-chip .estado.pendiente{ color:var(--chalk-faint); }
   .cumpl-chip .dia{ font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--chalk-faint); font-weight:700; }
   .cumpl-chip .tipo{ font-size:12.5px; color:var(--chalk); font-weight:600; }
   .cumpl-chip .squares{ display:flex; gap:5px; }
@@ -739,6 +741,9 @@ function nombreDiaCumpl(fechaDDMMYYYY){
 function fmtNumCumpl(n){ return Number.isInteger(n) ? String(n) : n.toFixed(1); }
 
 function chipCumplRoco(s){
+  if(!s.entrenada && !s.intentada){
+    return `<div class="cumpl-chip pendiente"><div class="dia">${escapeHtml(nombreDiaCumpl(s.fecha))}</div><div class="tipo">Roco</div><div class="estado pendiente">Pendiente</div></div>`;
+  }
   if(!s.entrenada){
     return `<div class="cumpl-chip bloq"><div class="dia">${escapeHtml(nombreDiaCumpl(s.fecha))}</div><div class="tipo">Roco</div><div class="estado bloq">No recuperado</div></div>`;
   }

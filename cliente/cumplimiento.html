@@ -94,6 +94,8 @@
   .chip-estado{ font-size:10.5px; }
   .chip-estado.ok{ color:var(--moss-light); }
   .chip-estado.bloq{ color:var(--amber); }
+  .chip-pendiente{ background:rgba(242,237,225,0.04); border:1px dashed rgba(242,237,225,0.18); }
+  .chip-estado.pendiente{ color:var(--chalk-faint); }
 
   .total-fila{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
   .total-pct{ font-family:'Anton',sans-serif; font-size:32px; }
@@ -189,6 +191,13 @@ function renderAnillo(porcentaje, tamano){
 }
 
 function renderChipRoco(s){
+  if(!s.entrenada && !s.intentada){
+    return `<div class="chip chip-pendiente">
+      <div class="chip-dia">${escapeHtml(nombreDia(s.fecha))}</div>
+      <div class="chip-tipo">Roco</div>
+      <div class="chip-estado pendiente">Pendiente</div>
+    </div>`;
+  }
   if(!s.entrenada){
     return `<div class="chip chip-bloq">
       <div class="chip-dia">${escapeHtml(nombreDia(s.fecha))}</div>

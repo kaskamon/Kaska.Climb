@@ -404,7 +404,11 @@ function construirSemanaDesdeProgramadas(correo, lunesFecha, filasProgramadas, f
       const fila = buscarRespuesta(fecha, mesociclo);
       const entrenada = !!fila && entrenadaDeFilaRoco(cfg, fila);
       const campos = fila && Array.isArray(cfg.campos) ? cfg.campos.map(col => fila[col]) : [];
-      sesionesRoco.push({ mesociclo, fecha, entrenada, campos });
+      // intentada: hay fila ese día (llegó a hacer al menos el PFinicial),
+      // aunque se bloqueara por no estar recuperado. Sin fila = todavía no
+      // le ha tocado/no la ha hecho — no es lo mismo que "no recuperado"
+      // (eso implica que sí lo intentó), así que el front debe distinguirlas.
+      sesionesRoco.push({ mesociclo, fecha, entrenada, intentada: !!fila, campos });
     } else if (CUMPLIMIENTO_SEMANAL.MESOCICLOS_GYM.includes(mesociclo)) {
       const fila = buscarRespuesta(fecha, mesociclo);
       sesionesGym.push({ mesociclo, fecha, entrenada: !!fila });
@@ -633,7 +637,7 @@ async function manejarCumplimiento(req, res, sheets) {
       const { sesionesRoco, sesionesGym } = construirSemanaDesdeProgramadas(cliente, lunesHoy, filasProgramadas, filasRespuestas);
       const r = CUMPLIMIENTO_SEMANAL.calcularCumplimientoSemana(sesionesRoco, sesionesGym);
       const detalleRoco = sesionesRoco.map(s => ({
-        mesociclo: s.mesociclo, fecha: s.fecha, entrenada: s.entrenada,
+        mesociclo: s.mesociclo, fecha: s.fecha, entrenada: s.entrenada, intentada: s.intentada,
         detalle: CUMPLIMIENTO_SEMANAL.detalleSesionRoco(s.mesociclo, s.campos),
       }));
       const detalleGym = sesionesGym.map(s => ({ mesociclo: s.mesociclo, fecha: s.fecha, entrenada: s.entrenada }));
