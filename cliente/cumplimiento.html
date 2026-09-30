@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<link rel="manifest" href="/manifest-cliente.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kaska.Climb">
+<link rel="apple-touch-icon" href="/logo-192.png">
+<meta name="theme-color" content="#1c211e">
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaska.Climb | Cumplimiento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --stone-900:#1c211e;
+    --stone-800:#262d28;
+    --chalk:#f2ede1;
+    --chalk-dim:#c9c3b4;
+    --chalk-faint:#8d9187;
+    --moss:#7c9070;
+    --moss-light:#a7bd98;
+    --amber:#c99a5b;
+    --danger:#c9705b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh;
+    background: radial-gradient(120% 90% at 15% 0%, #262d28 0%, var(--stone-900) 55%, #121614 100%);
+    color:var(--chalk);
+    font-family:'Work Sans', sans-serif;
+    position:relative;
+  }
+  .fondo-logo{
+    position:fixed; top:0; left:0; width:100vw; height:100vh; height:100dvh;
+    background-image:url('/logo-fondo.webp');
+    background-repeat:no-repeat; background-position:center; background-size:cover;
+    opacity:0.2; z-index:-10;
+  }
+  h1,h2,h3{ font-family:'Anton', sans-serif; font-weight:400; text-transform:uppercase; letter-spacing:0.5px; margin:0; }
+
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:rgba(28,33,30,0.92); backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(242,237,225,0.1);
+  }
+  .topbar-inner{ max-width:760px; margin:0 auto; padding:16px 24px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .eyebrow{ display:inline-flex; align-items:center; gap:10px; font-size:11px; letter-spacing:4px; font-weight:700; color:var(--moss-light); text-transform:uppercase; }
+  .eyebrow::before{ content:""; width:16px; height:2px; background:var(--moss-light); }
+  .back-btn{
+    background:var(--stone-800); border:1px solid rgba(242,237,225,0.16); color:var(--chalk);
+    padding:9px 14px; border-radius:10px; font-size:12px; font-weight:700; letter-spacing:0.5px;
+    text-transform:uppercase; cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    text-decoration:none; transition:all .2s ease;
+  }
+  .back-btn:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+
+  .wrap{ max-width:600px; margin:0 auto; padding:24px 24px 90px; }
+  .cabecera h1{ font-size:28px; margin-bottom:4px; }
+  .cabecera h1 span{ color:var(--moss); }
+  .cabecera .meso{ font-size:13px; color:var(--chalk-faint); margin-bottom:24px; }
+
+  .estado-carga, .estado-error{ max-width:760px; margin:60px auto; padding:0 24px; text-align:center; color:var(--chalk-dim); }
+  .estado-error{ color:var(--chalk); }
+  .estado-error h2{ font-size:22px; color:var(--danger); margin-bottom:10px; }
+
+  .tarjeta{
+    background:rgba(38,45,40,0.55); border:1px solid rgba(242,237,225,0.1);
+    border-radius:16px; padding:24px; margin-bottom:20px;
+  }
+  .tarjeta-titulo{ font-size:13px; color:var(--chalk-dim); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:16px; }
+
+  .anillo-fila{ display:flex; align-items:center; gap:24px; }
+  .anillo-wrap{ position:relative; width:110px; height:110px; flex:0 0 auto; }
+  .anillo-pct{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Anton',sans-serif; font-size:26px; }
+  .anillo-info{ flex:1; }
+  .anillo-puntos{ font-size:14px; color:var(--chalk-dim); }
+  .anillo-puntos b{ color:var(--chalk); }
+  .anillo-nota{ font-size:11.5px; color:var(--chalk-faint); font-style:italic; margin-top:6px; line-height:1.5; }
+
+  .chips{ display:flex; gap:10px; flex-wrap:wrap; margin-top:20px; }
+  .chip{ flex:1; min-width:90px; border-radius:12px; padding:12px 10px; display:flex; flex-direction:column; gap:8px; align-items:center; }
+  .chip-roco{ background:var(--stone-800); border:1px solid rgba(242,237,225,0.12); }
+  .chip-bloq{ background:rgba(201,154,91,0.08); border:1px dashed rgba(201,154,91,0.45); }
+  .chip-dia{ font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--chalk-faint); font-weight:700; }
+  .chip-tipo{ font-size:12.5px; color:var(--chalk); font-weight:600; }
+  .chip-squares{ display:flex; gap:5px; }
+  .chip-sq{ width:18px; height:18px; border-radius:5px; }
+  .chip-sq.hecho{ background:var(--moss); }
+  .chip-sq.no-hecho{ background:transparent; border:1.5px dashed rgba(242,237,225,0.22); }
+  .chip-estado{ font-size:10.5px; }
+  .chip-estado.ok{ color:var(--moss-light); }
+  .chip-estado.bloq{ color:var(--amber); }
+
+  .total-fila{ display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .total-pct{ font-family:'Anton',sans-serif; font-size:32px; }
+  .total-puntos{ font-size:13px; color:var(--chalk-dim); }
+
+  .vacio{
+    text-align:center; padding:40px 20px; color:var(--chalk-dim);
+    background:rgba(38,45,40,0.4); border:1px dashed rgba(242,237,225,0.15); border-radius:16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="fondo-logo"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="eyebrow">Kaska.Climb</div>
+    <a class="back-btn" id="btnVolver" href="semana.html">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+      Atrás
+    </a>
+  </div>
+</div>
+
+<div class="wrap" id="wrap" hidden>
+  <div class="cabecera">
+    <h1>Tu <span>cumplimiento</span></h1>
+    <div class="meso" id="mesoTxt"></div>
+  </div>
+  <div id="contenido"></div>
+</div>
+
+<div class="estado-carga" id="estadoCarga">Cargando tu cumplimiento…</div>
+<div class="estado-error" id="estadoError" hidden>
+  <h2>No se pudo cargar tu cumplimiento</h2>
+  <p id="estadoErrorTexto"></p>
+</div>
+
+<script src="../libs/sesion-cliente-front.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const CLIENTE = params.get('cliente');
+const NOMBRE_PARAM = params.get('nombre');
+
+function escapeHtml(str){
+  return (str == null ? '' : String(str)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function mostrarError(mensaje){
+  document.getElementById('estadoCarga').hidden = true;
+  document.getElementById('wrap').hidden = true;
+  document.getElementById('estadoError').hidden = false;
+  document.getElementById('estadoErrorTexto').textContent = mensaje;
+}
+if(!CLIENTE){
+  mostrarError('No hemos podido identificarte. Vuelve a iniciar sesión desde la pantalla de acceso.');
+  throw new Error('Falta cliente');
+}
+const TOKEN = tokenParaCliente(CLIENTE);
+(function(){
+  const qs = new URLSearchParams();
+  qs.set('cliente', CLIENTE);
+  if(NOMBRE_PARAM) qs.set('nombre', NOMBRE_PARAM);
+  document.getElementById('btnVolver').href = 'semana.html?' + qs.toString();
+})();
+
+function colorCumplimiento(pct){
+  if(pct >= 70) return 'var(--moss-light)';
+  if(pct >= 40) return 'var(--amber)';
+  return 'var(--danger)';
+}
+
+const DIAS_SEMANA = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+function nombreDia(fechaDDMMYYYY){
+  const [d,m,y] = fechaDDMMYYYY.split('/').map(Number);
+  const fecha = new Date(y, m-1, d);
+  const idx = (fecha.getDay() + 6) % 7; // 0=lunes
+  return DIAS_SEMANA[idx];
+}
+
+function fmtNum(n){ return Number.isInteger(n) ? String(n) : n.toFixed(1); }
+
+function renderAnillo(porcentaje, tamano){
+  const r = tamano === 'grande' ? 45 : 40;
+  const circunferencia = 2 * Math.PI * r;
+  const relleno = circunferencia * (Math.min(porcentaje,100) / 100);
+  const color = colorCumplimiento(porcentaje);
+  return `<svg width="100%" height="100%" viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--stone-800)" stroke-width="12"></circle>
+    <circle cx="50" cy="50" r="${r}" fill="none" stroke="${color}" stroke-width="12" stroke-linecap="round"
+      stroke-dasharray="${relleno.toFixed(1)} ${circunferencia.toFixed(1)}" transform="rotate(-90 50 50)"></circle>
+  </svg>`;
+}
+
+function renderChipRoco(s){
+  if(!s.entrenada){
+    return `<div class="chip chip-bloq">
+      <div class="chip-dia">${escapeHtml(nombreDia(s.fecha))}</div>
+      <div class="chip-tipo">Roco</div>
+      <div class="chip-estado bloq">No recuperado</div>
+    </div>`;
+  }
+  const cuadrados = ['principal','secundario','integrado']
+    .filter(cat => s.detalle[cat] !== null)
+    .map(cat => `<div class="chip-sq ${s.detalle[cat] ? 'hecho' : 'no-hecho'}"></div>`)
+    .join('');
+  const completa = ['principal','secundario','integrado'].every(cat => s.detalle[cat] === null || s.detalle[cat] === true);
+  return `<div class="chip chip-roco">
+    <div class="chip-dia">${escapeHtml(nombreDia(s.fecha))}</div>
+    <div class="chip-tipo">Roco</div>
+    <div class="chip-squares">${cuadrados}</div>
+    <div class="chip-estado ok">${completa ? 'Completa' : 'Parcial'}</div>
+  </div>`;
+}
+
+function renderChipGym(s){
+  return `<div class="chip chip-roco">
+    <div class="chip-dia">${escapeHtml(nombreDia(s.fecha))}</div>
+    <div class="chip-tipo">Gym</div>
+    <div class="chip-squares"><div class="chip-sq ${s.entrenada ? 'hecho' : 'no-hecho'}"></div></div>
+    <div class="chip-estado ${s.entrenada ? 'ok' : 'bloq'}">${s.entrenada ? 'Hecho' : 'Sin hacer'}</div>
+  </div>`;
+}
+
+async function cargar(){
+  try{
+    const res = await fetch('/api/macrociclo?' + new URLSearchParams({ accion: 'cumplimiento', cliente: CLIENTE, token: TOKEN }));
+    if(res.status === 401){ manejarSesionInvalida(); return; }
+    const data = await res.json();
+    if(!data.success){
+      mostrarError(data.error || 'Ha ocurrido un error inesperado.');
+      return;
+    }
+
+    if(!data.semanaActual || data.semanaActual.posible <= 0){
+      document.getElementById('contenido').innerHTML = `<div class="vacio">Esta semana todavía no tiene nada programado.</div>`;
+      document.getElementById('estadoCarga').hidden = true;
+      document.getElementById('wrap').hidden = false;
+      return;
+    }
+
+    const s = data.semanaActual;
+    document.getElementById('mesoTxt').textContent = `Semana del ${s.lunes} · ${s.mesociclo === 'TAPERING' ? 'TAP' : s.mesociclo}`;
+
+    const todasSesiones = [
+      ...s.sesionesRoco.map(x => ({ ...x, tipo:'roco' })),
+      ...s.sesionesGym.map(x => ({ ...x, tipo:'gym' })),
+    ].sort((a,b) => {
+      const [da,ma,ya] = a.fecha.split('/').map(Number);
+      const [db,mb,yb] = b.fecha.split('/').map(Number);
+      return new Date(ya,ma-1,da) - new Date(yb,mb-1,db);
+    });
+
+    const chipsHtml = todasSesiones.map(x => x.tipo === 'roco' ? renderChipRoco(x) : renderChipGym(x)).join('');
+
+    let totalHtml = '';
+    if(data.total){
+      totalHtml = `
+        <div class="tarjeta">
+          <div class="tarjeta-titulo">Total acumulado</div>
+          <div class="total-fila">
+            <div class="total-pct" style="color:${colorCumplimiento(data.total.porcentaje)};">${Math.round(data.total.porcentaje)}%</div>
+            <div class="total-puntos"><b>${fmtNum(data.total.puntos)}</b> / ${fmtNum(data.total.posible)} puntos desde que empezaste</div>
+          </div>
+        </div>`;
+    }
+
+    document.getElementById('contenido').innerHTML = `
+      <div class="tarjeta">
+        <div class="tarjeta-titulo">Esta semana</div>
+        <div class="anillo-fila">
+          <div class="anillo-wrap">
+            ${renderAnillo(s.porcentaje, 'grande')}
+            <div class="anillo-pct" style="color:${colorCumplimiento(s.porcentaje)};">${Math.round(s.porcentaje)}%</div>
+          </div>
+          <div class="anillo-info">
+            <div class="anillo-puntos"><b>${fmtNum(s.puntos)}</b> / ${fmtNum(s.posible)} puntos</div>
+            <div class="anillo-nota">Una sesión no recuperada no cuenta en contra — tienes toda la semana para recuperarla.</div>
+          </div>
+        </div>
+        <div class="chips">${chipsHtml}</div>
+      </div>
+      ${totalHtml}
+    `;
+
+    document.getElementById('estadoCarga').hidden = true;
+    document.getElementById('wrap').hidden = false;
+  }catch(err){
+    mostrarError('Error de red: ' + err.message);
+  }
+}
+
+cargar();
+</script>
+</body>
+</html>

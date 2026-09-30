@@ -141,6 +141,19 @@
     text-transform:uppercase; text-decoration:none; transition:all .2s ease;
   }
   .acceso-chip:hover{ background:var(--moss); border-color:var(--moss); color:var(--stone-900); }
+
+  .kc-cumplimiento{
+    display:flex; align-items:center; gap:14px; margin-bottom:24px; padding:14px 16px;
+    border-radius:14px; background:rgba(124,144,112,0.08); border:1px solid rgba(242,237,225,0.12);
+    text-decoration:none; cursor:pointer; transition:background .2s ease;
+  }
+  .kc-cumplimiento:hover{ background:rgba(124,144,112,0.14); }
+  .kc-cumplimiento-ring{ position:relative; width:46px; height:46px; flex:0 0 auto; }
+  .kc-cumplimiento-pct{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Anton',sans-serif; font-size:11px; }
+  .kc-cumplimiento-texto{ flex:1; min-width:0; }
+  .kc-cumplimiento-titulo{ font-family:'Anton',sans-serif; font-size:13px; letter-spacing:0.5px; text-transform:uppercase; color:var(--chalk); }
+  .kc-cumplimiento-sub{ font-size:11.5px; color:var(--chalk-faint); margin-top:2px; }
+  .kc-cumplimiento-flecha{ color:var(--chalk-faint); font-size:18px; }
 </style>
 </head>
 <body>
@@ -168,6 +181,22 @@
   </div>
 
   <div class="accesos" id="accesosRapidos"></div>
+
+  <a class="kc-cumplimiento" id="kcCumplimiento" href="cumplimiento.html" hidden>
+    <div class="kc-cumplimiento-ring" id="kcCumplimientoRingWrap">
+      <svg width="46" height="46" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="40" fill="none" stroke="var(--stone-800)" stroke-width="14"></circle>
+        <circle cx="50" cy="50" r="40" fill="none" stroke-width="14" stroke-linecap="round"
+          id="kcCumplimientoRingFill" transform="rotate(-90 50 50)"></circle>
+      </svg>
+      <div class="kc-cumplimiento-pct" id="kcCumplimientoPct"></div>
+    </div>
+    <div class="kc-cumplimiento-texto">
+      <div class="kc-cumplimiento-titulo">Cumplimiento esta semana</div>
+      <div class="kc-cumplimiento-sub" id="kcCumplimientoSub"></div>
+    </div>
+    <div class="kc-cumplimiento-flecha">&#8250;</div>
+  </a>
 
   <div id="contenedorDias"></div>
 </div>
@@ -271,6 +300,39 @@ function mostrarAvisoVence(fechaFin){
   el.hidden = false;
 }
 
+// Color según el % (mismos tonos que ya usa el resto de la app, ninguno
+// nuevo): rojizo por debajo de 40%, ámbar 40-69%, verde claro desde 70%.
+function colorCumplimiento(pct){
+  if(pct >= 70) return 'var(--moss-light)';
+  if(pct >= 40) return 'var(--amber)';
+  return 'var(--danger)';
+}
+
+async function cargarCumplimientoCompacto(){
+  try{
+    const res = await fetch('/api/macrociclo?' + new URLSearchParams({ accion: 'cumplimiento', cliente: CLIENTE, token: TOKEN }));
+    const data = await res.json();
+    if(!data.success || !data.semanaActual || data.semanaActual.posible <= 0) return;
+    const { puntos, posible, porcentaje } = data.semanaActual;
+    const color = colorCumplimiento(porcentaje);
+    const circunferencia = 2 * Math.PI * 40;
+    const relleno = circunferencia * (porcentaje / 100);
+    const fill = document.getElementById('kcCumplimientoRingFill');
+    fill.setAttribute('stroke', color);
+    fill.setAttribute('stroke-dasharray', `${relleno.toFixed(1)} ${circunferencia.toFixed(1)}`);
+    const pctEl = document.getElementById('kcCumplimientoPct');
+    pctEl.textContent = `${Math.round(porcentaje)}%`;
+    pctEl.style.color = color;
+    const puntosFmt = Number.isInteger(puntos) ? puntos : puntos.toFixed(1);
+    const posibleFmt = Number.isInteger(posible) ? posible : posible.toFixed(1);
+    document.getElementById('kcCumplimientoSub').textContent = `${puntosFmt} / ${posibleFmt} puntos — toca para ver el detalle`;
+    const qs = new URLSearchParams({ cliente: CLIENTE });
+    if(NOMBRE_PARAM) qs.set('nombre', NOMBRE_PARAM);
+    document.getElementById('kcCumplimiento').href = 'cumplimiento.html?' + qs.toString();
+    document.getElementById('kcCumplimiento').hidden = false;
+  }catch(e){ /* si falla, la tarjeta se queda oculta sin más — no es crítico para ver la semana */ }
+}
+
 function renderAccesosRapidos(driveUrl){
   const qs = new URLSearchParams();
   qs.set('cliente', CLIENTE);
@@ -323,6 +385,7 @@ async function cargar(){
       }
     }catch(e){ /* si falla, simplemente no mostramos el acceso a documentos ni el aviso de vencimiento */ }
     renderAccesosRapidos(driveUrl);
+    cargarCumplimientoCompacto(); // aparte, no bloquea el resto de la carga si falla o tarda
 
     const nombrePartes = NOMBRE_DISPLAY.split(' ');
     document.getElementById('nombreTxt').innerHTML =
