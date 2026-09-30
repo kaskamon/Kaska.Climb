@@ -219,8 +219,8 @@ function renderChipRoco(s){
 }
 
 function renderChipGym(s){
-  const cero = s.mesociclo === 'GYM-FMAX' && Number(s.dominadas) === 0;
-  const estado = !s.entrenada ? 'Pendiente' : (cero ? 'Parcial (0)' : 'Hecho');
+  const cero = s.mesociclo === 'GYM-FMAX' && !(Number(s.dominadas) > 0);
+  const estado = !s.entrenada ? 'Pendiente' : (cero ? 'Parcial' : 'Hecho');
   const claseEstado = !s.entrenada ? 'pendiente' : (cero ? 'bloq' : 'ok');
   return `<div class="chip chip-roco">
     <div class="chip-dia">${escapeHtml(nombreDia(s.fecha))}</div>

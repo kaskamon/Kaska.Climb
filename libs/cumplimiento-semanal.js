@@ -96,14 +96,16 @@
   }
 
   // GYM-FMAX es el único gym con un dato real que mirar (dominadas con
-  // lastre, ver COLUMNS['GYM-FMAX'].unico) — 0 dominadas cuenta como medio
-  // punto (se presentó e intentó, pero no completó ninguna), cualquier valor
-  // por encima de 0 cuenta el punto entero. GYM-ANTAGONISTAS no tiene ningún
-  // campo que mirar, así que sigue siendo todo o nada (la fila existe o no).
+  // lastre, ver COLUMNS['GYM-FMAX'].unico) — cualquier valor por encima de 0
+  // cuenta el punto entero; 0 explícito O el campo en blanco (la fila existe
+  // pero el cliente no rellenó dominadas — no es lo mismo que escribir "0",
+  // pero pesa igual: se presentó pero no hay dato real de que completara
+  // ninguna) cuentan medio punto. GYM-ANTAGONISTAS no tiene ningún campo que
+  // mirar, así que sigue siendo todo o nada (la fila existe o no).
   function puntosSesionGym(mesociclo, dominadas) {
-    if (mesociclo === 'GYM-FMAX' && dominadas !== undefined && dominadas !== null && dominadas !== '') {
+    if (mesociclo === 'GYM-FMAX') {
       const n = Number(dominadas);
-      if (!isNaN(n)) return n > 0 ? PESO_GYM : PESO_GYM / 2;
+      return (!isNaN(n) && n > 0) ? PESO_GYM : PESO_GYM / 2;
     }
     return PESO_GYM;
   }

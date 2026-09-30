@@ -754,8 +754,8 @@ function chipCumplRoco(s){
   return `<div class="cumpl-chip"><div class="dia">${escapeHtml(nombreDiaCumpl(s.fecha))}</div><div class="tipo">Roco</div><div class="squares">${cuadrados}</div><div class="estado ok">${completa?'Completa':'Parcial'}</div></div>`;
 }
 function chipCumplGym(s){
-  const cero = s.mesociclo === 'GYM-FMAX' && Number(s.dominadas) === 0;
-  const estado = !s.entrenada ? 'Pendiente' : (cero ? 'Parcial (0)' : 'Hecho');
+  const cero = s.mesociclo === 'GYM-FMAX' && !(Number(s.dominadas) > 0);
+  const estado = !s.entrenada ? 'Pendiente' : (cero ? 'Parcial' : 'Hecho');
   const claseEstado = !s.entrenada ? 'pendiente' : (cero ? 'bloq' : 'ok');
   return `<div class="cumpl-chip"><div class="dia">${escapeHtml(nombreDiaCumpl(s.fecha))}</div><div class="tipo">Gym</div><div class="squares"><div class="sq ${s.entrenada && !cero?'hecho':'no-hecho'}"></div></div><div class="estado ${claseEstado}">${estado}</div></div>`;
 }
