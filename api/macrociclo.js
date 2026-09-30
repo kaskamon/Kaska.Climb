@@ -404,10 +404,10 @@ function construirSemanaDesdeProgramadas(correo, lunesFecha, filasProgramadas, f
       const fila = buscarRespuesta(fecha, mesociclo);
       const entrenada = !!fila && entrenadaDeFilaRoco(cfg, fila);
       const campos = fila && Array.isArray(cfg.campos) ? cfg.campos.map(col => fila[col]) : [];
-      sesionesRoco.push({ mesociclo, entrenada, campos });
+      sesionesRoco.push({ mesociclo, fecha, entrenada, campos });
     } else if (CUMPLIMIENTO_SEMANAL.MESOCICLOS_GYM.includes(mesociclo)) {
       const fila = buscarRespuesta(fecha, mesociclo);
-      sesionesGym.push({ entrenada: !!fila });
+      sesionesGym.push({ mesociclo, fecha, entrenada: !!fila });
     }
     // ROCA/DESCANSO/cualquier otra cosa: no puntúan, se ignoran.
   });
@@ -632,7 +632,12 @@ async function manejarCumplimiento(req, res, sheets) {
     if (!calc.fueraDeRango) {
       const { sesionesRoco, sesionesGym } = construirSemanaDesdeProgramadas(cliente, lunesHoy, filasProgramadas, filasRespuestas);
       const r = CUMPLIMIENTO_SEMANAL.calcularCumplimientoSemana(sesionesRoco, sesionesGym);
-      semanaActual = { lunes: lunesFechaTexto, mesociclo: calc.mesociclo, ...r };
+      const detalleRoco = sesionesRoco.map(s => ({
+        mesociclo: s.mesociclo, fecha: s.fecha, entrenada: s.entrenada,
+        detalle: CUMPLIMIENTO_SEMANAL.detalleSesionRoco(s.mesociclo, s.campos),
+      }));
+      const detalleGym = sesionesGym.map(s => ({ mesociclo: s.mesociclo, fecha: s.fecha, entrenada: s.entrenada }));
+      semanaActual = { lunes: lunesFechaTexto, mesociclo: calc.mesociclo, ...r, sesionesRoco: detalleRoco, sesionesGym: detalleGym };
     }
 
     // Total acumulado: suma de lo ya congelado + la semana en curso (si tiene

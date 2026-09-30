@@ -73,6 +73,22 @@
     return { puntos, posible };
   }
 
+  // Igual que puntosSesionRoco, pero como 3 booleanos (para pintar los
+  // "cuadraditos" susp/campus/integrado de la tira de sesiones en el front,
+  // sin duplicar ahí la lógica de categorías). Una categoría que ese
+  // mesociclo no tiene (p.ej. "secundario" en AERO/TAPERING) sale null, no
+  // false, para poder distinguir "no aplica" de "no se hizo".
+  function detalleSesionRoco(mesociclo, camposValores) {
+    const grupo = CATEGORIAS_CAMPOS_ROCO[mesociclo];
+    if (!grupo) return { principal: null, secundario: null, integrado: null };
+    const valores = camposValores || [];
+    return {
+      principal: grupo.principal.length ? tieneAlguno(valores, grupo.principal) : null,
+      secundario: grupo.secundario.length ? tieneAlguno(valores, grupo.secundario) : null,
+      integrado: grupo.integrado.length ? tieneAlguno(valores, grupo.integrado) : null,
+    };
+  }
+
   // sesionesRoco: [{ mesociclo, entrenada, campos }] — una por sesión roco
   // PROGRAMADA esa semana (si no se entrenó/bloqueada, campos viene vacío y
   // puntosSesionRoco ya da 0 puntos sin más).
@@ -119,6 +135,7 @@
     MESOCICLOS_ROCO_PUNTUABLES,
     MESOCICLOS_GYM,
     puntosSesionRoco,
+    detalleSesionRoco,
     calcularCumplimientoSemana,
     construirProgramacionAsumida2Mas1,
   };
