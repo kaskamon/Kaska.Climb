@@ -1,7 +1,10 @@
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
+const { exigirEntrenadorOCron } = require('../libs/entrenador-notificaciones.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 const { semanasDelMacrociclo, calcularFaseYSemana, lunesDe, formatFechaDDMMYYYY, parseFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
 const { sanearFormula } = require('../libs/sheets-sanitize.js');
+const { COLUMNS } = require('../libs/mesociclos-config.js');
+const CUMPLIMIENTO_SEMANAL = require('../libs/cumplimiento-semanal.js');
 
 // Planificación de macrociclo por cliente (Macrociclos.html) — hoja principal,
 // distinta de la de sesiones/historial. Columnas: A marcaTemporal, B correo,
@@ -333,6 +336,207 @@ async function manejarHistorialMacrociclos(req, res, sheets) {
   res.status(200).json({ success: true, macrociclos });
 }
 
+// Pestaña nueva, propia del cumplimiento semanal (ver memoria de proyecto
+// proyecto_cumplimiento_semanal.md) — una fila por cliente+semana, escrita
+// UNA VEZ por manejarCerrarSemanaCumplimiento y nunca más tocada. Sobrevive
+// aunque Sesiones_Programadas pode esa semana después (por eso hace falta
+// esta pestaña: lo programado desaparece de ahí a las 2 semanas).
+const CUMPLIMIENTO_SHEET = 'Cumplimiento_Semanal';
+const CUMPLIMIENTO_CABECERA = ['Marca temporal', 'Correo', 'Lunes semana', 'Mesociclo', 'Puntos conseguidos', 'Puntos posibles', 'Porcentaje'];
+
+// Igual que el "entrenada" de api/obtener-historial.js: la señal habitual es
+// el test de Fmax (fmaxIzq); TAPERING no lo tiene, usa en su lugar el primer
+// campo de campos[] (Susp).
+function entrenadaDeFilaRoco(cfg, f) {
+  if (!cfg) return false;
+  if (cfg.fmaxIzq !== undefined) return f[cfg.fmaxIzq] !== undefined && f[cfg.fmaxIzq] !== '';
+  if (Array.isArray(cfg.campos) && cfg.campos[0] !== undefined) return f[cfg.campos[0]] !== undefined && f[cfg.campos[0]] !== '';
+  return true;
+}
+
+async function asegurarPestanaCumplimiento(sheets) {
+  try {
+    await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${CUMPLIMIENTO_SHEET}'!A1:A1` });
+  } catch (e) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: { requests: [{ addSheet: { properties: { title: CUMPLIMIENTO_SHEET } } }] },
+    });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${CUMPLIMIENTO_SHEET}'!A1:G1`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: [CUMPLIMIENTO_CABECERA] },
+    });
+  }
+}
+
+// Construye, para un cliente+semana+mesociclo concretos, las sesiones roco y
+// gym REALMENTE programadas esa semana (leídas de Sesiones_Programadas) con
+// su resultado real (leído de Respuestas de formulario 1) — puro cálculo, sin
+// red, a partir de filas ya leídas.
+function construirSemanaDesdeProgramadas(correo, lunesFecha, filasProgramadas, filasRespuestas) {
+  const lunesMs = lunesFecha.getTime();
+  const domingoMs = lunesMs + 6 * 86400000 + 86399999; // hasta el final del domingo
+  const correoNorm = correo.trim().toLowerCase();
+
+  const programadasSemana = filasProgramadas.filter(f => {
+    const correoFila = (f[1] || '').trim().toLowerCase();
+    if (correoFila !== correoNorm) return false;
+    const fechaFila = parseFechaDDMMYYYY(f[2]);
+    if (!fechaFila) return false;
+    const t = fechaFila.getTime();
+    return t >= lunesMs && t <= domingoMs;
+  });
+
+  const buscarRespuesta = (fecha, mesociclo) => filasRespuestas.find(f =>
+    (f[COL_RESPUESTAS_CORREO] || '').trim().toLowerCase() === correoNorm &&
+    f[2] === fecha && f[3] === mesociclo
+  );
+
+  const sesionesRoco = [];
+  const sesionesGym = [];
+  programadasSemana.forEach(f => {
+    const mesociclo = f[3];
+    const fecha = f[2];
+    if (CUMPLIMIENTO_SEMANAL.MESOCICLOS_ROCO_PUNTUABLES.includes(mesociclo)) {
+      const cfg = COLUMNS[mesociclo];
+      const fila = buscarRespuesta(fecha, mesociclo);
+      const entrenada = !!fila && entrenadaDeFilaRoco(cfg, fila);
+      const campos = fila && Array.isArray(cfg.campos) ? cfg.campos.map(col => fila[col]) : [];
+      sesionesRoco.push({ mesociclo, entrenada, campos });
+    } else if (CUMPLIMIENTO_SEMANAL.MESOCICLOS_GYM.includes(mesociclo)) {
+      const fila = buscarRespuesta(fecha, mesociclo);
+      sesionesGym.push({ entrenada: !!fila });
+    }
+    // ROCA/DESCANSO/cualquier otra cosa: no puntúan, se ignoran.
+  });
+
+  return { sesionesRoco, sesionesGym };
+}
+
+// GET ?accion=cerrar-semana-cumplimiento — cron del domingo (ver vercel.json):
+// calcula y congela el % de cumplimiento de la semana que acaba de terminar,
+// para CADA cliente activo con macrociclo, mientras Sesiones_Programadas
+// todavía tiene el dato real de lo programado (se poda a las 2 semanas).
+async function manejarCerrarSemanaCumplimiento(req, res, sheets) {
+  if (!exigirEntrenadorOCron(req, res)) return;
+
+  try {
+    const [respClientes, respMacros, respProgramadas, respRespuestas] = await Promise.all([
+      sheets.spreadsheets.values.get({ spreadsheetId: CLIENTES_SPREADSHEET_ID, range: `'${CLIENTES_SHEET_NAME}'!A:N` }),
+      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NAME}'!A:F` }),
+      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SESIONES_PROGRAMADAS_SHEET}'!A:D` }),
+      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${RESPUESTAS_SHEET}'!A:AL` }),
+    ]);
+    await asegurarPestanaCumplimiento(sheets);
+
+    const clientesActivos = (respClientes.data.values || [])
+      .filter(f => (f[COL_CLIENTES.estado] || '').trim().toLowerCase() === 'activo' && (f[COL_CLIENTES.correo] || '').trim())
+      .map(f => (f[COL_CLIENTES.correo] || '').trim());
+
+    const macrociclosPorCorreo = new Map();
+    (respMacros.data.values || []).forEach(f => {
+      const correo = (f[1] || '').trim().toLowerCase();
+      if (!correo) return;
+      let bloques;
+      try { bloques = JSON.parse(f[5] || '[]'); } catch (e) { return; }
+      macrociclosPorCorreo.set(correo, { inicio: f[3] || '', bloques });
+    });
+
+    const filasProgramadas = respProgramadas.data.values || [];
+    const filasRespuestas = (respRespuestas.data.values || []).slice(1); // sin cabecera
+
+    const hoy = new Date();
+    const lunesHoy = lunesDe(hoy);
+    const lunesFechaTexto = formatFechaDDMMYYYY(lunesHoy);
+
+    const filasNuevas = [];
+    const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
+
+    clientesActivos.forEach(correo => {
+      const plan = macrociclosPorCorreo.get(correo.toLowerCase());
+      if (!plan || !plan.inicio) return;
+      const calc = calcularFaseYSemana(plan.inicio, plan.bloques, lunesFechaTexto);
+      if (calc.fueraDeRango) return;
+
+      const { sesionesRoco, sesionesGym } = construirSemanaDesdeProgramadas(correo, lunesHoy, filasProgramadas, filasRespuestas);
+      const r = CUMPLIMIENTO_SEMANAL.calcularCumplimientoSemana(sesionesRoco, sesionesGym);
+      if (r.posible <= 0) return; // nada programado esa semana (p.ej. ROCA/DESCANSO sin gym) -- no hay nada que congelar
+      filasNuevas.push([marcaTemporal, sanearFormula(correo), lunesFechaTexto, calc.mesociclo, r.puntos, r.posible, r.porcentaje]);
+    });
+
+    if (filasNuevas.length) {
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `'${CUMPLIMIENTO_SHEET}'!A:G`,
+        valueInputOption: 'USER_ENTERED',
+        insertDataOption: 'INSERT_ROWS',
+        requestBody: { values: filasNuevas },
+      });
+    }
+
+    res.status(200).json({ success: true, semana: lunesFechaTexto, procesados: filasNuevas.length });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+// GET ?accion=cumplimiento&cliente=correo — cumplimiento semanal para la
+// página del cliente: la semana en curso calculada en vivo (Sesiones_
+// Programadas todavía tiene el dato fresco), más el total acumulado sumando
+// todo lo ya congelado en Cumplimiento_Semanal.
+async function manejarCumplimiento(req, res, sheets) {
+  const { cliente } = req.query || {};
+  if (!cliente) return res.status(400).json({ success: false, error: 'Falta el parámetro cliente.' });
+  const acceso = verificarAccesoCliente(req, cliente);
+  if (!acceso.ok) return res.status(401).json({ success: false, error: acceso.error });
+
+  try {
+    const [respMacros, respProgramadas, respRespuestas, respCumplimiento] = await Promise.all([
+      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SHEET_NAME}'!A:F` }),
+      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${SESIONES_PROGRAMADAS_SHEET}'!A:D` }),
+      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${RESPUESTAS_SHEET}'!A:AL` }),
+      sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${CUMPLIMIENTO_SHEET}'!A:G` }).catch(() => ({ data: { values: [] } })),
+    ]);
+
+    const correoNorm = cliente.trim().toLowerCase();
+    let plan = null;
+    (respMacros.data.values || []).forEach(f => {
+      if ((f[1] || '').trim().toLowerCase() === correoNorm) plan = { inicio: f[3] || '', bloques: (() => { try { return JSON.parse(f[5] || '[]'); } catch (e) { return []; } })() };
+    });
+    if (!plan || !plan.inicio) return res.status(200).json({ success: true, semanaActual: null, total: null });
+
+    const filasProgramadas = respProgramadas.data.values || [];
+    const filasRespuestas = (respRespuestas.data.values || []).slice(1);
+    const filasCumplimiento = (respCumplimiento.data.values || []).slice(1)
+      .filter(f => (f[1] || '').trim().toLowerCase() === correoNorm);
+
+    // Semana en curso, calculada en vivo (todavía no congelada).
+    const hoy = new Date();
+    const lunesHoy = lunesDe(hoy);
+    const lunesFechaTexto = formatFechaDDMMYYYY(lunesHoy);
+    const calc = calcularFaseYSemana(plan.inicio, plan.bloques, lunesFechaTexto);
+    let semanaActual = null;
+    if (!calc.fueraDeRango) {
+      const { sesionesRoco, sesionesGym } = construirSemanaDesdeProgramadas(cliente, lunesHoy, filasProgramadas, filasRespuestas);
+      const r = CUMPLIMIENTO_SEMANAL.calcularCumplimientoSemana(sesionesRoco, sesionesGym);
+      semanaActual = { lunes: lunesFechaTexto, mesociclo: calc.mesociclo, ...r };
+    }
+
+    // Total acumulado: suma de lo ya congelado + la semana en curso (si tiene
+    // algo puntuable), puntos conseguidos / puntos posibles de siempre.
+    let puntosTotal = 0, posibleTotal = 0;
+    filasCumplimiento.forEach(f => { puntosTotal += Number(f[4]) || 0; posibleTotal += Number(f[5]) || 0; });
+    if (semanaActual && semanaActual.posible > 0) { puntosTotal += semanaActual.puntos; posibleTotal += semanaActual.posible; }
+    const total = posibleTotal > 0 ? { puntos: puntosTotal, posible: posibleTotal, porcentaje: Math.round((puntosTotal / posibleTotal) * 1000) / 10 } : null;
+
+    res.status(200).json({ success: true, semanaActual, total });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'GET' && req.method !== 'POST') {
     return res.status(405).json({ success: false, error: 'Método no permitido, usa GET o POST.' });
@@ -350,6 +554,8 @@ module.exports = async (req, res) => {
     if (req.method === 'GET' && accion === 'grid') return await manejarGrid(req, res, sheets);
     if (req.method === 'GET' && accion === 'semana-siguiente-pendientes') return await manejarSemanaSiguientePendientes(req, res, sheets);
     if (req.method === 'GET' && accion === 'historial') return await manejarHistorialMacrociclos(req, res, sheets);
+    if (req.method === 'GET' && accion === 'cerrar-semana-cumplimiento') return await manejarCerrarSemanaCumplimiento(req, res, sheets);
+    if (req.method === 'GET' && accion === 'cumplimiento') return await manejarCumplimiento(req, res, sheets);
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     return await manejarPost(req, res, sheets);
   } catch (error) {

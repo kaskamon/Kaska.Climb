@@ -7,6 +7,10 @@
     {
       "path": "/api/listar-clientes?accion=backup-diario",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/macrociclo?accion=cerrar-semana-cumplimiento",
+      "schedule": "0 23 * * 0"
     }
   ],
   "headers": [
