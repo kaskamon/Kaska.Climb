@@ -38,7 +38,7 @@ async function manejarRecientes(req, res, sheets) {
 
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `'${SHEET_NAME}'!A:AI`,
+    range: `'${SHEET_NAME}'!A:AL`,
   });
   const filas = resp.data.values || [];
   const inicioSemana = lunesDe(new Date()).getTime();
@@ -77,7 +77,7 @@ async function manejarHistorialCliente(req, res, sheets) {
 
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `'${SHEET_NAME}'!A:AI`,
+    range: `'${SHEET_NAME}'!A:AL`,
   });
   const filas = resp.data.values || [];
   const max = Number(limite) || 60;
@@ -91,13 +91,16 @@ async function manejarHistorialCliente(req, res, sheets) {
   // "entrenada" — igual que en api/obtener-historial.js: si el mesociclo de
   // ese día lleva Fmax (COLUMNS[...].fmaxIzq) y esa celda quedó vacía, es que
   // la sesión se bloqueó por no estar recuperado (cliente/sesion.html), no
-  // que se entrenara de verdad. Los mesociclos sin ese campo (GYM, ROCA,
-  // DESCANSO, TAPERING) siempre cuentan como entrenados.
+  // que se entrenara de verdad. TAPERING no mide Fmax, así que usa en su
+  // lugar el primer campo de campos[] (Susp). Los mesociclos sin ninguna de
+  // las dos señales (GYM, ROCA, DESCANSO) siempre cuentan como entrenados.
   const historial = filas
     .filter(f => f[COL_CORREO] === cliente)
     .map(f => {
       const cfg = COLUMNS[f[3]];
-      const entrenada = cfg && cfg.fmaxIzq !== undefined ? (f[cfg.fmaxIzq] !== undefined && f[cfg.fmaxIzq] !== '') : true;
+      let entrenada = true;
+      if (cfg && cfg.fmaxIzq !== undefined) entrenada = f[cfg.fmaxIzq] !== undefined && f[cfg.fmaxIzq] !== '';
+      else if (cfg && Array.isArray(cfg.campos) && cfg.campos[0] !== undefined) entrenada = f[cfg.campos[0]] !== undefined && f[cfg.campos[0]] !== '';
       return { fecha: f[2], mesociclo: f[3], marcaTemporal: f[0], entrenada, _t: fechaMs(f[2]) };
     })
     .sort((a, b) => (b._t ?? -Infinity) - (a._t ?? -Infinity)) // más reciente primero

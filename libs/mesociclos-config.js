@@ -27,7 +27,7 @@
     'GYM-ANTAGONISTAS': {},            // sin columnas de datos, solo queda registrada la fila
     ROCA:               {},            // día libre de roca/roco — sin datos, solo queda registrado el día
     DESCANSO:           {},            // día de descanso — sin datos, solo queda registrado el día
-    TAPERING:           { pfInicial: 5 }, // ciclo de tapering/descarga (2-3 semanas) — sí guarda PFinicial
+    TAPERING:           { pfInicial: 5, campos: [36, 37] }, // Susp, Integrado (AK/AL, añadidas al final) — ciclo de tapering/descarga (2-3 semanas), sí guarda PFinicial y estos dos, nunca Campus
                                           // (da información real de carga aunque el bloque sea de descarga),
                                           // pero no Fmax/campos/PFfinal — la carga es deliberadamente ligera
                                           // y esos datos no aportan aquí.
@@ -103,6 +103,13 @@
     'GYM-ANTAGONISTAS': {},
     TAPERING: {
       pfInicial: { match: 'Test PFinicial' },
+      // Fijos para cualquier meso de origen (nunca Campus) — a diferencia de
+      // FMAX/REOX/DESOX/AERO, aquí el título del bloque no varía con la
+      // cualidad de la que viene la descarga.
+      campos: [
+        { match: 'Susp',      id: 'susp-tap',      label: 'Series completadas' },
+        { match: 'Integrado', id: 'integrado-tap', label: 'Nº de pegues totales' },
+      ],
       umbralControl: 7,
     },
   };

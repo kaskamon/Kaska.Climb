@@ -5,7 +5,7 @@ const { sanearFormula } = require('../libs/sheets-sanitize.js');
 
 const SPREADSHEET_ID = '1mfc4qr8xiiLmX8oA6f07XjMy7EhWwAcDEcDx3BmrLKM';
 const SHEET_NAME = 'Respuestas de formulario 1';
-const TOTAL_COLUMNAS = 36; // A hasta AJ (AI = correo, AJ = notas — ambas añadidas al final para no mover nada de A-AH)
+const TOTAL_COLUMNAS = 38; // A hasta AL (AI = correo, AJ = notas, AK/AL = Susp/Integrado de TAPERING — todas añadidas al final para no mover nada de A-AH)
 const COL_CORREO = 34; // AI — identificador real del cliente (el nombre en B es solo para leer a simple vista)
 const COL_NOTAS = 35; // AJ — nota libre opcional del cliente ("cómo me he sentido...")
 
@@ -106,7 +106,7 @@ module.exports = async (req, res) => {
       try {
         const existentes = await sheets.spreadsheets.values.get({
           spreadsheetId: SPREADSHEET_ID,
-          range: `'${SHEET_NAME}'!A:AJ`,
+          range: `'${SHEET_NAME}'!A:AL`,
         });
         const filas = existentes.data.values || [];
         const idx = filas.findIndex(f => f[COL_CORREO] === correo && f[2] === fecha && f[3] === mesociclo);
@@ -123,14 +123,14 @@ module.exports = async (req, res) => {
       if (filaExistente) {
         await sheets.spreadsheets.values.update({
           spreadsheetId: SPREADSHEET_ID,
-          range: `'${SHEET_NAME}'!A${filaExistente}:AJ${filaExistente}`,
+          range: `'${SHEET_NAME}'!A${filaExistente}:AL${filaExistente}`,
           valueInputOption: 'USER_ENTERED',
           requestBody: { values: [fila] },
         });
       } else {
         await sheets.spreadsheets.values.append({
           spreadsheetId: SPREADSHEET_ID,
-          range: `'${SHEET_NAME}'!A:AJ`,
+          range: `'${SHEET_NAME}'!A:AL`,
           valueInputOption: 'USER_ENTERED',
           insertDataOption: 'INSERT_ROWS',
           requestBody: { values: [fila] },

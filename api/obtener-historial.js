@@ -23,6 +23,16 @@ const COL_DOMINADAS_CON_LASTRE = 4;
 // Seguimiento.html la ofrece como variable extra dentro de la pestaña FMAX.
 const CLAVE_DOMINADAS = 'DOMINADAS_LASTRE';
 
+// "Entrenada de verdad" vs. "bloqueada por no recuperado": la señal habitual
+// es el test de Fmax (fmaxIzq). Los mesociclos sin ese test (TAPERING) usan
+// en su lugar el primer campo de campos[] (Susp) — si ni eso está relleno,
+// cae a "true" sin más remedio (no hay ninguna señal que mirar).
+function entrenadaDeFila(cfg, f) {
+  if (cfg.fmaxIzq !== undefined) return f[cfg.fmaxIzq] !== undefined && f[cfg.fmaxIzq] !== '';
+  if (Array.isArray(cfg.campos) && cfg.campos[0] !== undefined) return f[cfg.campos[0]] !== undefined && f[cfg.campos[0]] !== '';
+  return true;
+}
+
 // Para el chequeo de recuperación de cliente/sesion.html: el PFinicial y el
 // Fmax reflejan el estado físico real del cliente en ese momento, no algo
 // que "empiece de cero" solo porque el macrociclo pasa de un mesociclo a
@@ -43,7 +53,7 @@ function extraerHistorialCrossMesociclo(filas, cliente, max) {
       const fmaxIzq = cfg.fmaxIzq !== undefined ? f[cfg.fmaxIzq] : undefined;
       const fmaxDer = cfg.fmaxDer !== undefined ? f[cfg.fmaxDer] : undefined;
       const pfFinalRaw = cfg.pfFinal !== undefined && cfg.pfFinal !== null ? f[cfg.pfFinal] : undefined;
-      const entrenada = cfg.fmaxIzq !== undefined ? (fmaxIzq !== undefined && fmaxIzq !== '') : true;
+      const entrenada = entrenadaDeFila(cfg, f);
       return {
         fecha: f[2],
         _t: parseFechaDDMMYYYY(f[2])?.getTime(),
@@ -68,16 +78,15 @@ function extraerHistorialDeMesociclo(filas, cliente, mesociclo, max) {
   return filas
     .filter(f => f[COL_CORREO] === cliente && f[3] === mesociclo && f[cfg.pfInicial] !== undefined && f[cfg.pfInicial] !== '')
     .map(f => {
-      // Si ese día se registró algo más allá del PFinicial (p.ej. la Fmax), la
-      // sesión se entrenó de verdad. Si no, fue un día bloqueado por no estar
-      // recuperado, y no cuenta como referencia para sesiones futuras. Los
-      // mesociclos que ni siquiera miden Fmax (TAPERING) no tienen esa señal
-      // — ahí cualquier fila con PFinicial ya cuenta como entrenada, porque
-      // no hay forma de distinguir un día bloqueado sin el test de Fmax.
+      // Si ese día se registró algo más allá del PFinicial (p.ej. la Fmax, o
+      // para TAPERING el primer campo de campos[]), la sesión se entrenó de
+      // verdad. Si no, fue un día bloqueado por no estar recuperado, y no
+      // cuenta como referencia para sesiones futuras. Los mesociclos que ni
+      // siquiera miden eso (ninguno hoy) caerían a "true" sin más remedio.
       const fmaxIzq = cfg.fmaxIzq !== undefined ? f[cfg.fmaxIzq] : undefined;
       const fmaxDer = cfg.fmaxDer !== undefined ? f[cfg.fmaxDer] : undefined;
       const pfFinalRaw = cfg.pfFinal !== undefined && cfg.pfFinal !== null ? f[cfg.pfFinal] : undefined;
-      const entrenada = cfg.fmaxIzq !== undefined ? (fmaxIzq !== undefined && fmaxIzq !== '') : true;
+      const entrenada = entrenadaDeFila(cfg, f);
       const campos = Array.isArray(cfg.campos)
         ? cfg.campos.map(col => (f[col] !== undefined && f[col] !== '' ? Number(f[col]) : undefined))
         : undefined;
@@ -183,7 +192,7 @@ module.exports = async (req, res) => {
 
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `'${SHEET_NAME}'!A:AJ`,
+      range: `'${SHEET_NAME}'!A:AL`,
     });
     const filas = resp.data.values || [];
     const max = Number(limite) || 10;
