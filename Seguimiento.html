@@ -111,6 +111,19 @@
   .stat-tile .delta.up{ color:var(--moss-light); }
   .stat-tile .delta.down{ color:var(--danger); }
 
+  .cumpl-chips{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+  .cumpl-chip{ flex:1; min-width:90px; border-radius:12px; padding:12px 10px; display:flex; flex-direction:column; gap:8px; align-items:center; background:var(--stone-800); border:1px solid var(--line-strong); }
+  .cumpl-chip.bloq{ background:rgba(201,154,91,0.08); border:1px dashed rgba(201,154,91,0.45); }
+  .cumpl-chip .dia{ font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--chalk-faint); font-weight:700; }
+  .cumpl-chip .tipo{ font-size:12.5px; color:var(--chalk); font-weight:600; }
+  .cumpl-chip .squares{ display:flex; gap:5px; }
+  .cumpl-chip .sq{ width:18px; height:18px; border-radius:5px; }
+  .cumpl-chip .sq.hecho{ background:var(--moss); }
+  .cumpl-chip .sq.no-hecho{ background:transparent; border:1.5px dashed var(--line-strong); }
+  .cumpl-chip .estado{ font-size:10.5px; }
+  .cumpl-chip .estado.ok{ color:var(--moss-light); }
+  .cumpl-chip .estado.bloq{ color:var(--amber); }
+
   .chart-shell{ background:var(--stone-800); border:1px solid var(--line); border-radius:16px; padding:22px 22px 12px; margin-bottom:26px; }
   .chart-shell .leyenda{ display:flex; gap:10px; margin-bottom:6px; flex-wrap:wrap; }
   .leyenda .item{
@@ -406,6 +419,11 @@ function poblarSelectorVariable(){
   // Ya no hay opciones por campo secundario (series, pegues, tiempo) ni de
   // dominadas con lastre: todo eso se ve en "Resumen (todos los datos)".
   opciones.push('<option value="resumen">Resumen (todos los datos)</option>');
+  // A diferencia de las demás, esta no depende del mesociclo elegido arriba
+  // (MESO_ACTIVO) — "cumplimiento" es siempre la semana real actual del
+  // cliente según su macrociclo, sea cual sea la pestaña de mesociclo que se
+  // esté mirando en ese momento.
+  opciones.push('<option value="cumplimiento">Cumplimiento semanal</option>');
   sel.innerHTML = opciones.join('');
   VARIABLE_ACTIVA = 'fuerza';
   sel.value = 'fuerza';
@@ -578,6 +596,12 @@ function pintarDatos(){
   const panel = document.getElementById('panelDatos');
   if(!PORMESOCICLO) return;
 
+  // No depende de PORMESOCICLO/MESO_ACTIVO (ver poblarSelectorVariable) —
+  // se resuelve aparte, antes de la comprobación de abajo (que exige
+  // sesiones entrenadas de ESTE mesociclo, algo que a cumplimiento no le hace
+  // falta: es la semana real actual del cliente, la tenga entrenada o no).
+  if(VARIABLE_ACTIVA === 'cumplimiento'){ pintarPanelCumplimiento(panel); return; }
+
   const todos = PORMESOCICLO[MESO_ACTIVO] || [];
   const historial = todos.filter(h => h.entrenada);
 
@@ -700,6 +724,78 @@ function pintarPanelFuerza(panel, historial){
 // las sesiones no recuperadas. Solo tiene sentido como tabla: mezclar aquí
 // unidades tan distintas (N, %, series, tiempo...) en una misma gráfica no
 // contaría nada útil.
+// Color según el % (mismos tonos que ya usa el resto de la app): rojizo por
+// debajo de 40%, ámbar 40-69%, verde claro desde 70%.
+function colorCumplimiento(pct){
+  if(pct >= 70) return 'var(--moss-light)';
+  if(pct >= 40) return 'var(--amber)';
+  return 'var(--danger)';
+}
+const DIAS_SEMANA_CUMPL = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+function nombreDiaCumpl(fechaDDMMYYYY){
+  const [d,m,y] = fechaDDMMYYYY.split('/').map(Number);
+  return DIAS_SEMANA_CUMPL[(new Date(y,m-1,d).getDay()+6)%7];
+}
+function fmtNumCumpl(n){ return Number.isInteger(n) ? String(n) : n.toFixed(1); }
+
+function chipCumplRoco(s){
+  if(!s.entrenada){
+    return `<div class="cumpl-chip bloq"><div class="dia">${escapeHtml(nombreDiaCumpl(s.fecha))}</div><div class="tipo">Roco</div><div class="estado bloq">No recuperado</div></div>`;
+  }
+  const cuadrados = ['principal','secundario','integrado']
+    .filter(cat => s.detalle[cat] !== null)
+    .map(cat => `<div class="sq ${s.detalle[cat] ? 'hecho' : 'no-hecho'}"></div>`).join('');
+  const completa = ['principal','secundario','integrado'].every(cat => s.detalle[cat] === null || s.detalle[cat] === true);
+  return `<div class="cumpl-chip"><div class="dia">${escapeHtml(nombreDiaCumpl(s.fecha))}</div><div class="tipo">Roco</div><div class="squares">${cuadrados}</div><div class="estado ok">${completa?'Completa':'Parcial'}</div></div>`;
+}
+function chipCumplGym(s){
+  return `<div class="cumpl-chip"><div class="dia">${escapeHtml(nombreDiaCumpl(s.fecha))}</div><div class="tipo">Gym</div><div class="squares"><div class="sq ${s.entrenada?'hecho':'no-hecho'}"></div></div><div class="estado ${s.entrenada?'ok':'bloq'}">${s.entrenada?'Hecho':'Sin hacer'}</div></div>`;
+}
+
+// "Cumplimiento semanal" — a diferencia de los demás paneles, no lee
+// PORMESOCICLO: pide su propio dato fresco a /api/macrociclo?accion=
+// cumplimiento, independiente de qué pestaña de mesociclo esté activa (ver
+// poblarSelectorVariable).
+async function pintarPanelCumplimiento(panel){
+  const correo = document.getElementById('selectorCliente').value;
+  if(!correo){ panel.innerHTML = '<div class="estado-panel">Elige un cliente.</div>'; return; }
+  panel.innerHTML = '<div class="estado-panel">Cargando cumplimiento…</div>';
+  try{
+    const res = await fetch('/api/macrociclo?' + new URLSearchParams({ accion: 'cumplimiento', cliente: correo }));
+    const data = await res.json();
+    if(!data.success){
+      panel.innerHTML = `<div class="estado-panel">${escapeHtml(data.error || 'No se pudo cargar el cumplimiento.')}</div>`;
+      return;
+    }
+    if(!data.semanaActual || data.semanaActual.posible <= 0){
+      panel.innerHTML = '<div class="estado-panel">Este cliente no tiene macrociclo activo, o esta semana no tiene nada programado.</div>';
+      return;
+    }
+    const s = data.semanaActual;
+    const todasSesiones = [
+      ...s.sesionesRoco.map(x => ({ ...x, tipo:'roco' })),
+      ...s.sesionesGym.map(x => ({ ...x, tipo:'gym' })),
+    ].sort((a,b) => {
+      const [da,ma,ya] = a.fecha.split('/').map(Number), [db,mb,yb] = b.fecha.split('/').map(Number);
+      return new Date(ya,ma-1,da) - new Date(yb,mb-1,db);
+    });
+    const chipsHtml = todasSesiones.map(x => x.tipo==='roco' ? chipCumplRoco(x) : chipCumplGym(x)).join('');
+    const total = data.total;
+    panel.innerHTML = `
+      <div class="stat-tiles">
+        <div class="stat-tile"><div class="k">% esta semana (${escapeHtml(s.mesociclo === 'TAPERING' ? 'TAP' : s.mesociclo)})</div><div class="v" style="color:${colorCumplimiento(s.porcentaje)};">${Math.round(s.porcentaje)}<small>%</small></div></div>
+        <div class="stat-tile"><div class="k">Puntos esta semana</div><div class="v">${fmtNumCumpl(s.puntos)}<small>/${fmtNumCumpl(s.posible)}</small></div></div>
+        <div class="stat-tile"><div class="k">% total acumulado</div><div class="v" style="color:${total?colorCumplimiento(total.porcentaje):undefined};">${total?Math.round(total.porcentaje):'—'}<small>%</small></div></div>
+        <div class="stat-tile"><div class="k">Puntos total</div><div class="v">${total?fmtNumCumpl(total.puntos):'—'}<small>${total?'/'+fmtNumCumpl(total.posible):''}</small></div></div>
+      </div>
+      <div class="cumpl-chips">${chipsHtml}</div>
+      <div class="estado-panel" style="text-align:left; padding:0;">Semana del ${escapeHtml(s.lunes)} — una sesión no recuperada no cuenta en contra, tiene toda la semana para recuperarla.</div>
+    `;
+  }catch(e){
+    panel.innerHTML = `<div class="estado-panel">Error de red: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
 function pintarPanelResumen(panel){
   const todas = PORMESOCICLO[MESO_ACTIVO] || [];
   // Días de gimnasio de este mesociclo (GYM_EN_<meso>, ver
