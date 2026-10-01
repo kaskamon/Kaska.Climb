@@ -1,5 +1,5 @@
 const { verificarAccesoCliente, verificarEntrenador } = require('../libs/sesion-cliente.js');
-const { exigirEntrenadorOCron } = require('../libs/entrenador-notificaciones.js');
+const { exigirEntrenador, exigirEntrenadorOCron } = require('../libs/entrenador-notificaciones.js');
 const { authSheets: authSheetsCacheado, SCOPE_LECTURA_ESCRITURA } = require('../libs/sheets-auth.js');
 const { semanasDelMacrociclo, calcularFaseYSemana, lunesDe, formatFechaDDMMYYYY, parseFechaDDMMYYYY } = require('../libs/planificacion-semanas.js');
 const { sanearFormula } = require('../libs/sheets-sanitize.js');
@@ -559,6 +559,52 @@ function calcularSemanaAsumida(correo, lunesFecha, mesociclo, filasRespuestas) {
   return { puntos, posible, porcentaje };
 }
 
+// GET ?accion=debug-cumplimiento&cliente=correo&lunes=DD/MM/YYYY — diagnóstico
+// manual de un cálculo concreto que no cuadra: muestra, para ese cliente y esa
+// semana, qué filas de 'Respuestas de formulario 1' encontró calcularSemanaAsumida
+// (fecha, mesociclo, campos/dominadas tal cual están en el Sheet) y el
+// desglose puntos/posible resultante — para poder ver de un vistazo si el dato
+// de origen es el que se espera, sin tener que ir fila a fila a mano en el Sheet.
+async function manejarDebugCumplimiento(req, res, sheets) {
+  if (!exigirEntrenador(req, res)) return;
+  const { cliente, lunes, mesociclo } = req.query || {};
+  if (!cliente || !lunes) return res.status(400).json({ success: false, error: 'Faltan los parámetros cliente y lunes (DD/MM/YYYY).' });
+
+  try {
+    const respRespuestas = await sheets.spreadsheets.values.get({ spreadsheetId: SPREADSHEET_ID, range: `'${RESPUESTAS_SHEET}'!A:AL` });
+    const filasRespuestas = (respRespuestas.data.values || []).slice(1);
+    const lunesFecha = parseFechaDDMMYYYY(lunes);
+    if (!lunesFecha) return res.status(400).json({ success: false, error: 'Fecha de lunes inválida, usa DD/MM/YYYY.' });
+
+    const lunesMs = lunesFecha.getTime();
+    const domingoMs = lunesMs + 6 * 86400000 + 86399999;
+    const correoNorm = cliente.trim().toLowerCase();
+    const filasSemana = filasRespuestas.filter(f => {
+      if ((f[COL_RESPUESTAS_CORREO] || '').trim().toLowerCase() !== correoNorm) return false;
+      const fecha = parseFechaDDMMYYYY(f[2]);
+      if (!fecha) return false;
+      const t = fecha.getTime();
+      return t >= lunesMs && t <= domingoMs;
+    });
+
+    const filasEncontradas = filasSemana.map(f => {
+      const meso = f[3];
+      const cfg = COLUMNS[meso];
+      const out = { fecha: f[2], mesociclo: meso };
+      if (cfg && Array.isArray(cfg.campos)) out.campos = cfg.campos.map(c => f[c]);
+      if (cfg && cfg.unico !== undefined) out.dominadas = f[cfg.unico];
+      return out;
+    });
+
+    const mesoParaCalcular = mesociclo || (filasSemana.find(f => CUMPLIMIENTO_SEMANAL.MESOCICLOS_ROCO_PUNTUABLES.includes(f[3])) || [])[3];
+    const resultado = mesoParaCalcular ? calcularSemanaAsumida(cliente, lunesFecha, mesoParaCalcular, filasRespuestas) : null;
+
+    res.status(200).json({ success: true, lunes, mesociclo: mesoParaCalcular || null, filasEncontradas, resultado });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
 // GET ?accion=backfill-cumplimiento — migración manual, de un solo uso (la
 // dispara el entrenador a mano, no un cron): para cada cliente activo con
 // macrociclo, rellena en Cumplimiento_Semanal todas las semanas PASADAS
@@ -769,6 +815,7 @@ module.exports = async (req, res) => {
     if (req.method === 'GET' && accion === 'historial') return await manejarHistorialMacrociclos(req, res, sheets);
     if (req.method === 'GET' && accion === 'cerrar-semana-cumplimiento') return await manejarCerrarSemanaCumplimiento(req, res, sheets);
     if (req.method === 'GET' && accion === 'backfill-cumplimiento') return await manejarBackfillCumplimiento(req, res, sheets);
+    if (req.method === 'GET' && accion === 'debug-cumplimiento') return await manejarDebugCumplimiento(req, res, sheets);
     if (req.method === 'GET' && accion === 'cumplimiento') return await manejarCumplimiento(req, res, sheets);
     if (req.method === 'GET') return await manejarGet(req, res, sheets);
     return await manejarPost(req, res, sheets);
