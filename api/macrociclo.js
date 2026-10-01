@@ -610,6 +610,7 @@ async function manejarBackfillCumplimiento(req, res, sheets) {
     const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
     const filasNuevas = [];
     const actualizaciones = []; // { range, values } -- solo cuando forzar=true y ya existía
+    const aLimpiar = []; // rangos a vaciar -- solo cuando forzar=true: filas huérfanas (ver abajo)
 
     clientesActivos.forEach(correo => {
       const plan = macrociclosPorCorreo.get(correo.toLowerCase());
@@ -631,6 +632,25 @@ async function manejarBackfillCumplimiento(req, res, sheets) {
           filasNuevas.push(fila);
         }
       });
+
+      // Filas huérfanas: ya congeladas para este cliente, pero su semana ya
+      // no existe en el macrociclo ACTUAL (p. ej. se retrasó la fecha de
+      // inicio porque el cliente empezó más tarde de lo previsto, y la
+      // "semana 1" vieja ya no está en el plan). El bucle de arriba nunca
+      // las toca porque solo recorre las semanas del macrociclo actual — se
+      // vacían aquí para que dejen de sumar puntos/posibles que no
+      // corresponden a ninguna semana real. Solo en forzar=1 (acción
+      // explícita del entrenador, no automática).
+      if (forzar) {
+        const prefijo = correo.toLowerCase() + '|';
+        filaPorClave.forEach((numFila, clave) => {
+          if (!clave.startsWith(prefijo)) return;
+          const fechaFila = clave.slice(prefijo.length);
+          if (calcularFaseYSemana(plan.inicio, plan.bloques, fechaFila).fueraDeRango) {
+            aLimpiar.push(`'${CUMPLIMIENTO_SHEET}'!A${numFila}:G${numFila}`);
+          }
+        });
+      }
     });
 
     if (filasNuevas.length) {
@@ -650,7 +670,14 @@ async function manejarBackfillCumplimiento(req, res, sheets) {
       });
     }
 
-    res.status(200).json({ success: true, procesados: filasNuevas.length, recalculadas: actualizaciones.length, forzado: forzar });
+    if (aLimpiar.length) {
+      await sheets.spreadsheets.values.batchClear({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: { ranges: aLimpiar },
+      });
+    }
+
+    res.status(200).json({ success: true, procesados: filasNuevas.length, recalculadas: actualizaciones.length, limpiadas: aLimpiar.length, forzado: forzar });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
@@ -683,8 +710,15 @@ async function manejarCumplimiento(req, res, sheets) {
 
     const filasProgramadas = respProgramadas.data.values || [];
     const filasRespuestas = (respRespuestas.data.values || []).slice(1);
+    // Si el macrociclo se ha editado desde que se congeló alguna semana
+    // (p. ej. se retrasó la fecha de inicio porque el cliente empezó más
+    // tarde de lo previsto), esa fila congelada puede referirse a una semana
+    // que YA NO existe en el plan actual — se descarta del total en vez de
+    // arrastrar un % o unos puntos que no corresponden a nada real. No hace
+    // falta tocar el Sheet para esto: es solo un filtro de lectura.
     const filasCumplimiento = (respCumplimiento.data.values || []).slice(1)
-      .filter(f => (f[1] || '').trim().toLowerCase() === correoNorm);
+      .filter(f => (f[1] || '').trim().toLowerCase() === correoNorm)
+      .filter(f => !calcularFaseYSemana(plan.inicio, plan.bloques, (f[2] || '').trim()).fueraDeRango);
 
     // Semana en curso, calculada en vivo (todavía no congelada).
     const hoy = new Date();
