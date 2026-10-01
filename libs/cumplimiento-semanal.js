@@ -95,17 +95,29 @@
     };
   }
 
-  // GYM-FMAX es el único gym con un dato real que mirar (dominadas con
-  // lastre, ver COLUMNS['GYM-FMAX'].unico) — cualquier valor por encima de 0
-  // cuenta el punto entero; 0 explícito O el campo en blanco (la fila existe
-  // pero el cliente no rellenó dominadas — no es lo mismo que escribir "0",
-  // pero pesa igual: se presentó pero no hay dato real de que completara
-  // ninguna) cuentan medio punto. GYM-ANTAGONISTAS no tiene ningún campo que
-  // mirar, así que sigue siendo todo o nada (la fila existe o no).
+  // GYM-FMAX siempre lleva el bloque "Fmax tracción" (dominadas con lastre) —
+  // cualquier valor por encima de 0 cuenta el punto entero; 0 explícito O el
+  // campo en blanco (la fila existe pero el cliente no rellenó dominadas —
+  // no es lo mismo que escribir "0", pero pesa igual: se presentó pero no
+  // hay dato real de que completara ninguna) cuentan medio punto.
+  //
+  // Los demás tipos de gym (GYM-ANTAGONISTAS...) no llevan ese bloque POR
+  // DEFECTO, pero el entrenador puede añadirlo igualmente a una sesión
+  // suelta (el bloque ya no depende de que el mesociclo sea literalmente
+  // GYM-FMAX, ver libs/mesociclos-config.js) — si el cliente ha escrito un
+  // valor explícito ahí (incluido un 0 real), se puntúa exactamente igual
+  // que en GYM-FMAX. Si no hay ningún valor, es que esa sesión en concreto
+  // no tenía el bloque, y sigue siendo todo o nada.
   function puntosSesionGym(mesociclo, dominadas) {
+    const hayValor = dominadas !== undefined && dominadas !== null && dominadas !== '';
     if (mesociclo === 'GYM-FMAX') {
+      if (!hayValor) return PESO_GYM / 2;
       const n = Number(dominadas);
       return (!isNaN(n) && n > 0) ? PESO_GYM : PESO_GYM / 2;
+    }
+    if (hayValor) {
+      const n = Number(dominadas);
+      if (!isNaN(n)) return n > 0 ? PESO_GYM : PESO_GYM / 2;
     }
     return PESO_GYM;
   }

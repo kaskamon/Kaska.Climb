@@ -219,7 +219,13 @@ function renderChipRoco(s){
 }
 
 function renderChipGym(s){
-  const cero = s.mesociclo === 'GYM-FMAX' && !(Number(s.dominadas) > 0);
+  // Mismo criterio que puntosSesionGym en libs/cumplimiento-semanal.js: en
+  // GYM-FMAX, sin dominadas>0 es "Parcial" (incluye el campo en blanco). En
+  // el resto (GYM-ANTAGONISTAS...) solo cuenta como "Parcial" si hay un
+  // valor explícito de dominadas y no es mayor que 0 -- si no hay ningún
+  // valor, esa sesión no tenía ese bloque y sigue siendo "Hecho".
+  const hayDominadas = s.dominadas !== undefined && s.dominadas !== null && s.dominadas !== '';
+  const cero = s.mesociclo === 'GYM-FMAX' ? !(Number(s.dominadas) > 0) : (hayDominadas && !(Number(s.dominadas) > 0));
   const estado = !s.entrenada ? 'Pendiente' : (cero ? 'Parcial' : 'Hecho');
   const claseEstado = !s.entrenada ? 'pendiente' : (cero ? 'bloq' : 'ok');
   return `<div class="chip chip-roco">

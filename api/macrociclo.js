@@ -26,6 +26,13 @@ const SESIONES_PROGRAMADAS_SHEET = 'Sesiones_Programadas';
 // mandó hacer ese día, ese detalle sí se pierde con la poda.
 const RESPUESTAS_SHEET = 'Respuestas de formulario 1';
 const COL_RESPUESTAS_CORREO = 34; // AI
+// Dominadas con lastre (bloque "Fmax tracción") — misma columna que usa
+// api/enviar-sesion.js (COL_DOMINADAS_CON_LASTRE) como destino de ese dato
+// para CUALQUIER sesión de gimnasio, no solo GYM-FMAX (el bloque ya no
+// depende de que el mesociclo sea literalmente ese, ver
+// libs/mesociclos-config.js) — así que el cumplimiento semanal tiene que
+// leerla igual, sin mirar primero si el mesociclo es GYM-FMAX.
+const COL_DOMINADAS_CON_LASTRE = 4; // E
 
 
 
@@ -439,8 +446,9 @@ function construirSemanaDesdeProgramadas(correo, lunesFecha, filasProgramadas, f
       const realesDeEseTipo = respuestasPorMeso.get(mesociclo) || [];
       filasProgramadasDeEseTipo.forEach((filaProgramada, i) => {
         const fila = realesDeEseTipo[i];
-        const cfgGym = COLUMNS[mesociclo];
-        const dominadas = fila && cfgGym && cfgGym.unico !== undefined ? fila[cfgGym.unico] : undefined;
+        // La misma columna, se llame GYM-FMAX o no esa sesión en concreto —
+        // ver COL_DOMINADAS_CON_LASTRE arriba.
+        const dominadas = fila ? fila[COL_DOMINADAS_CON_LASTRE] : undefined;
         const fecha = fila ? fila[2] : filaProgramada[2];
         sesionesGym.push({ mesociclo, fecha, entrenada: !!fila, dominadas });
       });
@@ -549,8 +557,8 @@ function calcularSemanaAsumida(correo, lunesFecha, mesociclo, filasRespuestas) {
   posible += CUMPLIMIENTO_SEMANAL.PESO_GYM; // plantilla asumida: 1 gym
   const filaGym = filasSemana.find(f => CUMPLIMIENTO_SEMANAL.MESOCICLOS_GYM.includes(f[3]));
   if (filaGym) {
-    const cfgGym = COLUMNS[filaGym[3]];
-    const dominadas = cfgGym && cfgGym.unico !== undefined ? filaGym[cfgGym.unico] : undefined;
+    // Misma columna se llame GYM-FMAX o no -- ver COL_DOMINADAS_CON_LASTRE.
+    const dominadas = filaGym[COL_DOMINADAS_CON_LASTRE];
     puntos += CUMPLIMIENTO_SEMANAL.puntosSesionGym(filaGym[3], dominadas);
   }
 
@@ -592,7 +600,7 @@ async function manejarDebugCumplimiento(req, res, sheets) {
       const cfg = COLUMNS[meso];
       const out = { fecha: f[2], mesociclo: meso };
       if (cfg && Array.isArray(cfg.campos)) out.campos = cfg.campos.map(c => f[c]);
-      if (cfg && cfg.unico !== undefined) out.dominadas = f[cfg.unico];
+      if (CUMPLIMIENTO_SEMANAL.MESOCICLOS_GYM.includes(meso)) out.dominadas = f[COL_DOMINADAS_CON_LASTRE];
       return out;
     });
 
