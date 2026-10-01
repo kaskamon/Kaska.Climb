@@ -564,10 +564,14 @@ function calcularSemanaAsumida(correo, lunesFecha, mesociclo, filasRespuestas) {
 // macrociclo, rellena en Cumplimiento_Semanal todas las semanas PASADAS
 // (nunca la actual ni futuras, de eso ya se encargan el cron semanal y la
 // lectura en vivo) que todavía no tengan fila, usando la plantilla asumida
-// 2+1. Si se ejecuta más de una vez, nunca pisa una fila que ya exista
-// (ni las que puso el cron semanal ni las de una ejecución anterior de esto).
+// 2+1. Por defecto nunca pisa una fila que ya exista (ni las que puso el
+// cron semanal ni las de una ejecución anterior de esto) — pasando
+// ?forzar=1 SÍ las recalcula y sobrescribe en el sitio, para corregir filas
+// que se congelaron con una versión antigua de la fórmula de puntuación
+// (pedido 01/10/2026, ver proyecto_cumplimiento_semanal.md).
 async function manejarBackfillCumplimiento(req, res, sheets) {
   if (!exigirEntrenadorOCron(req, res)) return;
+  const forzar = !!(req.query && (req.query.forzar === '1' || req.query.forzar === 'true'));
 
   try {
     const [respClientes, respMacros, respRespuestas, respCumplimiento] = await Promise.all([
@@ -593,14 +597,19 @@ async function manejarBackfillCumplimiento(req, res, sheets) {
 
     const filasRespuestas = (respRespuestas.data.values || []).slice(1);
 
-    const yaCongeladas = new Set(); // "correo|lunesTexto"
-    (respCumplimiento.data.values || []).slice(1).forEach(f => {
-      yaCongeladas.add((f[1] || '').trim().toLowerCase() + '|' + (f[2] || '').trim());
+    // correo|lunesTexto -> número de fila real en el Sheet (1-based), para
+    // poder sobrescribirla en el sitio cuando forzar=true en vez de tener
+    // que borrar+reinsertar.
+    const filaPorClave = new Map();
+    (respCumplimiento.data.values || []).forEach((f, i) => {
+      if (i === 0) return; // cabecera
+      filaPorClave.set((f[1] || '').trim().toLowerCase() + '|' + (f[2] || '').trim(), i + 1);
     });
 
     const lunesHoyMs = lunesDe(new Date()).getTime();
     const marcaTemporal = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
     const filasNuevas = [];
+    const actualizaciones = []; // { range, values } -- solo cuando forzar=true y ya existía
 
     clientesActivos.forEach(correo => {
       const plan = macrociclosPorCorreo.get(correo.toLowerCase());
@@ -611,10 +620,16 @@ async function manejarBackfillCumplimiento(req, res, sheets) {
         const lunesFecha = parseFechaDDMMYYYY(s.fechaLunes);
         if (!lunesFecha || lunesFecha.getTime() >= lunesHoyMs) return; // la actual/futuras no se tocan aquí
         const key = correo.toLowerCase() + '|' + s.fechaLunes;
-        if (yaCongeladas.has(key)) return;
+        const filaExistente = filaPorClave.get(key);
+        if (filaExistente && !forzar) return; // comportamiento de siempre: no tocar lo que ya existe
         const r = calcularSemanaAsumida(correo, lunesFecha, s.mesociclo, filasRespuestas);
         if (r.posible <= 0) return;
-        filasNuevas.push([marcaTemporal, sanearFormula(correo), s.fechaLunes, s.mesociclo, r.puntos, r.posible, r.porcentaje]);
+        const fila = [marcaTemporal, sanearFormula(correo), s.fechaLunes, s.mesociclo, r.puntos, r.posible, r.porcentaje];
+        if (filaExistente) {
+          actualizaciones.push({ range: `'${CUMPLIMIENTO_SHEET}'!A${filaExistente}:G${filaExistente}`, values: [fila] });
+        } else {
+          filasNuevas.push(fila);
+        }
       });
     });
 
@@ -628,7 +643,14 @@ async function manejarBackfillCumplimiento(req, res, sheets) {
       });
     }
 
-    res.status(200).json({ success: true, procesados: filasNuevas.length });
+    if (actualizaciones.length) {
+      await sheets.spreadsheets.values.batchUpdate({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: { valueInputOption: 'USER_ENTERED', data: actualizaciones },
+      });
+    }
+
+    res.status(200).json({ success: true, procesados: filasNuevas.length, recalculadas: actualizaciones.length, forzado: forzar });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
