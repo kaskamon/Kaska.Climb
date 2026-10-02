@@ -358,7 +358,7 @@ function filaEdicion(c){
           ${campo('disponibilidad', 'Disponibilidad', c.disponibilidad)}
           ${campo('fechaNacimiento', 'Fecha de nacimiento', c.fechaNacimiento)}
           ${campo('lesion', '¿Lesión?', c.lesion)}
-          ${campo('fechaInicio', 'Fecha de inicio <small>día 1 de entreno, dd/mm/aaaa</small>', c.fechaInicio)}
+          ${campo('fechaInicio', 'Fecha de inicio <small>día de la evaluación inicial (batería de test), dd/mm/aaaa</small>', c.fechaInicio)}
           ${campo('fechaFin', 'Fecha de fin <small>dd/mm/aaaa</small>', c.fechaFin)}
           <div class="campo" style="grid-column:span 2;">${campo('drive', 'Carpeta Drive', c.drive).replace('<div class="campo">','').replace('</div>','')}</div>
           <div class="campo"><label>Correo <small>(identificador, no editable)</small></label><input type="text" value="${escapeHtml(c.email)}" disabled></div>

@@ -48,7 +48,8 @@ function registrarIntentoFallidoAlta(ip) {
 
 // Columnas A-N del Sheet. M/N (fechaInicio/fechaFin) sustituyen a "duracion"
 // como forma de llevar el contrato: el entrenador pone la fecha real de
-// inicio (día 1 de entreno, no la de alta en el formulario) y una fecha de
+// inicio (día de la evaluación inicial/batería de test, no la de alta en el
+// formulario; se rellena sola al publicar la batería) y una fecha de
 // fin que va sumando a mano (+3 meses el trimestre inicial obligatorio,
 // +1 mes en las renovaciones). La columna "duracion" (C) se queda en el
 // Sheet pero ya no se usa ni se edita desde aquí.
